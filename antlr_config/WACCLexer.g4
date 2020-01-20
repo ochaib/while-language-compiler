@@ -1,5 +1,7 @@
 lexer grammar WACCLexer;
 
+channels { COMMENTS };
+
 // ignore whitespace
 IGNORE: [ \t\r\n]+ -> skip;
 
@@ -120,4 +122,4 @@ PAIT_LIT: 'null';
 
 // Comments are given a skip rule as they don't need to be parsed
 fragment EOL: [\r\n];
-COMMENT: '#' ~(EOL)* EOL -> skip;
+COMMENT: '#' ~(EOL)* EOL -> channel(COMMENTS);
