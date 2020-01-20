@@ -108,10 +108,16 @@ fragment ESCAPED_CHAR: (
     SINGLEQUOTE |
     SLASH
 ;
-fragment CHARACTER: ~(SINGLEQUOTE | DOUBLEQUOTE | SLASH) | SLASH ESCAPED_CHAR;
+fragment CHARACTER: (
+    ~(SINGLEQUOTE | DOUBLEQUOTE | SLASH) |
+    SLASH ESCAPED_CHAR
+);
 CHAR_LIT: SINGLEQUOTE CHARACTER SINGLEQUOTE;
 STR_LIT: DOUBLEQUOTE CHARACTER* DOUBLEQUOTE;
 
 // TODO: array literal in parser
-
 PAIT_LIT: 'null';
+
+// Comments are given a skip rule as they don't need to be parsed
+fragment EOL: [\r\n];
+COMMENT: '#' ~(EOL)* EOL -> skip;
