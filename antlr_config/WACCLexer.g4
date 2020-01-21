@@ -91,6 +91,7 @@ IDENT:
 // LITERALS
 SIGN: PLUS | MINUS;
 INT_LIT: SIGN? DIGIT+;
+PAIR_LIT: 'null';
 
 fragment TRUE: 'true';
 fragment FALSE: 'false';
