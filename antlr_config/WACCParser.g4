@@ -1,11 +1,11 @@
-parser grammar BasicParser;
+parser grammar WACCParser;
 
 options {
-  tokenVocab=BasicLexer;
+  tokenVocab=WACCLexer;
 }
 
 // EOF indicates that the program must consume to the end of the input.
-program: BEGIN FUNC* stat END EOF;
+program: BEGIN func* stat END EOF;
 
 func: type IDENT OPEN_PARENTHESES param_list? CLOSE_PARENTHESES IS stat END ;
 
@@ -13,7 +13,7 @@ param_list: param (COMMA param)* ;
 
 param: type IDENT ;
 
-stat: SKIP
+stat: SKIP_
       | type IDENT EQUALS assign_rhs
       | assign_lhs EQUALS assign_rhs
       | READ assign_lhs
@@ -25,7 +25,7 @@ stat: SKIP
       | IF expr THEN stat ELSE stat FI
       | WHILE expr DO stat DONE
       | BEGIN stat END
-      | stat SEMI_COLON stat ;
+      | stat SEMICOLON stat ;
 
 assign_lhs: IDENT | array_elem | pair_elem ;
 
@@ -33,7 +33,7 @@ assign_rhs: expr
       | array_liter 
       | NEWPAIR OPEN_PARENTHESES expr COMMA expr CLOSE_PARENTHESES
       | pair_elem
-      | CALL IDENT OPEN_PARENTHESES arg-list? CLOSE_PARENTHESES ;
+      | CALL IDENT OPEN_PARENTHESES arg_list? CLOSE_PARENTHESES ;
 
 arg_list: expr (COMMA expr)* ;
 
@@ -41,7 +41,7 @@ pair_elem: FST expr
       | SND expr ;
 
 type: base_type
-      | array_type
+      | type OPEN_BRACKET CLOSE_BRACKET // array_type
       | pair_type ;
 
 base_type: INT
@@ -51,7 +51,7 @@ base_type: INT
 
 array_type: type OPEN_BRACKET CLOSE_BRACKET ;
 
-pair_type: PAIR OPEN_PARENTHASES pair_elem_type COMMA pair_elem_type CLOSE_PARENTHASES ;
+pair_type: PAIR OPEN_PARENTHESES pair_elem_type COMMA pair_elem_type CLOSE_PARENTHESES ;
 
 pair_elem_type: base_type
       | array_type
