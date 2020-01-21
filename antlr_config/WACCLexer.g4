@@ -1,6 +1,6 @@
 lexer grammar WACCLexer;
 
-channels { COMMENTS };
+channels { COMMENTS }
 
 // ignore whitespace
 IGNORE: [ \t\r\n]+ -> skip;
@@ -11,7 +11,7 @@ END: 'end';
 IS: 'is';
 
 // STAT
-SKIP: 'skip';
+SKIP_: 'skip';
 READ: 'read';
 FREE: 'free';
 RETURN: 'return';
@@ -96,9 +96,9 @@ fragment TRUE: 'true';
 fragment FALSE: 'false';
 BOOL_LIT: TRUE | FALSE;
 
-fragment SINGLEQUOTE = '\'';
-fragment DOUBLEQUOTE = '\"';
-fragment SLASH = '\\';
+fragment SINGLEQUOTE: '\'' ;
+fragment DOUBLEQUOTE: '"' ;
+fragment SLASH: '\\';
 fragment ESCAPED_CHAR: (
     '0' |
     'b' |
@@ -108,12 +108,10 @@ fragment ESCAPED_CHAR: (
     'r' |
     DOUBLEQUOTE |
     SINGLEQUOTE |
-    SLASH
-;
+    SLASH) ;
 fragment CHARACTER: (
-    ~(SINGLEQUOTE | DOUBLEQUOTE | SLASH) |
-    SLASH ESCAPED_CHAR
-);
+    [^'"\\] |
+    SLASH ESCAPED_CHAR ) ;
 CHAR_LIT: SINGLEQUOTE CHARACTER SINGLEQUOTE;
 STR_LIT: DOUBLEQUOTE CHARACTER* DOUBLEQUOTE;
 
@@ -122,4 +120,4 @@ PAIT_LIT: 'null';
 
 // Comments are given a skip rule as they don't need to be parsed
 fragment EOL: [\r\n];
-COMMENT: '#' ~(EOL)* EOL -> channel(COMMENTS);
+COMMENT: '#' ~([\r\n])* EOL -> channel(COMMENTS);
