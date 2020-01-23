@@ -1,0 +1,21 @@
+# exit with wrapped int 
+
+# Output:
+# #empty#
+
+# Observations:
+# exit 1024 --> exit: 0
+# exit 1023 --> exit: 255
+# exit 4096 --> exit: 0
+# exit 4095 --> exit: 255
+# exit 256 --> exit: 0
+# exit 255 --> exit: 255
+
+# Exit:
+# 0
+
+# Program:
+
+begin
+  exit 4096
+end

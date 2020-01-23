@@ -1,0 +1,13 @@
+# redeclaration of variable
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  int 9x = 10
+end
