@@ -84,10 +84,6 @@ fragment DIGIT: '0'..'9';
 fragment LOWERCASE: 'a'..'z';
 fragment UPPERCASE: 'A'..'Z';
 
-IDENT:
-    (UNDERSCORE | LOWERCASE | UPPERCASE)
-    (UNDERSCORE | LOWERCASE | UPPERCASE | DIGIT)*;
-
 // LITERALS
 SIGN: PLUS | MINUS;
 INT_LIT: SIGN? DIGIT+;
@@ -116,8 +112,13 @@ fragment CHARACTER: (
 CHAR_LIT: SINGLEQUOTE CHARACTER SINGLEQUOTE;
 STR_LIT: DOUBLEQUOTE CHARACTER* DOUBLEQUOTE;
 
-// TODO: array literal in parser
-PAIT_LIT: 'null';
+PAIR_LIT: 'null';
+
+IDENT:
+    (UNDERSCORE | LOWERCASE | UPPERCASE)
+    (UNDERSCORE | LOWERCASE | UPPERCASE | DIGIT)*;
+
+
 
 // Comments are given a skip rule as they don't need to be parsed
 fragment EOL: [\r\n];
