@@ -11,12 +11,14 @@ SBT := sbt
 
 # the make rules
 
-all: rules
+all: antlr sources
 
 # runs the antlr build script then attempts to compile all .java files within src
-rules:
-	cd $(ANTLR_DIR) && ./$(ANTLR)
+sources:
 	$(SBT) clean compile
+
+antlr:
+	cd $(ANTLR_DIR) && ./$(ANTLR)
 
 clean:
 	$(RM) rules $(SOURCE_DIR)/main/java/antlr
