@@ -6,11 +6,13 @@ stages:
 build:
   stage: build
   script:
+    - export PATH=$PATH:/usr/local/bin
+    - sh build
 
 test:
   stage: test
   script:
 
-deploy:
-  stage: deploy
-  script:
+# deploy:
+#   stage: deploy
+#   script:
