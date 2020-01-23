@@ -1,9 +1,28 @@
-#ignore generated binary files and auto-generated ANTLR code
+# ignore generated binary files and auto-generated ANTLR code
 bin
 src/antlr
 
-#ignore Java class files
+# ignore Java class files
 *.class
 
-#ignore other junk files
+# ignore other junk files
 *~
+
+# ignore scala logs
+*.log
+
+# ignore sbt specific files
+.cache/
+.history/
+.lib/
+dist/*
+target/
+lib_managed/
+src_managed/
+project/boot/
+project/plugins/project/
+
+# ignore scala IDE files
+.scala_dependencies
+.worksheet
+.idea
