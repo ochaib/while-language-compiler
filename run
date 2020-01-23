@@ -1,4 +1,4 @@
 #!/bin/sh
 
-echo Calling SBT and running project.
+echo calling SBT and running project
 sbt run

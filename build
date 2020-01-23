@@ -1,4 +1,4 @@
 #!/bin/sh
 
-echo Calling SBT and rebuilding project files
+echo calling SBT and rebuilding project files
 sbt clean compile
