@@ -1,0 +1,19 @@
+stages:
+  - build
+  - test
+#   - deploy
+  
+build:
+  stage: build
+  script:
+    - export PATH=$PATH:/usr/local/bin
+    - sh build
+
+test:
+  stage: test
+  script:
+    - ./test
+
+# deploy:
+#   stage: deploy
+#   script:
