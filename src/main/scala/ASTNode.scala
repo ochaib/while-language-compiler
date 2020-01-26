@@ -1,3 +1,4 @@
+import sun.jvm.hotspot.opto.TypeNode
 // Every node necessary to generate AST. From the WACCLangSpec.
 
 class ASTNode {
@@ -6,9 +7,19 @@ class ASTNode {
 
 class ProgramNode extends ASTNode {
 
+  // Functions in the program: <func>*.
+  val functions: Array[FuncNode]
+  // Stat in the program: <stat>.
+  val stat: StatNode
+
 }
 
 class FuncNode extends ASTNode {
+
+  val funcType: TypeNode
+  val ident: IdentNode
+  val paramListElems: Array[Param]
+  val stat: StatNode
 
 }
 
@@ -30,29 +41,45 @@ class AssignmentNode extends StatNode {
 
 class ReadNode extends StatNode {
 
+  val assignLeftNode: AssignmentLeftNode
+
 }
 
 class FreeNode extends StatNode {
+
+  val expr: ExprNode
 
 }
 
 class ReturnNode extends StatNode {
 
+  val expr: ExprNode
+
 }
 
 class ExitNode extends StatNode {
+
+  val expr: ExprNode
 
 }
 
 class PrintNode extends StatNode {
 
+  val expr: ExprNode
+
 }
 
 class PrintlnNode extends StatNode {
 
+  val expr: ExprNode
+
 }
 
 class IfNode extends StatNode {
+
+  val expr: ExprNode
+  // Two stat nodes, one for then one for else.
+  val statNodes: Array[StatNode]
 
 }
 
@@ -94,9 +121,13 @@ class PairElemNode extends AssignmentLeftNode with AssignmentRightNode {
 
 class FstNode extends PairElemNode {
 
+  val expr: ExprNode
+
 }
 
 class SndNode extends PairElemNode {
+
+  val expr: ExprNode
 
 }
 
