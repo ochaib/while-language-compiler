@@ -4,12 +4,12 @@ class ASTNode {
 
 }
 
-class ProgramNode extends ASTNode {
+class ProgramNode(val _stat: StatNode, val _functions: FuncNode*) extends ASTNode {
 
   // Functions in the program: <func>*.
-  val functions: Array[FuncNode]
+  val functions: Array[FuncNode] = _functions.toArray
   // Stat in the program: <stat>.
-  val stat: StatNode
+  val stat: StatNode = _stat
 
 }
 
@@ -30,95 +30,99 @@ class SkipNode extends StatNode {
 
 }
 
-class DeclarationNode extends StatNode {
+class DeclarationNode(val _type: TypeNode, val _ident: IdentNode, val _rhs: AssignRHSNode) extends StatNode {
+
+  val typeNode: TypeNode = _type
+  val ident: IdentNode = _ident
+  val rhs: AssignRHSNode = _rhs
 
 }
 
-class AssignmentNode extends StatNode {
+class AssignmentNode(val _lhs: AssignLHSNode, val _rhs: AssignRHSNode) extends StatNode {
 
-  val assignLeftNode: AssignmentLeftNode
-  val assignRightNode: AssignmentRightNode
-
-}
-
-class ReadNode extends StatNode {
-
-  val assignLeftNode: AssignmentLeftNode
+  val lhs: AssignLHSNode = _lhs
+  val rhs: AssignRHSNode = _rhs
 
 }
 
-class FreeNode extends StatNode {
+class ReadNode(val _lhs: AssignLHSNode) extends StatNode {
 
-  val expr: ExprNode
-
-}
-
-class ReturnNode extends StatNode {
-
-  val expr: ExprNode
+  val lhs: AssignLHSNode = _lhs
 
 }
 
-class ExitNode extends StatNode {
+class FreeNode(val _expr: ExprNode) extends StatNode {
 
-  val expr: ExprNode
-
-}
-
-class PrintNode extends StatNode {
-
-  val expr: ExprNode
+  val expr: ExprNode = _expr
 
 }
 
-class PrintlnNode extends StatNode {
+class ReturnNode(val _expr: ExprNode) extends StatNode {
 
-  val expr: ExprNode
+  val expr: ExprNode = _expr
 
 }
 
-class IfNode extends StatNode {
+class ExitNode(val _expr: ExprNode) extends StatNode {
 
-  val expr: ExprNode
+  val expr: ExprNode = _expr
+
+}
+
+class PrintNode(val _expr: ExprNode) extends StatNode {
+
+  val expr: ExprNode = _expr
+
+}
+
+class PrintlnNode(val _expr: ExprNode) extends StatNode {
+
+  val expr: ExprNode = _expr
+
+}
+
+class IfNode(val _expr: ExprNode, val _statNodes: StatNode*) extends StatNode {
+
+  val expr: ExprNode = _expr
   // Two stat nodes, one for then one for else.
   val statNodes: Array[StatNode]
 
 }
 
-class WhileNode extends StatNode {
+class WhileNode(val _expr: ExprNode, val _stat: StatNode) extends StatNode {
 
-  val expr: ExprNode
-  val stat: StatNode
-
-}
-
-class BeginNode extends StatNode {
-
-  val stat: StatNode
+  val expr: ExprNode = _expr
+  val stat: StatNode = _stat
 
 }
 
-class SequenceNode extends StatNode {
+class BeginNode(val _stat: StatNode) extends StatNode {
 
-  val statNodes: Array[StatNode]
-
-}
-
-class AssignmentLeftNode extends ASTNode {
+  val stat: StatNode = _stat
 
 }
 
-class AssignmentRightNode extends ASTNode {
+class SequenceNode(val _statNodes: StatNode*) extends StatNode {
+
+  val statNodes: Array[StatNode] = _statNodes
 
 }
 
-class NewPairNode extends AssignmentRightNode {
+class AssignLHSNode extends ASTNode {
+
+}
+
+class AssignRHSNode extends ASTNode {
+
+}
+
+class NewPairNode extends AssignRHSNode {
 
   val exprNodes: Array[ExprNode]
 
 }
 
-class CallNode extends AssignmentRightNode {
+class CallNode extends AssignRHSNode {
 
   val ident: IdentNode
   // How do I make this optional?
@@ -126,30 +130,30 @@ class CallNode extends AssignmentRightNode {
 
 }
 
-class ArgListNode extends ASTNode {
+class ArgListNode(val _exprNodes: ExprNode*) extends ASTNode {
 
-  val exprNodes: Array[ExprNode]
+  val exprNodes: Array[ExprNode] = _exprNodes.toArray
 
 }
 
 // Shouldn't be able to instantiate this.
-class PairElemNode extends AssignmentLeftNode with AssignmentRightNode {
+class PairElemNode extends AssignLHSNode with AssignRHSNode {
 
 }
 
-class FstNode extends PairElemNode {
+class FstNode(val _expr: ExprNode) extends PairElemNode {
 
-  val expr: ExprNode
-
-}
-
-class SndNode extends PairElemNode {
-
-  val expr: ExprNode
+  val expr: ExprNode = _expr
 
 }
 
-class ExprNode extends AssignmentRightNode {
+class SndNode(val _expr: ExprNode) extends PairElemNode {
+
+  val expr: ExprNode = _expr
+
+}
+
+class ExprNode extends AssignRHSNode {
 
 }
 
@@ -208,39 +212,37 @@ class StringTypeNode extends BaseTypeNode {
 
 }
 
-class ArrayTypeNode extends TypeNode with PairElemTypeNode {
+class ArrayTypeNode(val _typeNode: TypeNode) extends TypeNode with PairElemTypeNode {
 
-  val typeNode: TypeNode
-
-}
-
-class PairTypeNode extends TypeNode {
-
-  val firstPairElem: PairElemTypeNode
-  val secondPairElem: PairElemTypeNode
+  val typeNode: TypeNode = _typeNode
 
 }
 
-class PairElemTypeNode extends ASTNode {
+class PairTypeNode(val _firstPairElem: PairElemTypeNode, val _secondPairElem: PairElemTypeNode) extends TypeNode {
 
-
-
-}
-
-class IdentNode extends ExprNode with AssignmentLeftNode {
+  val firstPairElem: PairElemTypeNode = _firstPairElem
+  val secondPairElem: PairElemTypeNode = _secondPairElem
 
 }
 
-class ArrayElemNode extends ExprNode with AssignmentLeftNode {
+trait PairElemTypeNode extends ASTNode {
+
+}
+
+class IdentNode extends ExprNode with AssignLHSNode {
+
+}
+
+class ArrayElemNode(val _ident: IdentNode, val _expr: Array[ExprNode]) extends ExprNode with AssignLHSNode {
 
   val ident: IdentNode
-  val expr: ExprNode
+  val expr: Array[ExprNode]
 
 }
 
-class ArrayLiteralNode extends AssignmentRightNode {
+class ArrayLiteralNode(val _exprNodes: Array[ExprNode]) extends AssignRHSNode {
 
-  val exprNodes: Array[ExprNode]
+  val exprNodes: Array[ExprNode] = _exprNodes
 
 }
 
@@ -251,55 +253,55 @@ class BinaryOperationNode extends ExprNode {
 
 }
 
-class MultiplyNode extends BinaryOperationNode {
+class MultiplyNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
 
 }
 
-class DivideNode extends BinaryOperationNode {
+class DivideNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
 
 }
 
-class ModNode extends BinaryOperationNode {
+class ModNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
 
 }
 
-class PlusNode extends BinaryOperationNode {
+class PlusNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
 
 }
 
-class MinusNode extends BinaryOperationNode {
+class MinusNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
 
 }
 
-class GreaterThanNode extends BinaryOperationNode {
+class GreaterThanNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
 
 }
 
-class GreaterEqualNode extends BinaryOperationNode {
+class GreaterEqualNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
 
 }
 
-class LessThanNode extends BinaryOperationNode {
+class LessThanNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
 
 }
 
-class LessEqualNode extends BinaryOperationNode {
+class LessEqualNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
 
 }
 
-class DoubleEqualNode extends BinaryOperationNode {
+class DoubleEqualNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
 
 }
 
-class NotEqualNode extends BinaryOperationNode {
+class NotEqualNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
 
 }
 
-class LogicalAndNode extends BinaryOperationNode {
+class LogicalAndNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
 
 }
 
-class LogicalOrNode extends BinaryOperationNode {
+class LogicalOrNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
 
 }
 
