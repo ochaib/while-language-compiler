@@ -1,3 +1,5 @@
+// Every node necessary to generate AST. From the WACCLangSpec.
+
 class ASTNode {
 
 }
@@ -10,11 +12,67 @@ class FuncNode extends ASTNode {
 
 }
 
+class StatNode extends ASTNode {
+
+}
+
+class SkipNode extends StatNode {
+
+}
+
+class DeclarationNode extends StatNode {
+
+}
+
+class AssignmentNode extends StatNode {
+
+}
+
+class ReadNode extends StatNode {
+
+}
+
+class FreeNode extends StatNode {
+
+}
+
+class ReturnNode extends StatNode {
+
+}
+
+class ExitNode extends StatNode {
+
+}
+
+class PrintNode extends StatNode {
+
+}
+
+class PrintlnNode extends StatNode {
+
+}
+
+class IfNode extends StatNode {
+
+}
+
+class WhileNode extends StatNode {
+
+}
+
+class BeginNode extends StatNode {
+
+}
+
+class SequenceNode extends StatNode {
+
+}
+
 class AssignmentLeftNode extends ASTNode {
 
 }
 
-class AssignmentRightNode extends AstNode {
+class AssignmentRightNode extends ASTNode {
 
 }
 
@@ -106,10 +164,6 @@ class PairElemTypeNode extends ASTNode {
 
 }
 
-class InnerPairTypeNode extends PairElemTypeNode {
-
-}
-
 class IdentNode extends ExprNode with AssignmentLeftNode {
 
 }
@@ -126,11 +180,11 @@ class BinaryOperationNode extends ExprNode {
 
 }
 
-class MulOperationNode extends BinaryOperationNode {
+class MultiplyNode extends BinaryOperationNode {
 
 }
 
-class DivOperationNode extends BinaryOperationNode {
+class DivideNode extends BinaryOperationNode {
 
 }
 
@@ -175,5 +229,29 @@ class LogicalAndNode extends BinaryOperationNode {
 }
 
 class LogicalOrNode extends BinaryOperationNode {
+
+}
+
+class UnaryOperationNode extends ExprNode {
+
+}
+
+class LogicalNotNode extends UnaryOperationNode {
+
+}
+
+class NegateNode extends UnaryOperationNode {
+
+}
+
+class LenNode extends UnaryOperationNode {
+
+}
+
+class OrdNode extends UnaryOperationNode {
+
+}
+
+class ChrNode extends UnaryOperationNode {
 
 }
