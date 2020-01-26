@@ -1,4 +1,3 @@
-import sun.jvm.hotspot.opto.TypeNode
 // Every node necessary to generate AST. From the WACCLangSpec.
 
 class ASTNode {
@@ -36,6 +35,9 @@ class DeclarationNode extends StatNode {
 }
 
 class AssignmentNode extends StatNode {
+
+  val assignLeftNode: AssignmentLeftNode
+  val assignRightNode: AssignmentRightNode
 
 }
 
@@ -85,13 +87,20 @@ class IfNode extends StatNode {
 
 class WhileNode extends StatNode {
 
+  val expr: ExprNode
+  val stat: StatNode
+
 }
 
 class BeginNode extends StatNode {
 
+  val stat: StatNode
+
 }
 
 class SequenceNode extends StatNode {
+
+  val statNodes: Array[StatNode]
 
 }
 
@@ -105,16 +114,25 @@ class AssignmentRightNode extends ASTNode {
 
 class NewPairNode extends AssignmentRightNode {
 
+  val exprNodes: Array[ExprNode]
+
 }
 
 class CallNode extends AssignmentRightNode {
+
+  val ident: IdentNode
+  // How do I make this optional?
+  val argList: ArgListNode
 
 }
 
 class ArgListNode extends ASTNode {
 
+  val exprNodes: Array[ExprNode]
+
 }
 
+// Shouldn't be able to instantiate this.
 class PairElemNode extends AssignmentLeftNode with AssignmentRightNode {
 
 }
@@ -137,17 +155,24 @@ class ExprNode extends AssignmentRightNode {
 
 class IntLiteralNode extends ExprNode {
 
+  val value: Int
+
 }
 
 class BoolLiteralNode extends ExprNode {
 
+  val value: Boolean
 }
 
 class CharLiteralNode extends ExprNode {
 
+  val value: Char
+
 }
 
 class StringLiteralNode extends ExprNode {
+
+  val value: String
 
 }
 
@@ -185,13 +210,20 @@ class StringTypeNode extends BaseTypeNode {
 
 class ArrayTypeNode extends TypeNode with PairElemTypeNode {
 
+  val typeNode: TypeNode
+
 }
 
 class PairTypeNode extends TypeNode {
 
+  val firstPairElem: PairElemTypeNode
+  val secondPairElem: PairElemTypeNode
+
 }
 
 class PairElemTypeNode extends ASTNode {
+
+
 
 }
 
@@ -201,13 +233,21 @@ class IdentNode extends ExprNode with AssignmentLeftNode {
 
 class ArrayElemNode extends ExprNode with AssignmentLeftNode {
 
+  val ident: IdentNode
+  val expr: ExprNode
+
 }
 
 class ArrayLiteralNode extends AssignmentRightNode {
 
+  val exprNodes: Array[ExprNode]
+
 }
 
 class BinaryOperationNode extends ExprNode {
+
+  val argOne: ExprNode
+  val argTwo: ExprNode
 
 }
 
@@ -264,6 +304,8 @@ class LogicalOrNode extends BinaryOperationNode {
 }
 
 class UnaryOperationNode extends ExprNode {
+
+  val arg: ExprNode
 
 }
 
