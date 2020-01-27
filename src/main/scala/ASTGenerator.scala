@@ -316,12 +316,57 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
   }
 
-  override def visitUnary_oper(ctx: WACCParser.Unary_operContext): ASTNode = {
+  def visitExprIntLiter(ctx: WACCParser.ExprIntLiterContext): ASTNode = {
+    // ⟨int-liter⟩
+    val intLiter: IntLiteralNode = visit(ctx.getChild(0)).asInstanceOf[IntLiteralNode]
+  }
 
+  def visitExprBoolLiter(ctx: WACCParser.ExprBoolLiterContext): ASTNode = {
+    // ⟨bool-liter⟩
+    val boolLiter: BoolLiteralNode = visit(ctx.getChild(0)).asInstanceOf[BoolLiteralNode]
+  }
+
+  def visitExprCharLiter(ctx: WACCParser.ExprCharLiterContext): ASTNode = {
+    // ⟨char-liter⟩
+    val charLiter: CharLiteralNode = visit(ctx.getChild(0)).asInstanceOf[CharLiteralNode]
+  }
+
+  def visitExprStringLiter(ctx: WACCParser.ExprStringLiterContext): ASTNode = {
+    // ⟨string-liter⟩
+    val stringLiter: StringLiteralNode = visit(ctx.getChild(0)).asInstanceOf[StringLiteralNode]
+  }
+
+  def visitExprPairLiter(ctx: WACCParser.ExprPairLiterContext): ASTNode = {
+    // ⟨pair-liter⟩
+    val pairLiter: PairLiteralNode = visit(ctx.getChild(0)).asInstanceOf[PairLiteralNode]
+  }
+
+  def visitExprIdent(ctx: WACCParser.ExprIdentContext): ASTNode = {
+    // ⟨ident⟩
+    val ident: IdentNode = visit(ctx.getChild(0)).asInstanceOf[IdentNode]
+  }
+
+  def visitExprArrayElem(ctx: WACCParser.ExprArrayElemContext): ASTNode = {
+    // ⟨array-elem⟩
+    val arrayElem: ArrayElemNode = visit(ctx.getChild(0)).asInstanceOf[ArrayElemNode]
+  }
+
+  override def visitUnary_oper(ctx: WACCParser.Unary_operContext): ASTNode = {
+    // This is not a node so it shouldn't be visited, find out how to extract
+    // information/variables from child.
+    val unaryOperator: Char = ctx.getChild(0)
+    val expr: ExprNode = visit(ctx.getChild(1)).asInstanceOf[ExprNode]
+
+    // Now I need to figure out which unary operator it is from the context
+    // then construct the relevant node.
   }
 
   override def visitBinary_oper(ctx: WACCParser.Binary_operContext): ASTNode = {
+    val firstExpr: ExprNode = visit(ctx.getChild(0)).asInstanceOf[ExprNode]
+    val binaryOperator: Char = ctx.getChild(1)
+    val secondExpr: ExprNode = visit(ctx.getChild(2)).asInstanceOf[ExprNode]
 
+    // Need to deduce binary operator from context and construct node.
   }
 
   override def visitArray_elem(ctx: WACCParser.Array_elemContext): ASTNode = {
