@@ -219,20 +219,72 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     
   }
 
-  override def visitType(ctx: WACCParser.TypeContext): ASTNode = {
+  def visitPairFst(ctx: WACCParser.PairFstContext): ASTNode = {
+    // ‘fst’ ⟨expr ⟩
+    val pairFstExpr: ExprNode = visit(ctx.getChild(1)).asInstanceOf[ExprNode]
 
+    FstNode(pairFstExpr)
+  }
+
+  def visitPairSnd(ctx: WACCParser.PairSndContext): ASTNode = {
+    // ‘snd’ ⟨expr ⟩
+    val pairSndExpr: ExprNode = visit(ctx.getChild(1)).asInstanceOf[ExprNode]
+
+    SndNode(pairSndExpr)
+  }
+
+
+  override def visitType(ctx: WACCParser.TypeContext): ASTNode = {
+    // ⟨type⟩
+  }
+
+  def visitTypeBase_type(ctx: WACCParser.TypeBase_typeContext): ASTNode = {
+    // ⟨base-type⟩
+    val baseType: BaseTypeNode = visit(ctx.getChild(0)).asInstanceOf[BaseTypeNode]
+  }
+
+  def visitTypeArray_type(ctx: WACCParser.TypeArray_typeContext): ASTNode = {
+    // ⟨array-type⟩
+    val arrayType: ArrayTypeNode = visit(ctx.getChild(0)).asInstanceOf[ArrayTypeNode]
+  }
+
+  def visitTypePair_type(ctx: WACCParser.TypePair_typeContext): ASTNode = {
+    // ⟨pair-type⟩
+    val pairType: PairTypeNode = visit(ctx.getChild(0)).asInstanceOf[PairTypeNode]
   }
 
   override def visitBase_type(ctx: WACCParser.Base_typeContext): ASTNode = {
 
   }
 
-  override def visitArray_type(ctx: WACCParser.Array_typeContext): ASTNode = {
+  def visitIntBase_type(ctx: WACCParser.IntBase_typeContext): ASTNode = {
+    // 'int'
+    IntTypeNode()
+  }
 
+  def visitBoolBase_type(ctx: WACCParser.BoolBase_typeContext): ASTNode = {
+    // 'bool'
+    BoolTypeNode()
+  }
+
+  def visitCharBase_type(ctx: WACCParser.CharBase_typeContext): ASTNode = {
+    // 'char'
+    CharTypeNode()
+  }
+
+  def visitStringBase_type(ctx: WACCParser.StringBase_typeContext): ASTNode = {
+    // 'string'
+    StringTypeNode()
+  }
+
+  override def visitArray_type(ctx: WACCParser.Array_typeContext): ASTNode = {
+    // ⟨array-type⟩
+    val arrayType: ArrayTypeNode = visit(ctx.getChild(0)).asInstanceOf[ArrayTypeNode]
   }
 
   override def visitPair_type(ctx: WACCParser.Pair_typeContext): ASTNode = {
-
+    // ⟨pair-type⟩
+    val pairType: PairTypeNode = visit(ctx.getChild(0)).asInstanceOf[PairTypeNode]
   }
 
   override def visitPair_elem_type(ctx: WACCParser.Pair_elemContext): ASTNode = {
