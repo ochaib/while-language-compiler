@@ -26,7 +26,6 @@ class FuncNode(val _funcType: TypeNode, val _ident: IdentNode, val _paramList: P
 class ParamListNode(val _paramList: IndexedSeq[ParamNode]) extends ASTNode {
 
   val paramList: IndexedSeq[ParamNode] = _paramList
-
 }
 
 class ParamNode extends ASTNode {
@@ -146,9 +145,9 @@ class CallNode(val _ident: IdentNode, val _argList: ArgListNode) extends AssignR
 
 }
 
-class ArgListNode(val _exprNodes: ExprNode*) extends ASTNode {
+class ArgListNode(val _exprNodes: IndexedSeq[ExprNode]) extends ASTNode {
 
-  val exprNodes: Array[ExprNode] = _exprNodes.toArray
+  val exprNodes: IndexedSeq[ExprNode] = _exprNodes
 
 }
 

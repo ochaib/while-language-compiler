@@ -196,13 +196,23 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
   def visitAssignRHSCall(ctx: WACCParser.AssignRHSCallContext): ASTNode = {
     // ‘call’ ⟨ident ⟩ ‘(’ ⟨arg-list ⟩? ‘)’
     val ident: IdentNode = visit(ctx.getChild(1)).asInstanceOf[IdentNode]
-    val argList: NewPairNode = //
+    // Have to make this optional.
+    val argList: ArgListNode = visit(ctx.getChild(3)).asInstanceOf[ArgListNode]
 
-    CallNode(ident, )
+    CallNode(ident, argList)
   }
   
   override def visitArg_list(ctx: WACCParser.Arg_listContext): ASTNode = {
-    
+    // ⟨expr ⟩ (‘,’ ⟨expr ⟩ )*
+    val childCount = ctx.getChildCount
+
+    val exprChildren: IndexedSeq[ExprNode] = IndexedSeq[ExprNode]()
+
+    for (i <- 0 to childCount - 1) {
+      exprChildren :+ visit(ctx.getChild(i)).asInstanceOf[ExprNode]
+    }
+
+    ArgListNode(exprChildren)
   }
 
   override def visitPair_elem(ctx: WACCParser.Pair_elemContext): ASTNode = {
