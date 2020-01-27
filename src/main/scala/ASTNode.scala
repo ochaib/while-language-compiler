@@ -23,7 +23,9 @@ class FuncNode(val _funcType: TypeNode, val _ident: IdentNode, val _paramList: P
 
 }
 
-class ParamListNode extends ASTNode {
+class ParamListNode(val _paramList: IndexedSeq[ParamNode]) extends ASTNode {
+
+  val paramList: IndexedSeq[ParamNode] = _paramList
 
 }
 

@@ -17,15 +17,29 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
   override def visitFunc(ctx: WACCParser.FuncContext): ASTNode = {
 
-
   }
 
   override def visitParam_list(ctx: WACCParser.Param_listContext): ASTNode = {
+    // ⟨param ⟩ ( ‘,’ ⟨param ⟩ )*
+    // Multiple params... a param list
+    val childCount = ctx.getChildCount
+    // Apparently IndexedSeq is much better than an array so I'll use it instead
+    val paramList: IndexedSeq[ParamNode] = IndexedSeq[ParamNode]()
 
+    // Hope this is how you do it.
+    for (i <- 0 to childCount - 1) {
+      paramList :+ visit(ctx.getChild(i)).asInstanceOf[ParamNode]
+    }
+
+    ParamListNode(paramList)
   }
 
   override def visitParam(ctx: WACCParser.ParamContext): ASTNode = {
+    // ⟨type ⟩ ⟨ident ⟩
+    val paramType: TypeNode = visit(ctx.getChild(0)).asInstanceOf[TypeNode]
+    val ident: IdentNode = visit(ctx.getChild(1)).asInstanceOf[IdentNode]
 
+    ParamNode(paramType, ident)
   }
 
   override def visitStat(ctx: WACCParser.StatContext): ASTNode = {
