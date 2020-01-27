@@ -40,9 +40,9 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
   override def visitDeclaration(ctx: WACCParser.DeclarationContext): ASTNode = {
     // Need to get each individual child of the declaration context as its own type.
-    val typeNode: TypeNode = TypeNode(visitChild(ctx.at(0)))
-    val ident: IdentNode = IdentNode(visitChild(ctx.at(1)))
-    val assignRHS: AssignRHSNode = AssignRHSNode(visitChild(ctx.at(3)))
+    val typeNode: TypeNode = TypeNode(visit(ctx.getChild(0)))
+    val ident: IdentNode = IdentNode(visit(ctx.getChild(1)))
+    val assignRHS: AssignRHSNode = AssignRHSNode(visit(ctx.getChild(3)))
 
     // Then create DeclarationNode with the above as parameters for constructor
     DeclarationNode(typeNode, ident, assignRHS)
@@ -50,47 +50,47 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
   override def visitAssignment(ctx: WACCParser.AssignmentContext): ASTNode = {
     // Get assignLHS and assignRHS then construct AssignNode with them
-    val lhs: AssignLHSNode = AssignLHSNode(visitChild(ctx.at(0)))
+    val lhs: AssignLHSNode = AssignLHSNode(visit(ctx.getChild(0)))
     // Have to consider the equals
-    val rhs: AssignRHSNode = AssignRHSNode(visitChild(ctx.at(2)))
+    val rhs: AssignRHSNode = AssignRHSNode(visit(ctx.getChild(2)))
 
     AssignmentNode(lhs, rhs)
   }
 
   override def visitRead(ctx: WACCParser.ReadContext): ASTNode = {
     // ‘read’ ⟨assign-lhs⟩
-    val lhs: AssignLHSNode = AssignLHSNode(visitChild(ctx.at(1)))
+    val lhs: AssignLHSNode = AssignLHSNode(visit(ctx.getChild(1)))
 
     ReadNode(lhs)
   }
 
   override def visitFree(ctx: WACCParser.FreeContext): ASTNode = {
     // ‘free’ ⟨expr ⟩
-    val freeExpr: ExprNode = ExprNode(visitChild(ctx.at(1)))
+    val freeExpr: ExprNode = ExprNode(visit(ctx.getChild(1)))
 
     FreeNode(freeExpr)
   }
 
   override def visitReturn(ctx: WACCParser.ReturnContext): ASTNode = {
-    val returnExpr: ExprNode = ExprNode(visitChild(ctx.at(1)))
+    val returnExpr: ExprNode = ExprNode(visit(ctx.getChild(1)))
 
     ReturnNode(returnExpr)
   }
 
   override def visitExit(ctx: WACCParser.ExitContext): ASTNode = {
-    val exitExpr: ExprNode = ExprNode(visitChild(ctx.at(1)))
+    val exitExpr: ExprNode = ExprNode(visit(ctx.getChild(1)))
 
     ExitNode(exitExpr)
   }
 
   override def visitPrint(ctx: WACCParser.PrintContext): ASTNode = {
-    val printExpr: ExprNode = ExprNode(visitChild(ctx.at(1)))
+    val printExpr: ExprNode = ExprNode(visit(ctx.getChild(1)))
 
     PrintNode(printExpr)
   }
 
   override def visitPrintln(ctx: WACCParser.PrintlnContext): ASTNode = {
-    val printlnExpr: ExprNode = ExprNode(visitChild(ctx.at(1)))
+    val printlnExpr: ExprNode = ExprNode(visit(ctx.getChild(1)))
 
     PrintlnNode(printlnExpr)
   }
