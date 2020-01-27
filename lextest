@@ -1,0 +1,48 @@
+#!/bin/bash
+
+make
+error_detected=0;
+
+# write a bash function with two states, one that checks all the outputs of grun with find as the inputs
+# and program exit failure if there are any outputs
+# Another that does the opposite
+error_detected=0;
+valid_test ()
+{
+  echo "Testing: $1"
+  ./grun antlr.WACC program "$1" > ;
+  echo "$testResult"
+  echo "DEBUG"
+  if [ "$testResult" != "running the ANTLR TestRig grammar tool" ]; then
+    echo "TEST FAILURE"
+    error_detected=1
+  fi
+}
+invalid_test ()
+{
+  echo "$1"
+  testResult="$(./grun antlr.WACC program "$1")";
+  if [ "$testResult" == "running the ANTLR TestRig grammar tool" ]; then
+    echo "TEST FAILURE: $1"
+    error_detected=1
+  fi
+}
+
+: 'export -f valid_test
+export -f invalid_test
+
+find testcases/valid -type f -iname '*.wacc' -exec bash -c 'valid_test {}' bash \;
+find testcases/invalid -type f -iname '*.wacc' -exec bash -c 'invalid_test {}' bash \;
+
+unset valid_test
+unset invalid_test
+'
+valid_test testcases/valid/variables/stringDeclaration.wacc
+echo "$testResult"
+
+if [ $error_detected -eq 0 ] ; then
+  echo "All tests passed..."
+  exit 0
+else
+  exit 1
+fi
