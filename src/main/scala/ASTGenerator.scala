@@ -105,19 +105,30 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     val thenStat: StatNode = visit(ctx.getChild(3)).asInstanceOf[StatNode]
     val elseStat: StatNode = visit(ctx.getChild(5)).asInstanceOf[StatNode]
 
-    new IfNode(conditionExpr, thenStat, elseStat)
+    IfNode(conditionExpr, thenStat, elseStat)
   }
 
   override def visitWhile(ctx: WACCParser.WhileContext): ASTNode = {
+    // ‘while’ ⟨expr ⟩ ‘do’ ⟨stat ⟩ ‘done’
+    val conditionExpr: ExprNode = visit(ctx.getChild(1)).asInstanceOf[ExprNode]
+    val doStat: StatNode = visit(ctx.getChild(3)).asInstanceOf[StatNode]
 
+    WhileNode(conditionExpr, doStat)
   }
 
   override def visitBegin(ctx: WACCParser.BeginContext): ASTNode = {
+    // ‘begin’ ⟨stat ⟩ ‘end’
+    val beginStat: StatNode = visit(ctx.getChild(1)).asInstanceOf[StatNode]
 
+    BeginNode(beginStat)
   }
 
   override def visitSequence(ctx: WACCParser.SequenceContext): ASTNode = {
+    // ⟨stat ⟩ ‘;’ ⟨stat ⟩
+    val statOne: StatNode = visit(ctx.getChild(0)).asInstanceOf[StatNode]
+    val statTwo: StatNode = visit(ctx.getChild(2)).asInstanceOf[StatNode]
 
+    new SequenceNode(statOne, statTwo)
   }
 
   override def visitAssign_lhs (ctx: WACCParser.Assign_lhsContext): ASTNode = {

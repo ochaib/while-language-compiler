@@ -90,11 +90,13 @@ class PrintlnNode(val _expr: ExprNode) extends StatNode {
 
 }
 
-class IfNode(val _expr: ExprNode, val _statNodes: Array[StatNode]) extends StatNode {
+class IfNode(val _conditionExpr: ExprNode, val _thenStat: StatNode, val _elseStat: StatNode)
+  extends StatNode {
 
-  val expr: ExprNode = _expr
+  val conditionExpr: ExprNode = _conditionExpr
   // Two stat nodes, one for then one for else.
-  val statNodes: Array[StatNode] = _statNodes
+  val thenStat: StatNode = _thenStat
+  val elseStat: StatNode = _elseStat
 
 }
 
@@ -111,9 +113,10 @@ class BeginNode(val _stat: StatNode) extends StatNode {
 
 }
 
-class SequenceNode(val _statNodes: Array[StatNode]) extends StatNode {
+class SequenceNode(val _statOne: StatNode, val _statTwo: StatNode) extends StatNode {
 
-  val statNodes: Array[StatNode] = _statNodes
+  val statOne: StatNode = _statOne
+  val statTwo: StatNode = _statTwo
 
 }
 
