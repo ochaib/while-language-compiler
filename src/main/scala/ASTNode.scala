@@ -27,7 +27,7 @@ class ParamListNode extends ASTNode {
 
 }
 
-class ParamElemNode extends ASTNode {
+class ParamNode extends ASTNode {
 
 }
 
