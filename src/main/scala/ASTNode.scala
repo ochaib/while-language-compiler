@@ -13,12 +13,21 @@ class ProgramNode(val _stat: StatNode, val _functions: FuncNode*) extends ASTNod
 
 }
 
-class FuncNode extends ASTNode {
+class FuncNode(val _funcType: TypeNode, val _ident: IdentNode, val _paramList: ParamListNode,
+               val _stat: StatNode) extends ASTNode {
 
-  val funcType: TypeNode
-  val ident: IdentNode
-  val paramListElems: Array[Param]
-  val stat: StatNode
+  val funcType: TypeNode = _funcType
+  val ident: IdentNode = _ident
+  val paramList: ParamListNode = _paramList
+  val stat: StatNode = _stat
+
+}
+
+class ParamListNode extends ASTNode {
+
+}
+
+class ParamElemNode extends ASTNode {
 
 }
 
@@ -81,11 +90,11 @@ class PrintlnNode(val _expr: ExprNode) extends StatNode {
 
 }
 
-class IfNode(val _expr: ExprNode, val _statNodes: StatNode*) extends StatNode {
+class IfNode(val _expr: ExprNode, val _statNodes: Array[StatNode]) extends StatNode {
 
   val expr: ExprNode = _expr
   // Two stat nodes, one for then one for else.
-  val statNodes: Array[StatNode]
+  val statNodes: Array[StatNode] = _statNodes
 
 }
 
@@ -102,31 +111,33 @@ class BeginNode(val _stat: StatNode) extends StatNode {
 
 }
 
-class SequenceNode(val _statNodes: StatNode*) extends StatNode {
+class SequenceNode(val _statNodes: Array[StatNode]) extends StatNode {
 
   val statNodes: Array[StatNode] = _statNodes
 
 }
 
-class AssignLHSNode extends ASTNode {
+// Both of these need to be traits (abstract classes) in order to be extended later.
+trait AssignLHSNode extends ASTNode {
 
 }
 
-class AssignRHSNode extends ASTNode {
+trait AssignRHSNode extends ASTNode {
 
 }
 
-class NewPairNode extends AssignRHSNode {
+class NewPairNode(val _fstElem: ExprNode, val _sndElem: ExprNode) extends AssignRHSNode {
 
-  val exprNodes: Array[ExprNode]
+  val fstElem: ExprNode = _fstElem
+  val sndElem: ExprNode = _sndElem
 
 }
 
-class CallNode extends AssignRHSNode {
+class CallNode(val _ident: IdentNode, val _argList: ArgListNode) extends AssignRHSNode {
 
-  val ident: IdentNode
+  val ident: IdentNode = _ident
   // How do I make this optional?
-  val argList: ArgListNode
+  val argList: ArgListNode = _argList
 
 }
 
@@ -137,7 +148,7 @@ class ArgListNode(val _exprNodes: ExprNode*) extends ASTNode {
 }
 
 // Shouldn't be able to instantiate this.
-class PairElemNode extends AssignLHSNode with AssignRHSNode {
+trait PairElemNode extends AssignLHSNode with AssignRHSNode {
 
 }
 
@@ -157,26 +168,26 @@ class ExprNode extends AssignRHSNode {
 
 }
 
-class IntLiteralNode extends ExprNode {
+class IntLiteralNode(val _value: Int) extends ExprNode {
 
-  val value: Int
-
-}
-
-class BoolLiteralNode extends ExprNode {
-
-  val value: Boolean
-}
-
-class CharLiteralNode extends ExprNode {
-
-  val value: Char
+  val value: Int = _value
 
 }
 
-class StringLiteralNode extends ExprNode {
+class BoolLiteralNode(val _value: Boolean) extends ExprNode {
 
-  val value: String
+  val value: Boolean = _value
+}
+
+class CharLiteralNode(val _value: Char) extends ExprNode {
+
+  val value: Char = _value
+
+}
+
+class StringLiteralNode(val _value: String) extends ExprNode {
+
+  val value: String = _value
 
 }
 
@@ -235,8 +246,8 @@ class IdentNode extends ExprNode with AssignLHSNode {
 
 class ArrayElemNode(val _ident: IdentNode, val _expr: Array[ExprNode]) extends ExprNode with AssignLHSNode {
 
-  val ident: IdentNode
-  val expr: Array[ExprNode]
+  val ident: IdentNode = _ident
+  val expr: Array[ExprNode] = _expr
 
 }
 
@@ -246,10 +257,10 @@ class ArrayLiteralNode(val _exprNodes: Array[ExprNode]) extends AssignRHSNode {
 
 }
 
-class BinaryOperationNode extends ExprNode {
+trait BinaryOperationNode extends ExprNode {
 
-  val argOne: ExprNode
-  val argTwo: ExprNode
+  def argOne: ExprNode
+  def argTwo: ExprNode
 
 }
 
@@ -305,28 +316,28 @@ class LogicalOrNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends Binary
 
 }
 
-class UnaryOperationNode extends ExprNode {
+trait UnaryOperationNode extends ExprNode {
 
-  val arg: ExprNode
-
-}
-
-class LogicalNotNode extends UnaryOperationNode {
+  def arg: ExprNode
 
 }
 
-class NegateNode extends UnaryOperationNode {
+class LogicalNotNode(val _arg: ExprNode) extends UnaryOperationNode {
 
 }
 
-class LenNode extends UnaryOperationNode {
+class NegateNode(val _arg: ExprNode) extends UnaryOperationNode {
 
 }
 
-class OrdNode extends UnaryOperationNode {
+class LenNode(val _arg: ExprNode) extends UnaryOperationNode {
 
 }
 
-class ChrNode extends UnaryOperationNode {
+class OrdNode(val _arg: ExprNode) extends UnaryOperationNode {
+
+}
+
+class ChrNode(val _arg: ExprNode) extends UnaryOperationNode {
 
 }

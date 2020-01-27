@@ -1,7 +1,7 @@
 import WACCParser._
 
 // Class used to traverse the parse tree built by ANTLR
-class ASTGenerator extends WACCParserBaseVisitor[T] {
+class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
   override def visitProgram(ctx: WACCParser.ProgramContext): T = {
     // Need to retrieve program information from parser context,
