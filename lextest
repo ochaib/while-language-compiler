@@ -1,0 +1,43 @@
+#!/bin/bash
+
+make
+
+error_detected=0;
+valid_test ()
+{
+  echo "Testing: $1"
+  ./grun antlr.WACC program "$1" > testtemp 2>&1;
+  if [ "$(cat testtemp)" != "running the ANTLR TestRig grammar tool" ]; then
+    echo "TEST FAILURE:"
+    echo "Test had the following output: $(cat testtemp)"
+    error_detected=1
+  fi
+  rm testtemp
+}
+invalid_test ()
+{
+  echo "Testing: $1"
+  ./grun antlr.WACC program "$1" > testtemp 2>&1;
+  if [ "$(cat testtemp)" == "running the ANTLR TestRig grammar tool" ]; then
+    echo "TEST UNEXPECTEDLY SUCCEEDED: $1"
+    error_detected=1
+  fi
+  rm testtemp
+}
+rm testtemp
+
+export -f valid_test
+export -f invalid_test
+
+find testcases/valid -type f -iname '*.wacc' -exec bash -c 'valid_test {}' bash \;
+find testcases/invalid -type f -iname '*.wacc' -exec bash -c 'invalid_test {}' bash \;
+
+unset valid_test
+unset invalid_test
+
+if [ $error_detected -eq 0 ] ; then
+  echo "All tests passed..."
+  exit 0
+else
+  exit 1
+fi
