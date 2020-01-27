@@ -307,6 +307,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     val arrayType: ArrayTypeNode = visit(ctx.getChild(0)).asInstanceOf[ArrayTypeNode]
   }
 
+  // I doubt one is needed for the ⟨pair-elem-type⟩ 'pair'. Surely just a string?
   def visitPETPair(ctx: WACCParser.PETPairContext): ASTNode = {
     // 'pair'
     //  PairNode()
@@ -354,6 +355,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
   override def visitUnary_oper(ctx: WACCParser.Unary_operContext): ASTNode = {
     // This is not a node so it shouldn't be visited, find out how to extract
     // information/variables from child.
+    // ⟨unary-oper⟩ ⟨expr⟩
     val unaryOperator: Char = ctx.getChild(0)
     val expr: ExprNode = visit(ctx.getChild(1)).asInstanceOf[ExprNode]
 
@@ -362,6 +364,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
   }
 
   override def visitBinary_oper(ctx: WACCParser.Binary_operContext): ASTNode = {
+    // ⟨expr⟩ ⟨binary-oper⟩ ⟨expr⟩
     val firstExpr: ExprNode = visit(ctx.getChild(0)).asInstanceOf[ExprNode]
     val binaryOperator: Char = ctx.getChild(1)
     val secondExpr: ExprNode = visit(ctx.getChild(2)).asInstanceOf[ExprNode]
@@ -369,12 +372,46 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     // Need to deduce binary operator from context and construct node.
   }
 
-  override def visitArray_elem(ctx: WACCParser.Array_elemContext): ASTNode = {
+  def visitBracketExpr(ctx: WACCParser.BracketExprContext): ASTNode = {
+    // ‘(’ ⟨expr⟩ ‘)’
+    val expr: ExprNode = visit(ctx.getChild(1)).asInstanceOf[ExprNode]
+  }
 
+  def visitIdent(ctx: WACCParser.IdentContext): ASTNode = {
+    // Research how to get information from top level context because it would be
+    // inefficient to traverse each ctx.child in order to have to construct it
+    // again.
+    val stringStream: String
+
+    IdentNode(stringStream)
+  }
+
+  override def visitArray_elem(ctx: WACCParser.Array_elemContext): ASTNode = {
+    // ⟨ident⟩ (‘[’ ⟨expr⟩ ‘]’)+
+    val ident: IdentNode = visit(ctx.getChild(0)).asInstanceOf[IdentNode]
+    val childCount = ctx.getChildCount
+    val exprList: IndexedSeq[ExprNode] = IndexedSeq[ExprNode]()
+
+    // To get every expr in the exprList
+    for (i <- 2 to childCount - 1) {
+      exprList :+ visit(ctx.getChild(i)).asInstanceOf[ExprNode]
+    }
+
+    ArrayElemNode(ident, exprList)
   }
 
   override def visitArray_liter(ctx: WACCParser.Array_literContext): ASTNode = {
+    // ‘[’ ( ⟨expr⟩ (‘,’ ⟨expr⟩)* )? ‘]’
+    val childCount = ctx.getChildCount
+    val exprList: IndexedSeq[ExprNode] = IndexedSeq[ExprNode]()
 
+    // To get every expr in the exprList but I don't think it works here because
+    // it would be separated by commas, need to get every next expr after comma.
+    for (i <- 0 to childCount - 1) {
+      exprList :+ visit(ctx.getChild(i)).asInstanceOf[ExprNode]
+    }
+
+    ArrayLiteralNode(exprList)
   }
 
   // Need to add remaining visiting methods for nodes defined in ASTNode however the

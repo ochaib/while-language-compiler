@@ -248,16 +248,16 @@ class IdentNode extends ExprNode with AssignLHSNode {
 
 }
 
-class ArrayElemNode(val _ident: IdentNode, val _expr: Array[ExprNode]) extends ExprNode with AssignLHSNode {
+class ArrayElemNode(val _ident: IdentNode, val _exprNodes: IndexedSeq[ExprNode]) extends ExprNode with AssignLHSNode {
 
   val ident: IdentNode = _ident
-  val expr: Array[ExprNode] = _expr
+  val exprNodes: IndexedSeq[ExprNode] = _exprNodes
 
 }
 
-class ArrayLiteralNode(val _exprNodes: Array[ExprNode]) extends AssignRHSNode {
+class ArrayLiteralNode(val _exprNodes: IndexedSeq[ExprNode]) extends AssignRHSNode {
 
-  val exprNodes: Array[ExprNode] = _exprNodes
+  val exprNodes: IndexedSeq[ExprNode] = _exprNodes
 
 }
 
