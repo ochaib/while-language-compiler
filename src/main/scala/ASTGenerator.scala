@@ -236,7 +236,6 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     SndNode(pairSndExpr)
   }
 
-
   override def visitType(ctx: WACCParser.TypeContext): ASTNode = {
     // ⟨type⟩
   }
@@ -325,9 +324,32 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     val intLiter: IntLiteralNode = visit(ctx.getChild(0)).asInstanceOf[IntLiteralNode]
   }
 
+  def visitIntLiteral(ctx: WACCParser.IntLiteralContext): ASTNode = {
+    // ⟨int-sign⟩? ⟨digit⟩+
+    // Need to create node for sign, needs to be optional.
+    val intSign: Char
+    val childCount = ctx.getChildCount
+    // Need to create list of digitNodes, or just chars...
+//    val digits: IndexedSeq[DigitNode] = IndexedSeq[DigitNode]()
+    val digits: IndexedSeq[Char] = IndexedSeq[Char]()
+
+    for (i <- 1 to childCount) {
+      digits :+ visit(ctx.getChild(i))
+    }
+
+    IntLiteralNode(intSign, digits)
+  }
+
   def visitExprBoolLiter(ctx: WACCParser.ExprBoolLiterContext): ASTNode = {
     // ⟨bool-liter⟩
     val boolLiter: BoolLiteralNode = visit(ctx.getChild(0)).asInstanceOf[BoolLiteralNode]
+  }
+
+  def visitBoolLiteral(ctx: WACCParser.BoolLiteralContext): ASTNode = {
+    // ‘true’ | ‘false’
+    val boolValue: String = ctx.getChild(0).toBoolean
+
+    BoolLiteralNode(boolValue)
   }
 
   def visitExprCharLiter(ctx: WACCParser.ExprCharLiterContext): ASTNode = {
@@ -335,9 +357,28 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     val charLiter: CharLiteralNode = visit(ctx.getChild(0)).asInstanceOf[CharLiteralNode]
   }
 
+  def visitCharLiteral(ctx: WACCParser.CharLiteralContext): ASTNode = {
+    // ‘’’ ⟨character ⟩ ‘’’
+    val charValue: CharLiteralNode = ctx.getChild(1).charAt(0)
+
+    CharLiteralNode(charValue)
+  }
+
   def visitExprStringLiter(ctx: WACCParser.ExprStringLiterContext): ASTNode = {
     // ⟨string-liter⟩
     val stringLiter: StringLiteralNode = visit(ctx.getChild(0)).asInstanceOf[StringLiteralNode]
+  }
+
+  def visitStringLiteral(ctx: WACCParser.StringLiteralContext): ASTNode = {
+    // ‘"’ ⟨character⟩* ‘"’
+    val childCount = ctx.getChildCount
+    val charList: IndexedSeq[Char] = IndexedSeq[Char]()
+
+    for (i <- 1 to childCount - 1) {
+      charList :+ visit(ctx.getChild(i))
+    }
+
+    StringLiteralNode(charList)
   }
 
   def visitExprPairLiter(ctx: WACCParser.ExprPairLiterContext): ASTNode = {
@@ -420,8 +461,6 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
   // Need to add remaining visiting methods for nodes defined in ASTNode however the
   // WACCParserVisitor doesn't have these methods so they shouldn't be overrides.
   // But then where do I get their contexts from.
-
-
 
 
 
