@@ -23,7 +23,14 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
   }
 
   override def visitFunc(ctx: WACCParser.FuncContext): ASTNode = {
+    // ⟨type⟩ ⟨ident⟩ ‘(’ ⟨param-list⟩? ‘)’ ‘is’ ⟨stat⟩ ‘end’
+    val funcType: TypeNode = visit(ctx.getChild(0)).asInstanceOf[TypeNode]
+    val ident: IdentNode = visit(ctx.getChild(1)).asInstanceOf[IdentNode]
+    // Needs to be optional... so either an empty list or populated.
+    val paramList: ParamListNode = visit(ctx.getChild(3)).asInstanceOf[ParamListNode]
+    val statement: StatNode = visit(ctx.getChild(6)).asInstanceOf[StatNode]
 
+    FuncNode(funcType, ident, paramList, statement)
   }
 
   override def visitParam_list(ctx: WACCParser.Param_listContext): ASTNode = {
@@ -34,7 +41,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     val paramList: IndexedSeq[ParamNode] = IndexedSeq[ParamNode]()
 
     // Hope this is how you do it.
-    for (i <- 0 to childCount - 1) {
+    for (i <- 0 to childCount - 3) {
       paramList :+ visit(ctx.getChild(i)).asInstanceOf[ParamNode]
     }
 
@@ -211,7 +218,8 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
     val exprChildren: IndexedSeq[ExprNode] = IndexedSeq[ExprNode]()
 
-    for (i <- 0 to childCount - 1) {
+    // Change this to account for the comma...
+    for (i <- 0 to childCount - 2) {
       exprChildren :+ visit(ctx.getChild(i)).asInstanceOf[ExprNode]
     }
 
@@ -333,7 +341,8 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 //    val digits: IndexedSeq[DigitNode] = IndexedSeq[DigitNode]()
     val digits: IndexedSeq[Char] = IndexedSeq[Char]()
 
-    for (i <- 1 to childCount) {
+
+    for (i <- 1 to childCount - 1) {
       digits :+ visit(ctx.getChild(i))
     }
 
@@ -374,7 +383,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     val childCount = ctx.getChildCount
     val charList: IndexedSeq[Char] = IndexedSeq[Char]()
 
-    for (i <- 1 to childCount - 1) {
+    for (i <- 1 to childCount - 2) {
       charList :+ visit(ctx.getChild(i))
     }
 
@@ -437,7 +446,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     val exprList: IndexedSeq[ExprNode] = IndexedSeq[ExprNode]()
 
     // To get every expr in the exprList
-    for (i <- 2 to childCount - 1) {
+    for (i <- 2 to childCount - 2) {
       exprList :+ visit(ctx.getChild(i)).asInstanceOf[ExprNode]
     }
 
@@ -451,7 +460,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
     // To get every expr in the exprList but I don't think it works here because
     // it would be separated by commas, need to get every next expr after comma.
-    for (i <- 0 to childCount - 1) {
+    for (i <- 0 to childCount - 2) {
       exprList :+ visit(ctx.getChild(i)).asInstanceOf[ExprNode]
     }
 
