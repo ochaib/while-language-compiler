@@ -8,15 +8,21 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     // Need to retrieve program information from parser context,
     // Need to visit all the functions (as many as there are due to the *)
     // Need to visit the statement "node".
-    val functions: Array[FuncNode] = // Need to get array of functions
-    val stat: StatNode = // Need to get stat node from the parse context
+    // ‘begin’ ⟨func⟩* ⟨stat⟩ ‘end’
+    //    0     1-n     n+1    n+2
+    val childCount = ctx.getChildCount
+    val functions: IndexedSeq[FuncNode] = IndexedSeq[FuncNode]()
+    val stat: StatNode = visit(ctx.getChild(childCount - 1)).asInstanceOf[StatNode]
+
+    for (i <- 1 to childCount - 2) {
+      functions :+ visit(ctx.getChild(i)).asInstanceOf[FuncNode]
+    }
 
     // Then create program node from the two
     new ProgramNode(stat, functions)
   }
 
   override def visitFunc(ctx: WACCParser.FuncContext): ASTNode = {
-
 
   }
 
