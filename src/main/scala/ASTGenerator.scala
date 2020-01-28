@@ -1,4 +1,4 @@
-import WACCParser._
+import antlr.{WACCParser, WACCParserBaseVisitor}
 import org.antlr.v4.runtime._
 
 // Class used to traverse the parse tree built by ANTLR
@@ -162,7 +162,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
   // Need to traverse each possible option of assign-lhs
   override def visitAssign_lhs(ctx: WACCParser.Assign_lhsContext): ASTNode = {
-    
+
   }
 
   def visitAssignLHSIdent(ctx: WACCParser.AssignLHSIdentContext): ASTNode = {

@@ -4,10 +4,10 @@ class ASTNode {
 
 }
 
-class ProgramNode(val _stat: StatNode, val _functions: FuncNode*) extends ASTNode {
+class ProgramNode(val _stat: StatNode, val _functions: IndexedSeq[FuncNode]) extends ASTNode {
 
   // Functions in the program: <func>*.
-  val functions: Array[FuncNode] = _functions.toArray
+  val functions: IndexedSeq[FuncNode] = _functions
   // Stat in the program: <stat>.
   val stat: StatNode = _stat
 
