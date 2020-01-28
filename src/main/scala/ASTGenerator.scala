@@ -30,7 +30,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     val paramList: ParamListNode = visit(ctx.getChild(3)).asInstanceOf[ParamListNode]
     val statement: StatNode = visit(ctx.getChild(6)).asInstanceOf[StatNode]
 
-    FuncNode(funcType, ident, paramList, statement)
+    new FuncNode(funcType, ident, paramList, statement)
   }
 
   override def visitParam_list(ctx: WACCParser.Param_listContext): ASTNode = {
@@ -45,7 +45,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
       paramList :+ visit(ctx.getChild(i)).asInstanceOf[ParamNode]
     }
 
-    ParamListNode(paramList)
+    new ParamListNode(paramList)
   }
 
   override def visitParam(ctx: WACCParser.ParamContext): ASTNode = {
@@ -53,7 +53,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     val paramType: TypeNode = visit(ctx.getChild(0)).asInstanceOf[TypeNode]
     val ident: IdentNode = visit(ctx.getChild(1)).asInstanceOf[IdentNode]
 
-    ParamNode(paramType, ident)
+    new ParamNode(paramType, ident)
   }
 
   override def visitStat(ctx: WACCParser.StatContext): ASTNode = {
@@ -64,7 +64,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
   override def visitSkip(ctx: WACCParser.SkipContext): ASTNode = {
     println("Skip stat.")
     // Or something.
-    SkipNode()
+    new SkipNode()
   }
 
   override def visitDeclaration(ctx: WACCParser.DeclarationContext): ASTNode = {
@@ -74,7 +74,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     val assignRHS: AssignRHSNode = visit(ctx.getChild(3)).asInstanceOf[AssignRHSNode]
 
     // Then create DeclarationNode with the above as parameters for constructor
-    DeclarationNode(typeNode, ident, assignRHS)
+    new DeclarationNode(typeNode, ident, assignRHS)
   }
 
   override def visitAssignment(ctx: WACCParser.AssignmentContext): ASTNode = {
@@ -83,49 +83,49 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     // Have to consider the equals
     val rhs: AssignRHSNode = visit(ctx.getChild(2)).asInstanceOf[AssignRHSNode]
 
-    AssignmentNode(lhs, rhs)
+    new AssignmentNode(lhs, rhs)
   }
 
   override def visitRead(ctx: WACCParser.ReadContext): ASTNode = {
     // ‘read’ ⟨assign-lhs⟩
     val lhs: AssignLHSNode = visit(ctx.getChild(1)).asInstanceOf[AssignLHSNode]
 
-    ReadNode(lhs)
+    new ReadNode(lhs)
   }
 
   override def visitFree(ctx: WACCParser.FreeContext): ASTNode = {
     // ‘free’ ⟨expr⟩
     val freeExpr: ExprNode = visit(ctx.getChild(1)).asInstanceOf[ExprNode]
 
-    FreeNode(freeExpr)
+    new FreeNode(freeExpr)
   }
 
   override def visitReturn(ctx: WACCParser.ReturnContext): ASTNode = {
     // ‘return’ ⟨expr ⟩
     val returnExpr: ExprNode = visit(ctx.getChild(1)).asInstanceOf[ExprNode]
 
-    ReturnNode(returnExpr)
+    new ReturnNode(returnExpr)
   }
 
   override def visitExit(ctx: WACCParser.ExitContext): ASTNode = {
     //  ‘exit’ ⟨expr ⟩
     val exitExpr: ExprNode = visit(ctx.getChild(1)).asInstanceOf[ExprNode]
 
-    ExitNode(exitExpr)
+    new ExitNode(exitExpr)
   }
 
   override def visitPrint(ctx: WACCParser.PrintContext): ASTNode = {
     // ‘print’ ⟨expr ⟩
     val printExpr: ExprNode = visit(ctx.getChild(1)).asInstanceOf[ExprNode]
 
-    PrintNode(printExpr)
+    new PrintNode(printExpr)
   }
 
   override def visitPrintln(ctx: WACCParser.PrintlnContext): ASTNode = {
     // ‘println’ ⟨expr ⟩
     val printlnExpr: ExprNode = visit(ctx.getChild(1)).asInstanceOf[ExprNode]
 
-    PrintlnNode(printlnExpr)
+    new PrintlnNode(printlnExpr)
   }
 
   override def visitIf(ctx: WACCParser.IfContext): ASTNode = {
@@ -134,7 +134,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     val thenStat: StatNode = visit(ctx.getChild(3)).asInstanceOf[StatNode]
     val elseStat: StatNode = visit(ctx.getChild(5)).asInstanceOf[StatNode]
 
-    IfNode(conditionExpr, thenStat, elseStat)
+    new IfNode(conditionExpr, thenStat, elseStat)
   }
 
   override def visitWhile(ctx: WACCParser.WhileContext): ASTNode = {
@@ -142,14 +142,14 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     val conditionExpr: ExprNode = visit(ctx.getChild(1)).asInstanceOf[ExprNode]
     val doStat: StatNode = visit(ctx.getChild(3)).asInstanceOf[StatNode]
 
-    WhileNode(conditionExpr, doStat)
+    new WhileNode(conditionExpr, doStat)
   }
 
   override def visitBegin(ctx: WACCParser.BeginContext): ASTNode = {
     // ‘begin’ ⟨stat ⟩ ‘end’
     val beginStat: StatNode = visit(ctx.getChild(1)).asInstanceOf[StatNode]
 
-    BeginNode(beginStat)
+    new BeginNode(beginStat)
   }
 
   override def visitSequence(ctx: WACCParser.SequenceContext): ASTNode = {
@@ -195,7 +195,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     val newPairFst: ExprNode = visit(ctx.getChild(2)).asInstanceOf[ExprNode]
     val newPairSnd: ExprNode = visit(ctx.getChild(4)).asInstanceOf[ExprNode]
 
-    NewPairNode(newPairFst, newPairSnd)
+    new NewPairNode(newPairFst, newPairSnd)
   }
 
   def visitAssignRHSPairElem(ctx: WACCParser.AssignRHSPairElemContext): ASTNode = {
@@ -209,7 +209,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     // Have to make this optional.
     val argList: ArgListNode = visit(ctx.getChild(3)).asInstanceOf[ArgListNode]
 
-    CallNode(ident, argList)
+    new CallNode(ident, argList)
   }
   
   override def visitArg_list(ctx: WACCParser.Arg_listContext): ASTNode = {
@@ -223,7 +223,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
       exprChildren :+ visit(ctx.getChild(i)).asInstanceOf[ExprNode]
     }
 
-    ArgListNode(exprChildren)
+    new ArgListNode(exprChildren)
   }
 
   override def visitPair_elem(ctx: WACCParser.Pair_elemContext): ASTNode = {
@@ -234,14 +234,14 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     // ‘fst’ ⟨expr ⟩
     val pairFstExpr: ExprNode = visit(ctx.getChild(1)).asInstanceOf[ExprNode]
 
-    FstNode(pairFstExpr)
+    new FstNode(pairFstExpr)
   }
 
   def visitPairSnd(ctx: WACCParser.PairSndContext): ASTNode = {
     // ‘snd’ ⟨expr ⟩
     val pairSndExpr: ExprNode = visit(ctx.getChild(1)).asInstanceOf[ExprNode]
 
-    SndNode(pairSndExpr)
+    new SndNode(pairSndExpr)
   }
 
   override def visitType(ctx: WACCParser.TypeContext): ASTNode = {
@@ -269,29 +269,29 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
   def visitIntBase_type(ctx: WACCParser.IntBase_typeContext): ASTNode = {
     // 'int'
-    IntTypeNode()
+    new IntTypeNode()
   }
 
   def visitBoolBase_type(ctx: WACCParser.BoolBase_typeContext): ASTNode = {
     // 'bool'
-    BoolTypeNode()
+    new BoolTypeNode()
   }
 
   def visitCharBase_type(ctx: WACCParser.CharBase_typeContext): ASTNode = {
     // 'char'
-    CharTypeNode()
+    new CharTypeNode()
   }
 
   def visitStringBase_type(ctx: WACCParser.StringBase_typeContext): ASTNode = {
     // 'string'
-    StringTypeNode()
+    new StringTypeNode()
   }
 
   override def visitArray_type(ctx: WACCParser.Array_typeContext): ASTNode = {
     // ⟨type ⟩ ‘[’ ‘]’
     val arrayType: TypeNode = visit(ctx.getChild(0)).asInstanceOf[TypeNode]
 
-    ArrayTypeNode(arrayType)
+    new ArrayTypeNode(arrayType)
   }
 
   override def visitPair_type(ctx: WACCParser.Pair_typeContext): ASTNode = {
@@ -300,7 +300,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     val fstPairElem: PairElemTypeNode = visit(ctx.getChild(2)).asInstanceOf[PairElemTypeNode]
     val sndPairElem: PairElemTypeNode = visit(ctx.getChild(4)).asInstanceOf[PairElemTypeNode]
 
-    PairTypeNode(fstPairElem, sndPairElem)
+    new PairTypeNode(fstPairElem, sndPairElem)
   }
 
   override def visitPair_elem_type(ctx: WACCParser.Pair_elemContext): ASTNode = {
@@ -346,7 +346,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
       digits :+ visit(ctx.getChild(i))
     }
 
-    IntLiteralNode(intSign, digits)
+    new IntLiteralNode(intSign, digits)
   }
 
   def visitExprBoolLiter(ctx: WACCParser.ExprBoolLiterContext): ASTNode = {
@@ -358,7 +358,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     // ‘true’ | ‘false’
     val boolValue: String = ctx.getChild(0).toBoolean
 
-    BoolLiteralNode(boolValue)
+    new BoolLiteralNode(boolValue)
   }
 
   def visitExprCharLiter(ctx: WACCParser.ExprCharLiterContext): ASTNode = {
@@ -370,7 +370,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     // ‘’’ ⟨character ⟩ ‘’’
     val charValue: CharLiteralNode = ctx.getChild(1).charAt(0)
 
-    CharLiteralNode(charValue)
+    new CharLiteralNode(charValue)
   }
 
   def visitExprStringLiter(ctx: WACCParser.ExprStringLiterContext): ASTNode = {
@@ -387,7 +387,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
       charList :+ visit(ctx.getChild(i))
     }
 
-    StringLiteralNode(charList)
+    new StringLiteralNode(charList)
   }
 
   def visitExprPairLiter(ctx: WACCParser.ExprPairLiterContext): ASTNode = {
@@ -436,7 +436,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     // again.
     val stringStream: String
 
-    IdentNode(stringStream)
+    new IdentNode(stringStream)
   }
 
   override def visitArray_elem(ctx: WACCParser.Array_elemContext): ASTNode = {
@@ -450,7 +450,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
       exprList :+ visit(ctx.getChild(i)).asInstanceOf[ExprNode]
     }
 
-    ArrayElemNode(ident, exprList)
+    new ArrayElemNode(ident, exprList)
   }
 
   override def visitArray_liter(ctx: WACCParser.Array_literContext): ASTNode = {
@@ -464,7 +464,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
       exprList :+ visit(ctx.getChild(i)).asInstanceOf[ExprNode]
     }
 
-    ArrayLiteralNode(exprList)
+    new ArrayLiteralNode(exprList)
   }
 
   // Need to add remaining visiting methods for nodes defined in ASTNode however the
