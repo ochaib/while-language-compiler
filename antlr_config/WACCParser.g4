@@ -27,35 +27,37 @@ stat: SKIP_                                 #Skip
       | BEGIN stat END                      #Begin
       | stat SEMICOLON stat                 #Sequence;
 
-assign_lhs: IDENT | array_elem | pair_elem ;
+assign_lhs: IDENT                           #LHSIdent
+          | array_elem                      #LHSArrayElem
+          | pair_elem                       #LHSPairElem;
 
 assign_rhs: expr 
-      | array_liter 
-      | NEWPAIR OPEN_PARENTHESES expr COMMA expr CLOSE_PARENTHESES
-      | pair_elem
-      | CALL IDENT OPEN_PARENTHESES arg_list? CLOSE_PARENTHESES ;
+          | array_liter                     #RHSExpr
+          | NEWPAIR OPEN_PARENTHESES expr COMMA expr CLOSE_PARENTHESES    #RHSNewPair
+          | pair_elem                       #RHSPairElem
+          | CALL IDENT OPEN_PARENTHESES arg_list? CLOSE_PARENTHESES       #RHSCall;
 
 arg_list: expr (COMMA expr)* ;
 
-pair_elem: FST expr
-      | SND expr ;
+pair_elem: FST expr                         #PairFst
+         | SND expr                         #PairSnd;
 
-type: base_type
-      | type OPEN_BRACKET CLOSE_BRACKET // array_type
-      | pair_type ;
+type: base_type                             #TypeBase_type
+    | array_type                            #TypeArray_type
+    | pair_type                             #TypePair_type;
 
-base_type: INT
-      | BOOL
-      | CHAR
-      | STRING ;
+base_type: INT                              #IntBase_type
+         | BOOL                             #BoolBase_type
+         | CHAR                             #CharBase_type
+         | STRING                           #StringBase_type;
 
 array_type: type OPEN_BRACKET CLOSE_BRACKET ;
 
 pair_type: PAIR OPEN_PARENTHESES pair_elem_type COMMA pair_elem_type CLOSE_PARENTHESES ;
 
-pair_elem_type: base_type
-      | array_type
-      | PAIR ;
+pair_elem_type: base_type                   #PETBaseType
+              | array_type                  #PETArrayType
+              | PAIR                        #PETPair;
 
 expr: INT_LIT
       | BOOL_LIT
