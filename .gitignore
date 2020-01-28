@@ -7,7 +7,6 @@ src/main/java/antlr
 
 # ignore other junk files
 *~
-.DS_Store
 
 # ignore scala logs
 *.log
