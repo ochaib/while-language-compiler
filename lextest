@@ -3,37 +3,27 @@
 rm failedfilestemp
 make
 
-error_detected=0;
-valid_test ()
+test ()
 {
   echo "Testing: $1"
   ./grun antlr.WACC program "$1" > testtemp 2>&1;
-  if [ "$(cat testtemp)" != "running the ANTLR TestRig grammar tool" ]; then
+  if [[ ($2 == "-valid" ) && ("$(cat testtemp)" != "running the ANTLR TestRig grammar tool") ]]; then
     echo "TEST FAILURE:"
     echo "Test had the following output: $(cat testtemp)"
     echo "$1" >> failedfilestemp;
-  fi
-  rm testtemp
-}
-invalid_test ()
-{
-  echo "Testing: $1"
-  ./grun antlr.WACC program "$1" > testtemp 2>&1;
-  if [ "$(cat testtemp)" == "running the ANTLR TestRig grammar tool" ]; then
+  elif [[ ($2 == "-invalid") && ("$(cat testtemp)" == "running the ANTLR TestRig grammar tool") ]]; then
     echo "TEST UNEXPECTEDLY SUCCEEDED: $1"
     echo "$1" >> failedfilestemp;
   fi
   rm testtemp
 }
 
-export -f valid_test
-export -f invalid_test
+export -f test
 
-find testcases/valid -type f -iname '*.wacc' -exec bash -c 'valid_test {}' bash \;
-find testcases/invalid -type f -iname '*.wacc' -exec bash -c 'invalid_test {}' bash \;
+find testcases/valid -type f -iname '*.wacc' -exec bash -c 'test "$1" -valid' bash {} \;
+find testcases/invalid -type f -iname '*.wacc' -exec bash -c 'test "$1" -invalid' bash {} \;
 
-unset valid_test
-unset invalid_test
+unset test
 
 if [ -f /failedfilestemp ] ; then
   echo "All tests passed..."
