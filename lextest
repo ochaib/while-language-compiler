@@ -1,5 +1,6 @@
 #!/bin/bash
 
+rm failedfilestemp
 make
 
 error_detected=0;
@@ -10,7 +11,7 @@ valid_test ()
   if [ "$(cat testtemp)" != "running the ANTLR TestRig grammar tool" ]; then
     echo "TEST FAILURE:"
     echo "Test had the following output: $(cat testtemp)"
-    error_detected=1
+    echo "$1" >> failedfilestemp;
   fi
   rm testtemp
 }
@@ -20,11 +21,10 @@ invalid_test ()
   ./grun antlr.WACC program "$1" > testtemp 2>&1;
   if [ "$(cat testtemp)" == "running the ANTLR TestRig grammar tool" ]; then
     echo "TEST UNEXPECTEDLY SUCCEEDED: $1"
-    error_detected=1
+    echo "$1" >> failedfilestemp;
   fi
   rm testtemp
 }
-rm testtemp
 
 export -f valid_test
 export -f invalid_test
@@ -35,9 +35,12 @@ find testcases/invalid -type f -iname '*.wacc' -exec bash -c 'invalid_test {}' b
 unset valid_test
 unset invalid_test
 
-if [ $error_detected -eq 0 ] ; then
+if [ -f /failedfilestemp ] ; then
   echo "All tests passed..."
   exit 0
 else
+  echo "The following files failed the tests: "
+  cat failedfilestemp
+  rm failedfilestemp
   exit 1
 fi
