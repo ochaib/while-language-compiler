@@ -27,7 +27,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
   }
 
   override def visitParam_list(ctx: WACCParser.Param_listContext): ASTNode = {
-    // ⟨param ⟩ ( ‘,’ ⟨param ⟩ )*
+    // ⟨param⟩ ( ‘,’ ⟨param⟩ )*
     // Multiple params... a param list
     val childCount = ctx.getChildCount
     // Apparently IndexedSeq is much better than an array so I'll use it instead
@@ -42,7 +42,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
   }
 
   override def visitParam(ctx: WACCParser.ParamContext): ASTNode = {
-    // ⟨type ⟩ ⟨ident ⟩
+    // ⟨type⟩ ⟨ident⟩
     val paramType: TypeNode = visit(ctx.getChild(0)).asInstanceOf[TypeNode]
     val ident: IdentNode = visit(ctx.getChild(1)).asInstanceOf[IdentNode]
 
@@ -57,6 +57,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
   override def visitSkip(ctx: WACCParser.SkipContext): ASTNode = {
     println("Skip stat.")
     // Or something.
+    SkipNode()
   }
 
   override def visitDeclaration(ctx: WACCParser.DeclarationContext): ASTNode = {
@@ -175,10 +176,6 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
   }
 
   def visitAssignRHSExpr(ctx: WACCParser.AssignRHSExprContext): ASTNode = {
-    val RHSExpr: ExprNode = visit(ctx.getChild(0)).asInstanceOf[ExprNode]
-  }
-
-  def visitAssignRHS(ctx: WACCParser.AssignRHSExprContext): ASTNode = {
     val RHSExpr: ExprNode = visit(ctx.getChild(0)).asInstanceOf[ExprNode]
   }
 
