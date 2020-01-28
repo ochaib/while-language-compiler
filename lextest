@@ -2,10 +2,13 @@
 
 # Run ./lextest to test all the test cases. Use the -log option to log the failed tests
 
+if [[ ! -d "src/main/java/antlr" ]]; then
+  echo "Need to run \"make antlrBuild\" to test lexer... Exiting..."
+  exit 1;
+fi
+
 mkdir test_temp
 trap "{ rm -rf test_temp; }" EXIT
-
-make
 
 test ()
 {
