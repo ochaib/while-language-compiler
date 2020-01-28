@@ -35,11 +35,96 @@ public interface WACCParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitParam(WACCParser.ParamContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link WACCParser#stat}.
+	 * Visit a parse tree produced by the {@code Return}
+	 * labeled alternative in {@link WACCParser#stat}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitStat(WACCParser.StatContext ctx);
+	T visitReturn(WACCParser.ReturnContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code While}
+	 * labeled alternative in {@link WACCParser#stat}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitWhile(WACCParser.WhileContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code Sequence}
+	 * labeled alternative in {@link WACCParser#stat}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitSequence(WACCParser.SequenceContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code Free}
+	 * labeled alternative in {@link WACCParser#stat}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFree(WACCParser.FreeContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code Assignment}
+	 * labeled alternative in {@link WACCParser#stat}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitAssignment(WACCParser.AssignmentContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code Read}
+	 * labeled alternative in {@link WACCParser#stat}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitRead(WACCParser.ReadContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code Print}
+	 * labeled alternative in {@link WACCParser#stat}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPrint(WACCParser.PrintContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code Skip}
+	 * labeled alternative in {@link WACCParser#stat}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitSkip(WACCParser.SkipContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code Begin}
+	 * labeled alternative in {@link WACCParser#stat}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitBegin(WACCParser.BeginContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code Println}
+	 * labeled alternative in {@link WACCParser#stat}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPrintln(WACCParser.PrintlnContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code Declaration}
+	 * labeled alternative in {@link WACCParser#stat}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitDeclaration(WACCParser.DeclarationContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code If}
+	 * labeled alternative in {@link WACCParser#stat}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitIf(WACCParser.IfContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code Exit}
+	 * labeled alternative in {@link WACCParser#stat}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExit(WACCParser.ExitContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link WACCParser#assign_lhs}.
 	 * @param ctx the parse tree

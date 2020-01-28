@@ -1,4 +1,4 @@
-import antlr.{WACCParser, WACCParserBaseVisitor}
+import antlr.{WACCLexer, WACCParser, WACCParserBaseVisitor}
 import org.antlr.v4.runtime._
 
 // Class used to traverse the parse tree built by ANTLR
