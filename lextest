@@ -1,7 +1,9 @@
 #!/bin/bash
 
+# Run ./lextest to test all the test cases. Use the -log option to log the failed tests
+
 mkdir test_temp
-trap "{ rm -rf test_temp }" EXIT
+trap "{ rm -rf test_temp; }" EXIT
 
 make
 
@@ -13,7 +15,7 @@ test ()
     echo "TEST FAILURE:"
     echo "Test had the following output: $(cat test_temp/output)"
     echo "$1" >> test_temp/failedfilestemp
-  elif [[ ($2 == "-invalid") && ("$(cat testtemp)" == "running the ANTLR TestRig grammar tool") ]]; then
+  elif [[ ($2 == "-invalid") && ("$(cat test_temp/output)" == "running the ANTLR TestRig grammar tool") ]]; then
     echo "TEST UNEXPECTEDLY SUCCEEDED: $1"
     echo "$1" >> test_temp/failedfilestemp
   fi
@@ -26,14 +28,19 @@ find testcases/invalid -type f -iname '*.wacc' -exec bash -c 'test "$1" -invalid
 
 unset test
 
-if [ -f test_temp/failedfilestemp ] ; then
+if [ ! -f test_temp/failedfilestemp ] ; then
   echo "All tests passed..."
-  rm -rf failedfilestemp
+  if [ "$1" == "-log" ]; then
+    mkdir -p test_logs
+    echo "ALL tests passed..." >> "test_logs/testfailures_$(date +%F_%R)"
+  fi
   exit 0
 else
   echo "The following files failed the tests: "
-  cat failedfilestemp
-  rm failedfilestemp
-  rm -rf failedfilestemp
+  cat test_temp/failedfilestemp
+  if [ "$1" == "-log" ]; then
+    mkdir -p test_logs
+    cp test_temp/failedfilestemp "test_logs/testfailures_$(date +%F_%R)"
+  fi
   exit 1
 fi
