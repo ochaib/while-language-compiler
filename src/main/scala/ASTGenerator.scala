@@ -185,8 +185,8 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
   def visitAssignRHSNewPair(ctx: WACCParser.AssignRHSNewPairContext): ASTNode = {
     // ‘newpair’ ‘(’ ⟨expr ⟩ ‘,’ ⟨expr ⟩ ‘)’
-    val newPairFst: NewPairNode = visit(ctx.getChild(2)).asInstanceOf[NewPairNode]
-    val newPairSnd: NewPairNode = visit(ctx.getChild(4)).asInstanceOf[NewPairNode]
+    val newPairFst: ExprNode = visit(ctx.getChild(2)).asInstanceOf[ExprNode]
+    val newPairSnd: ExprNode = visit(ctx.getChild(4)).asInstanceOf[ExprNode]
 
     NewPairNode(newPairFst, newPairSnd)
   }
