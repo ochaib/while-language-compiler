@@ -42,7 +42,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
     // Hope this is how you do it.
     // Now takes into account the comma.
-    for (i <- 0 to childCount - 1) {
+    for (i <- 0 until childCount) {
       if (!ctx.getChild(i).getText.charAt(0).equals(',')) {
         paramList :+ visit(ctx.getChild(i)).asInstanceOf[ParamNode]
       }
