@@ -26,4 +26,5 @@ COPY . .
 # you may have to wait until SBT is downloaded + everything installed
 RUN make all
 
-ENTRYPOINT [ "/usr/app/lextest" ]
+RUN cd /usr/app
+ENTRYPOINT [ "lextest" ]
