@@ -27,7 +27,7 @@ stat: SKIP_                                 #Skip
       | BEGIN stat END                      #Begin
       | stat SEMICOLON stat                 #Sequence;
 
-assign_lhs: IDENT                           #LHSIdent
+assign_lhs: ident                           #LHSIdent
           | array_elem                      #LHSArrayElem
           | pair_elem                       #LHSPairElem;
 

@@ -28,7 +28,7 @@ class ParamListNode(val _paramList: IndexedSeq[ParamNode]) extends ASTNode {
   val paramList: IndexedSeq[ParamNode] = _paramList
 }
 
-class ParamNode extends ASTNode {
+class ParamNode(val _paramType: TypeNode, val _ident: IdentNode) extends ASTNode {
 
 }
 
