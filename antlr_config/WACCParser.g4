@@ -31,8 +31,8 @@ assign_lhs: IDENT                           #LHSIdent
           | array_elem                      #LHSArrayElem
           | pair_elem                       #LHSPairElem;
 
-assign_rhs: expr 
-          | array_liter                     #RHSExpr
+assign_rhs: expr                            #RHSExpr
+          | array_liter                     #RHSLiteral
           | NEWPAIR OPEN_PARENTHESES expr COMMA expr CLOSE_PARENTHESES    #RHSNewPair
           | pair_elem                       #RHSPairElem
           | CALL IDENT OPEN_PARENTHESES arg_list? CLOSE_PARENTHESES       #RHSCall;
@@ -51,6 +51,7 @@ base_type: INT                              #IntBase_type
          | CHAR                             #CharBase_type
          | STRING                           #StringBase_type;
 
+// The following sets of rules are mutually left-recursive?
 array_type: type OPEN_BRACKET CLOSE_BRACKET ;
 
 pair_type: PAIR OPEN_PARENTHESES pair_elem_type COMMA pair_elem_type CLOSE_PARENTHESES ;
@@ -59,16 +60,16 @@ pair_elem_type: base_type                   #PETBaseType
               | array_type                  #PETArrayType
               | PAIR                        #PETPair;
 
-expr: INT_LIT
-      | BOOL_LIT
-      | CHAR_LIT
-      | STR_LIT
-      | PAIR_LIT
-      | IDENT
-      | array_elem
-      | unary_oper expr
-      | expr binary_oper expr
-      | OPEN_PARENTHESES expr CLOSE_PARENTHESES ;
+expr: INT_LIT                               #ExprIntLiter
+      | BOOL_LIT                            #ExprBoolLiter
+      | CHAR_LIT                            #ExprCharLiter
+      | STR_LIT                             #ExprStringLiter
+      | PAIR_LIT                            #ExprPairLiter
+      | IDENT                               #ExprIdent
+      | array_elem                          #ExprArrayElem
+      | unary_oper expr                     #ExprUnaryOper
+      | expr binary_oper expr               #ExprBinaryOper
+      | OPEN_PARENTHESES expr CLOSE_PARENTHESES    #BracketExpr;
 
 unary_oper: NOT | MINUS | LEN | ORD | CHR;
 
