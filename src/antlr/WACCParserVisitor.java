@@ -354,6 +354,12 @@ public interface WACCParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExprUnaryOper(WACCParser.ExprUnaryOperContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link WACCParser#ident}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitIdent(WACCParser.IdentContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link WACCParser#unary_oper}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -377,4 +383,34 @@ public interface WACCParserVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitArray_liter(WACCParser.Array_literContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link WACCParser#int_liter}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitInt_liter(WACCParser.Int_literContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link WACCParser#bool_liter}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitBool_liter(WACCParser.Bool_literContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link WACCParser#char_liter}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitChar_liter(WACCParser.Char_literContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link WACCParser#str_liter}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitStr_liter(WACCParser.Str_literContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link WACCParser#pair_liter}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPair_liter(WACCParser.Pair_literContext ctx);
 }
