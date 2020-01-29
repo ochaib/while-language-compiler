@@ -21,7 +21,7 @@ antlr:
 	cd $(ANTLR_DIR) && ./$(ANTLR)
 
 clean:
-	$(RM) rules $(SOURCE_DIR)/antlr
+	$(RM) rules $(SOURCE_DIR)/main/java/antlr
 	$(SBT) clean
 
 .PHONY: all rules clean
