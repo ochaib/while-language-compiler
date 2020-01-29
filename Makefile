@@ -15,7 +15,6 @@ all: antlr sources
 
 # runs the antlr build script then attempts to compile all .java files within src
 sources:
-	ls src/main/java/
 	$(SBT) clean compile
 
 antlr:
