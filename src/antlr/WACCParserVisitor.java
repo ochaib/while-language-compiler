@@ -126,61 +126,61 @@ public interface WACCParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExit(WACCParser.ExitContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code LHSIdent}
+	 * Visit a parse tree produced by the {@code AssignLHSIdent}
 	 * labeled alternative in {@link WACCParser#assign_lhs}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitLHSIdent(WACCParser.LHSIdentContext ctx);
+	T visitAssignLHSIdent(WACCParser.AssignLHSIdentContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code LHSArrayElem}
+	 * Visit a parse tree produced by the {@code AssignLHSArrayElem}
 	 * labeled alternative in {@link WACCParser#assign_lhs}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitLHSArrayElem(WACCParser.LHSArrayElemContext ctx);
+	T visitAssignLHSArrayElem(WACCParser.AssignLHSArrayElemContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code LHSPairElem}
+	 * Visit a parse tree produced by the {@code AssignLHSPairElem}
 	 * labeled alternative in {@link WACCParser#assign_lhs}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitLHSPairElem(WACCParser.LHSPairElemContext ctx);
+	T visitAssignLHSPairElem(WACCParser.AssignLHSPairElemContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code RHSExpr}
+	 * Visit a parse tree produced by the {@code AssignRHSExpr}
 	 * labeled alternative in {@link WACCParser#assign_rhs}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitRHSExpr(WACCParser.RHSExprContext ctx);
+	T visitAssignRHSExpr(WACCParser.AssignRHSExprContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code RHSLiteral}
+	 * Visit a parse tree produced by the {@code AssignRHSLiteral}
 	 * labeled alternative in {@link WACCParser#assign_rhs}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitRHSLiteral(WACCParser.RHSLiteralContext ctx);
+	T visitAssignRHSLiteral(WACCParser.AssignRHSLiteralContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code RHSNewPair}
+	 * Visit a parse tree produced by the {@code AssignRHSNewPair}
 	 * labeled alternative in {@link WACCParser#assign_rhs}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitRHSNewPair(WACCParser.RHSNewPairContext ctx);
+	T visitAssignRHSNewPair(WACCParser.AssignRHSNewPairContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code RHSPairElem}
+	 * Visit a parse tree produced by the {@code AssignRHSPairElem}
 	 * labeled alternative in {@link WACCParser#assign_rhs}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitRHSPairElem(WACCParser.RHSPairElemContext ctx);
+	T visitAssignRHSPairElem(WACCParser.AssignRHSPairElemContext ctx);
 	/**
-	 * Visit a parse tree produced by the {@code RHSCall}
+	 * Visit a parse tree produced by the {@code AssignRHSCall}
 	 * labeled alternative in {@link WACCParser#assign_rhs}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitRHSCall(WACCParser.RHSCallContext ctx);
+	T visitAssignRHSCall(WACCParser.AssignRHSCallContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link WACCParser#arg_list}.
 	 * @param ctx the parse tree

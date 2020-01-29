@@ -165,16 +165,16 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
   }
 
-  def visitAssignLHSIdent(ctx: WACCParser.AssignLHSIdentContext): ASTNode = {
+  override def visitAssignLHSIdent(ctx: WACCParser.AssignLHSIdentContext): ASTNode = {
     val LHSIdent: IdentNode = visit(ctx.getChild(0)).asInstanceOf[IdentNode]
     // Now what?
   }
 
-  def visitAssignLHSArrayElem(ctx: WACCParser.AssignLHSArrayElemContext): ASTNode = {
+  override def visitAssignLHSArrayElem(ctx: WACCParser.AssignLHSArrayElemContext): ASTNode = {
     val LHSArrayElem: ArrayElemNode = visit(ctx.getChild(0)).asInstanceOf[ArrayElemNode]
   }
 
-  def visitAssignLHSPairElem(ctx: WACCParser.AssignLHSPairElemContext): ASTNode = {
+  override def visitAssignLHSPairElem(ctx: WACCParser.AssignLHSPairElemContext): ASTNode = {
     val LHSPairElem: PairElemNode = visit(ctx.getChild(0)).asInstanceOf[PairElemNode]
   }
 
@@ -182,15 +182,15 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
   }
 
-  def visitAssignRHSExpr(ctx: WACCParser.AssignRHSExprContext): ASTNode = {
+  override def visitAssignRHSExpr(ctx: WACCParser.AssignRHSExprContext): ASTNode = {
     val RHSExpr: ExprNode = visit(ctx.getChild(0)).asInstanceOf[ExprNode]
   }
 
-  def visitAssignRHSLiteral(ctx: WACCParser.AssignRHSLiteralContext): ASTNode = {
+  override def visitAssignRHSLiteral(ctx: WACCParser.AssignRHSLiteralContext): ASTNode = {
     val RHSLiteral: ArrayLiteralNode = visit(ctx.getChild(0)).asInstanceOf[ArrayLiteralNode]
   }
 
-  def visitAssignRHSNewPair(ctx: WACCParser.AssignRHSNewPairContext): ASTNode = {
+  override def visitAssignRHSNewPair(ctx: WACCParser.AssignRHSNewPairContext): ASTNode = {
     // ‘newpair’ ‘(’ ⟨expr ⟩ ‘,’ ⟨expr ⟩ ‘)’
     val newPairFst: ExprNode = visit(ctx.getChild(2)).asInstanceOf[ExprNode]
     val newPairSnd: ExprNode = visit(ctx.getChild(4)).asInstanceOf[ExprNode]
@@ -198,12 +198,12 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     new NewPairNode(newPairFst, newPairSnd)
   }
 
-  def visitAssignRHSPairElem(ctx: WACCParser.AssignRHSPairElemContext): ASTNode = {
+  override def visitAssignRHSPairElem(ctx: WACCParser.AssignRHSPairElemContext): ASTNode = {
     // ⟨pair-elem ⟩
     val RHSPairElem: PairElemNode = visit(ctx.getChild(0)).asInstanceOf[PairElemNode]
   }
 
-  def visitAssignRHSCall(ctx: WACCParser.AssignRHSCallContext): ASTNode = {
+  override def visitAssignRHSCall(ctx: WACCParser.AssignRHSCallContext): ASTNode = {
     // ‘call’ ⟨ident ⟩ ‘(’ ⟨arg-list ⟩? ‘)’
     val ident: IdentNode = visit(ctx.getChild(1)).asInstanceOf[IdentNode]
     // Have to make this optional.

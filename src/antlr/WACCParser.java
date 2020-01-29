@@ -766,34 +766,34 @@ public class WACCParser extends Parser {
 			super.copyFrom(ctx);
 		}
 	}
-	public static class LHSIdentContext extends Assign_lhsContext {
+	public static class AssignLHSIdentContext extends Assign_lhsContext {
 		public TerminalNode IDENT() { return getToken(WACCParser.IDENT, 0); }
-		public LHSIdentContext(Assign_lhsContext ctx) { copyFrom(ctx); }
+		public AssignLHSIdentContext(Assign_lhsContext ctx) { copyFrom(ctx); }
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof WACCParserVisitor ) return ((WACCParserVisitor<? extends T>)visitor).visitLHSIdent(this);
+			if ( visitor instanceof WACCParserVisitor ) return ((WACCParserVisitor<? extends T>)visitor).visitAssignLHSIdent(this);
 			else return visitor.visitChildren(this);
 		}
 	}
-	public static class LHSArrayElemContext extends Assign_lhsContext {
+	public static class AssignLHSArrayElemContext extends Assign_lhsContext {
 		public Array_elemContext array_elem() {
 			return getRuleContext(Array_elemContext.class,0);
 		}
-		public LHSArrayElemContext(Assign_lhsContext ctx) { copyFrom(ctx); }
+		public AssignLHSArrayElemContext(Assign_lhsContext ctx) { copyFrom(ctx); }
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof WACCParserVisitor ) return ((WACCParserVisitor<? extends T>)visitor).visitLHSArrayElem(this);
+			if ( visitor instanceof WACCParserVisitor ) return ((WACCParserVisitor<? extends T>)visitor).visitAssignLHSArrayElem(this);
 			else return visitor.visitChildren(this);
 		}
 	}
-	public static class LHSPairElemContext extends Assign_lhsContext {
+	public static class AssignLHSPairElemContext extends Assign_lhsContext {
 		public Pair_elemContext pair_elem() {
 			return getRuleContext(Pair_elemContext.class,0);
 		}
-		public LHSPairElemContext(Assign_lhsContext ctx) { copyFrom(ctx); }
+		public AssignLHSPairElemContext(Assign_lhsContext ctx) { copyFrom(ctx); }
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof WACCParserVisitor ) return ((WACCParserVisitor<? extends T>)visitor).visitLHSPairElem(this);
+			if ( visitor instanceof WACCParserVisitor ) return ((WACCParserVisitor<? extends T>)visitor).visitAssignLHSPairElem(this);
 			else return visitor.visitChildren(this);
 		}
 	}
@@ -806,7 +806,7 @@ public class WACCParser extends Parser {
 			_errHandler.sync(this);
 			switch ( getInterpreter().adaptivePredict(_input,5,_ctx) ) {
 			case 1:
-				_localctx = new LHSIdentContext(_localctx);
+				_localctx = new AssignLHSIdentContext(_localctx);
 				enterOuterAlt(_localctx, 1);
 				{
 				setState(122);
@@ -814,7 +814,7 @@ public class WACCParser extends Parser {
 				}
 				break;
 			case 2:
-				_localctx = new LHSArrayElemContext(_localctx);
+				_localctx = new AssignLHSArrayElemContext(_localctx);
 				enterOuterAlt(_localctx, 2);
 				{
 				setState(123);
@@ -822,7 +822,7 @@ public class WACCParser extends Parser {
 				}
 				break;
 			case 3:
-				_localctx = new LHSPairElemContext(_localctx);
+				_localctx = new AssignLHSPairElemContext(_localctx);
 				enterOuterAlt(_localctx, 3);
 				{
 				setState(124);
@@ -853,18 +853,55 @@ public class WACCParser extends Parser {
 			super.copyFrom(ctx);
 		}
 	}
-	public static class RHSPairElemContext extends Assign_rhsContext {
+	public static class AssignRHSPairElemContext extends Assign_rhsContext {
 		public Pair_elemContext pair_elem() {
 			return getRuleContext(Pair_elemContext.class,0);
 		}
-		public RHSPairElemContext(Assign_rhsContext ctx) { copyFrom(ctx); }
+		public AssignRHSPairElemContext(Assign_rhsContext ctx) { copyFrom(ctx); }
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof WACCParserVisitor ) return ((WACCParserVisitor<? extends T>)visitor).visitRHSPairElem(this);
+			if ( visitor instanceof WACCParserVisitor ) return ((WACCParserVisitor<? extends T>)visitor).visitAssignRHSPairElem(this);
 			else return visitor.visitChildren(this);
 		}
 	}
-	public static class RHSNewPairContext extends Assign_rhsContext {
+	public static class AssignRHSExprContext extends Assign_rhsContext {
+		public ExprContext expr() {
+			return getRuleContext(ExprContext.class,0);
+		}
+		public AssignRHSExprContext(Assign_rhsContext ctx) { copyFrom(ctx); }
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof WACCParserVisitor ) return ((WACCParserVisitor<? extends T>)visitor).visitAssignRHSExpr(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+	public static class AssignRHSLiteralContext extends Assign_rhsContext {
+		public Array_literContext array_liter() {
+			return getRuleContext(Array_literContext.class,0);
+		}
+		public AssignRHSLiteralContext(Assign_rhsContext ctx) { copyFrom(ctx); }
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof WACCParserVisitor ) return ((WACCParserVisitor<? extends T>)visitor).visitAssignRHSLiteral(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+	public static class AssignRHSCallContext extends Assign_rhsContext {
+		public TerminalNode CALL() { return getToken(WACCParser.CALL, 0); }
+		public TerminalNode IDENT() { return getToken(WACCParser.IDENT, 0); }
+		public TerminalNode OPEN_PARENTHESES() { return getToken(WACCParser.OPEN_PARENTHESES, 0); }
+		public TerminalNode CLOSE_PARENTHESES() { return getToken(WACCParser.CLOSE_PARENTHESES, 0); }
+		public Arg_listContext arg_list() {
+			return getRuleContext(Arg_listContext.class,0);
+		}
+		public AssignRHSCallContext(Assign_rhsContext ctx) { copyFrom(ctx); }
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof WACCParserVisitor ) return ((WACCParserVisitor<? extends T>)visitor).visitAssignRHSCall(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+	public static class AssignRHSNewPairContext extends Assign_rhsContext {
 		public TerminalNode NEWPAIR() { return getToken(WACCParser.NEWPAIR, 0); }
 		public TerminalNode OPEN_PARENTHESES() { return getToken(WACCParser.OPEN_PARENTHESES, 0); }
 		public List<ExprContext> expr() {
@@ -875,47 +912,10 @@ public class WACCParser extends Parser {
 		}
 		public TerminalNode COMMA() { return getToken(WACCParser.COMMA, 0); }
 		public TerminalNode CLOSE_PARENTHESES() { return getToken(WACCParser.CLOSE_PARENTHESES, 0); }
-		public RHSNewPairContext(Assign_rhsContext ctx) { copyFrom(ctx); }
+		public AssignRHSNewPairContext(Assign_rhsContext ctx) { copyFrom(ctx); }
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof WACCParserVisitor ) return ((WACCParserVisitor<? extends T>)visitor).visitRHSNewPair(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-	public static class RHSCallContext extends Assign_rhsContext {
-		public TerminalNode CALL() { return getToken(WACCParser.CALL, 0); }
-		public TerminalNode IDENT() { return getToken(WACCParser.IDENT, 0); }
-		public TerminalNode OPEN_PARENTHESES() { return getToken(WACCParser.OPEN_PARENTHESES, 0); }
-		public TerminalNode CLOSE_PARENTHESES() { return getToken(WACCParser.CLOSE_PARENTHESES, 0); }
-		public Arg_listContext arg_list() {
-			return getRuleContext(Arg_listContext.class,0);
-		}
-		public RHSCallContext(Assign_rhsContext ctx) { copyFrom(ctx); }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof WACCParserVisitor ) return ((WACCParserVisitor<? extends T>)visitor).visitRHSCall(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-	public static class RHSExprContext extends Assign_rhsContext {
-		public ExprContext expr() {
-			return getRuleContext(ExprContext.class,0);
-		}
-		public RHSExprContext(Assign_rhsContext ctx) { copyFrom(ctx); }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof WACCParserVisitor ) return ((WACCParserVisitor<? extends T>)visitor).visitRHSExpr(this);
-			else return visitor.visitChildren(this);
-		}
-	}
-	public static class RHSLiteralContext extends Assign_rhsContext {
-		public Array_literContext array_liter() {
-			return getRuleContext(Array_literContext.class,0);
-		}
-		public RHSLiteralContext(Assign_rhsContext ctx) { copyFrom(ctx); }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof WACCParserVisitor ) return ((WACCParserVisitor<? extends T>)visitor).visitRHSLiteral(this);
+			if ( visitor instanceof WACCParserVisitor ) return ((WACCParserVisitor<? extends T>)visitor).visitAssignRHSNewPair(this);
 			else return visitor.visitChildren(this);
 		}
 	}
@@ -940,7 +940,7 @@ public class WACCParser extends Parser {
 			case CHAR_LIT:
 			case STR_LIT:
 			case IDENT:
-				_localctx = new RHSExprContext(_localctx);
+				_localctx = new AssignRHSExprContext(_localctx);
 				enterOuterAlt(_localctx, 1);
 				{
 				setState(127);
@@ -948,7 +948,7 @@ public class WACCParser extends Parser {
 				}
 				break;
 			case OPEN_BRACKET:
-				_localctx = new RHSLiteralContext(_localctx);
+				_localctx = new AssignRHSLiteralContext(_localctx);
 				enterOuterAlt(_localctx, 2);
 				{
 				setState(128);
@@ -956,7 +956,7 @@ public class WACCParser extends Parser {
 				}
 				break;
 			case NEWPAIR:
-				_localctx = new RHSNewPairContext(_localctx);
+				_localctx = new AssignRHSNewPairContext(_localctx);
 				enterOuterAlt(_localctx, 3);
 				{
 				setState(129);
@@ -975,7 +975,7 @@ public class WACCParser extends Parser {
 				break;
 			case FST:
 			case SND:
-				_localctx = new RHSPairElemContext(_localctx);
+				_localctx = new AssignRHSPairElemContext(_localctx);
 				enterOuterAlt(_localctx, 4);
 				{
 				setState(136);
@@ -983,7 +983,7 @@ public class WACCParser extends Parser {
 				}
 				break;
 			case CALL:
-				_localctx = new RHSCallContext(_localctx);
+				_localctx = new AssignRHSCallContext(_localctx);
 				enterOuterAlt(_localctx, 5);
 				{
 				setState(137);

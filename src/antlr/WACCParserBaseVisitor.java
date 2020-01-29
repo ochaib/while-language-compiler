@@ -136,56 +136,56 @@ public class WACCParserBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitLHSIdent(WACCParser.LHSIdentContext ctx) { return visitChildren(ctx); }
+	@Override public T visitAssignLHSIdent(WACCParser.AssignLHSIdentContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitLHSArrayElem(WACCParser.LHSArrayElemContext ctx) { return visitChildren(ctx); }
+	@Override public T visitAssignLHSArrayElem(WACCParser.AssignLHSArrayElemContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitLHSPairElem(WACCParser.LHSPairElemContext ctx) { return visitChildren(ctx); }
+	@Override public T visitAssignLHSPairElem(WACCParser.AssignLHSPairElemContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitRHSExpr(WACCParser.RHSExprContext ctx) { return visitChildren(ctx); }
+	@Override public T visitAssignRHSExpr(WACCParser.AssignRHSExprContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitRHSLiteral(WACCParser.RHSLiteralContext ctx) { return visitChildren(ctx); }
+	@Override public T visitAssignRHSLiteral(WACCParser.AssignRHSLiteralContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitRHSNewPair(WACCParser.RHSNewPairContext ctx) { return visitChildren(ctx); }
+	@Override public T visitAssignRHSNewPair(WACCParser.AssignRHSNewPairContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitRHSPairElem(WACCParser.RHSPairElemContext ctx) { return visitChildren(ctx); }
+	@Override public T visitAssignRHSPairElem(WACCParser.AssignRHSPairElemContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitRHSCall(WACCParser.RHSCallContext ctx) { return visitChildren(ctx); }
+	@Override public T visitAssignRHSCall(WACCParser.AssignRHSCallContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *

@@ -27,15 +27,15 @@ stat: SKIP_                                 #Skip
       | BEGIN stat END                      #Begin
       | stat SEMICOLON stat                 #Sequence;
 
-assign_lhs: ident                           #LHSIdent
-          | array_elem                      #LHSArrayElem
-          | pair_elem                       #LHSPairElem;
+assign_lhs: IDENT                           #AssignLHSIdent
+          | array_elem                      #AssignLHSArrayElem
+          | pair_elem                       #AssignLHSPairElem;
 
-assign_rhs: expr                            #RHSExpr
-          | array_liter                     #RHSLiteral
-          | NEWPAIR OPEN_PARENTHESES expr COMMA expr CLOSE_PARENTHESES    #RHSNewPair
-          | pair_elem                       #RHSPairElem
-          | CALL IDENT OPEN_PARENTHESES arg_list? CLOSE_PARENTHESES       #RHSCall;
+assign_rhs: expr                            #AssignRHSExpr
+          | array_liter                     #AssignRHSLiteral
+          | NEWPAIR OPEN_PARENTHESES expr COMMA expr CLOSE_PARENTHESES    #AssignRHSNewPair
+          | pair_elem                       #AssignRHSPairElem
+          | CALL IDENT OPEN_PARENTHESES arg_list? CLOSE_PARENTHESES       #AssignRHSCall;
 
 arg_list: expr (COMMA expr)* ;
 
