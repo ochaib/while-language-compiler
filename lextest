@@ -2,8 +2,18 @@
 
 # Run ./lextest to test all the test cases. Use the -log option to log the failed tests
 
+# formatting tools
+black="\033[30m"
+red="\033[31m"
+green="\033[32m"
+yellow="\033[93m"
+blue="\033[36m"
+purple="\033[95m"
+invert="\033[7m"
+normal="\033[0m"
+
 if [[ ! -d "src/main/java/antlr" ]]; then
-  echo "Need to run \"make antlrBuild\" to test lexer... Exiting..."
+  echo -e "${invert}${red}Need to run ${purple}\"make\"${red} to test lexer...${normal} Exiting..."
   exit 1;
 fi
 
@@ -12,16 +22,20 @@ trap "{ rm -rf test_temp; }" EXIT
 
 test ()
 {
-  echo "Testing: $1"
+  echo "----------------------------------"
+  echo -e "${invert}${blue}Testing:${normal} ${yellow}$1${normal}"
   ./grun antlr.WACC program "$1" > test_temp/output 2>&1;
   if [[ ($2 == "-valid" ) && ("$(cat test_temp/output)" != "running the ANTLR TestRig grammar tool") ]]; then
-    echo "TEST FAILURE:"
-    echo "Test had the following output: $(cat test_temp/output)"
+    echo -e "${invert}${red}TEST FAILURE:${normal}\n"
+    echo -e "${red}Test had the following output:\n${yellow}$(cat test_temp/output)${normal}"
     echo "$1" >> test_temp/failedfilestemp
   elif [[ ($2 == "-invalid") && ("$(cat test_temp/output)" == "running the ANTLR TestRig grammar tool") ]]; then
-    echo "TEST UNEXPECTEDLY SUCCEEDED: $1"
+    echo -e "${invert}${red}TEST UNEXPECTEDLY SUCCEEDED:${normal} ${yellow}$1${normal}"
     echo "$1" >> test_temp/failedfilestemp
+  else
+    echo -e "${green}Test passed.${normal}"
   fi
+  echo "----------------------------------"
 }
 
 export -f test
@@ -32,15 +46,18 @@ find testcases/invalid -type f -iname '*.wacc' -exec bash -c 'test "$1" -invalid
 unset test
 
 if [ ! -f test_temp/failedfilestemp ] ; then
-  echo "All tests passed..."
+  echo "----------------------------------"
+  echo "----------------------------------"
+  echo -e "${invert}${green}All tests passed...${normal}"
   if [ "$1" == "-log" ]; then
     mkdir -p test_logs
     echo "ALL tests passed..." >> "test_logs/testfailures_$(date +%F_%R)"
   fi
   exit 0
 else
-  echo "The following files failed the tests: "
+  echo -e "${invert}${red}The following files failed the tests:${normal}${yellow}"
   cat test_temp/failedfilestemp
+  echo -e "${normal}----------------------------------"
   if [ "$1" == "-log" ]; then
     mkdir -p test_logs
     cp test_temp/failedfilestemp "test_logs/testfailures_$(date +%F_%R)"
