@@ -1,19 +1,32 @@
 stages:
   - build
   - test
-#   - deploy
-  
+
+# building the docker in docker, docker-ception!!
+# this is so we start on a clean environment when we build docker
+# SBT does wonky business with docker when building in an existing env
+image: docker:19.03.1
+
+services:
+  - docker:19.03.1-dind
+
+variables:
+  # TODO: should use tls
+  DOCKER_TLS_CERTDIR: ""
+  CONTAINER_TEST_IMAGE: gitlab.doc.ic.ac.uk:4567/lab1920_spring/wacc_11:wacc-frontend
+
+# TODO: change these to environmental vars we shouldnt be exposing the deploy token
+before_script:
+  - docker login -u $CI_REGISTRY_USER  -p $CI_REGISTRY_PASSWORD gitlab.doc.ic.ac.uk:4567
+
 build:
   stage: build
   script:
-    - export PATH=$PATH:/usr/local/bin
-    - sh build
+    - docker build --pull -t $CONTAINER_TEST_IMAGE .
+    - docker push $CONTAINER_TEST_IMAGE
 
 test:
   stage: test
   script:
-    - ./test
-
-# deploy:
-#   stage: deploy
-#   script:
+    - docker pull $CONTAINER_TEST_IMAGE
+    - docker run $CONTAINER_TEST_IMAGE
