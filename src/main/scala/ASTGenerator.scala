@@ -12,9 +12,9 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     //    0     1-n     n+1    n+2
     val childCount = ctx.getChildCount
     val functions: IndexedSeq[FuncNode] = IndexedSeq[FuncNode]()
-    val stat: StatNode = visit(ctx.getChild(childCount - 1)).asInstanceOf[StatNode]
+    val stat: StatNode = visit(ctx.getChild(childCount - 2)).asInstanceOf[StatNode]
 
-    for (i <- 1 to childCount - 2) {
+    for (i <- 1 to childCount - 3) {
       functions :+ visit(ctx.getChild(i)).asInstanceOf[FuncNode]
     }
 
@@ -227,7 +227,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
   }
 
   override def visitPair_elem(ctx: WACCParser.Pair_elemContext): ASTNode = {
-    
+
   }
 
   override def visitPairFst(ctx: WACCParser.PairFstContext): ASTNode = {
