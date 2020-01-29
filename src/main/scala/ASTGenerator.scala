@@ -417,10 +417,8 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
   }
 
   override def visitUnary_oper(ctx: WACCParser.Unary_operContext): ASTNode = {
-    // This is not a node so it shouldn't be visited, find out how to extract
-    // information/variables from child.
     // ⟨unary-oper⟩ ⟨expr⟩
-    val unaryOperator: String = ctx.getChild(0).getText
+    val unaryOperator: Char = ctx.getChild(0).getText.charAt(0)
     val expr: ExprNode = visit(ctx.getChild(1)).asInstanceOf[ExprNode]
 
     // Now I need to figure out which unary operator it is from the context
