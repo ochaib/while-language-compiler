@@ -439,14 +439,11 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     visit(ctx.getChild(1)).asInstanceOf[ExprNode]
   }
 
-//  def visitIdent(ctx: WACCParser.IdentContext): ASTNode = {
-//    // Research how to get information from top level context because it would be
-//    // inefficient to traverse each ctx.child in order to have to construct it
-//    // again.
-//    val stringStream: String
-//
-//    new IdentNode(stringStream)
-//  }
+  override def visitIdent(ctx: WACCParser.IdentContext): ASTNode = {
+    val string: String = ctx.getText
+
+    new IdentNode(string)
+  }
 
   override def visitArray_elem(ctx: WACCParser.Array_elemContext): ASTNode = {
     // ⟨ident⟩ (‘[’ ⟨expr⟩ ‘]’)+

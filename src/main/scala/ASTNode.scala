@@ -249,8 +249,8 @@ class PairElemTypePairNode extends PairElemTypeNode {
 
 }
 
-class IdentNode extends ExprNode with AssignLHSNode {
-
+class IdentNode(val _ident: String) extends ExprNode with AssignLHSNode {
+  val ident: String = _ident
 }
 
 class ArrayElemNode(val _ident: IdentNode, val _exprNodes: IndexedSeq[ExprNode]) extends ExprNode with AssignLHSNode {
