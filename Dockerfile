@@ -27,4 +27,4 @@ COPY . .
 RUN cd /usr/app
 RUN make all
 
-ENTRYPOINT [ "lextest" ]
+ENTRYPOINT [ "/usr/app/lextest" ]
