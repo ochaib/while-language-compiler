@@ -325,9 +325,9 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
   }
 
   // I doubt one is needed for the ⟨pair-elem-type⟩ 'pair'. Surely just a string?
-  def visitPETPair(ctx: WACCParser.PETPairContext): ASTNode = {
+  override def visitPETPair(ctx: WACCParser.PETPairContext): ASTNode = {
     // 'pair'
-    //  PairNode()
+    new PairElemTypePairNode()
   }
 
 //  override def visitExpr(ctx: WACCParser.ExprContext): ASTNode = {

@@ -244,6 +244,10 @@ trait PairElemTypeNode extends ASTNode {
 
 }
 
+class PairElemTypePairNode extends PairElemTypeNode {
+
+}
+
 class IdentNode extends ExprNode with AssignLHSNode {
 
 }
