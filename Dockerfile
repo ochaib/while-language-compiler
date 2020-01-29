@@ -24,7 +24,7 @@ COPY . .
 # This will take a really long time. So when modifying this file,
 # make sure all dependencies needed to "make" come before this or
 # you may have to wait until SBT is downloaded + everything installed
+RUN cd /usr/app
 RUN make all
 
-RUN cd /usr/app
 ENTRYPOINT [ "lextest" ]
