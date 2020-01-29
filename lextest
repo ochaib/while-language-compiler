@@ -55,7 +55,7 @@ if [ ! -f test_temp/failedfilestemp ] ; then
   fi
   exit 0
 else
-  echo -e "${invert}${red}The following files failed the tests:${normal}${yellow}"
+  echo -e "${invert}${yellow}The following files failed the tests:${normal}${red}"
   cat test_temp/failedfilestemp
   echo -e "${normal}----------------------------------"
   if [ "$1" == "-log" ]; then
