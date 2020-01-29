@@ -432,15 +432,29 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
       case "chr" => new ChrNode(expr)
     }
   }
-//
-//  override def visitBinary_oper(ctx: WACCParser.Binary_operContext): ASTNode = {
-//    // ⟨expr⟩ ⟨binary-oper⟩ ⟨expr⟩
-//    val firstExpr: ExprNode = visit(ctx.getChild(0)).asInstanceOf[ExprNode]
-//    val binaryOperator: String = ctx.getChild(1).getText
-//    val secondExpr: ExprNode = visit(ctx.getChild(2)).asInstanceOf[ExprNode]
-//
-//    // Need to deduce binary operator from context and construct node.
-//  }
+
+  override def visitBinary_oper(ctx: WACCParser.Binary_operContext): ASTNode = {
+    // ⟨expr⟩ ⟨binary-oper⟩ ⟨expr⟩
+    val firstExpr: ExprNode = visit(ctx.getChild(0)).asInstanceOf[ExprNode]
+    val binaryOperator: String = ctx.getChild(1).getText
+    val secondExpr: ExprNode = visit(ctx.getChild(2)).asInstanceOf[ExprNode]
+
+    binaryOperator match {
+      case "*"  => new MultiplyNode(firstExpr, secondExpr)
+      case "/"  => new DivideNode(firstExpr, secondExpr)
+      case "%"  => new ModNode(firstExpr, secondExpr)
+      case "+"  => new PlusNode(firstExpr, secondExpr)
+      case "-"  => new MinusNode(firstExpr, secondExpr)
+      case ">"  => new GreaterThanNode(firstExpr, secondExpr)
+      case ">=" => new GreaterEqualNode(firstExpr, secondExpr)
+      case "<"  => new LessThanNode(firstExpr, secondExpr)
+      case "<=" => new LessEqualNode(firstExpr, secondExpr)
+      case "==" => new EqualToNode(firstExpr, secondExpr)
+      case "!=" => new NotEqualNode(firstExpr, secondExpr)
+      case "&&" => new LogicalAndNode(firstExpr, secondExpr)
+      case "||" => new LogicalOrNode(firstExpr, secondExpr)
+    }
+  }
 
   override def visitBracketExpr(ctx: WACCParser.BracketExprContext): ASTNode = {
     // ‘(’ ⟨expr⟩ ‘)’

@@ -274,55 +274,81 @@ trait BinaryOperationNode extends ExprNode {
 }
 
 class MultiplyNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
+  override def argOne: ExprNode = _argOne
 
+  override def argTwo: ExprNode = _argTwo
 }
 
 class DivideNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
+  override def argOne: ExprNode = _argOne
 
+  override def argTwo: ExprNode = _argTwo
 }
 
 class ModNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
+  override def argOne: ExprNode = _argOne
 
+  override def argTwo: ExprNode = _argTwo
 }
 
 class PlusNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
+  override def argOne: ExprNode = _argOne
 
+  override def argTwo: ExprNode = _argTwo
 }
 
 class MinusNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
+  override def argOne: ExprNode = _argOne
 
+  override def argTwo: ExprNode = _argTwo
 }
 
 class GreaterThanNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
+  override def argOne: ExprNode = _argOne
 
+  override def argTwo: ExprNode = _argTwo
 }
 
 class GreaterEqualNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
+  override def argOne: ExprNode = _argOne
 
+  override def argTwo: ExprNode = _argTwo
 }
 
 class LessThanNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
+  override def argOne: ExprNode = _argOne
 
+  override def argTwo: ExprNode = _argTwo
 }
 
 class LessEqualNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
+  override def argOne: ExprNode = _argOne
 
+  override def argTwo: ExprNode = _argTwo
 }
 
-class DoubleEqualNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
+class EqualToNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
+  override def argOne: ExprNode = _argOne
 
+  override def argTwo: ExprNode = _argTwo
 }
 
 class NotEqualNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
+  override def argOne: ExprNode = _argOne
 
+  override def argTwo: ExprNode = _argTwo
 }
 
 class LogicalAndNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
+  override def argOne: ExprNode = _argOne
 
+  override def argTwo: ExprNode = _argTwo
 }
 
 class LogicalOrNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
+  override def argOne: ExprNode = _argOne
 
+  override def argTwo: ExprNode = _argTwo
 }
 
 trait UnaryOperationNode extends ExprNode {
