@@ -416,14 +416,22 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     visit(ctx.getChild(0)).asInstanceOf[ArrayElemNode]
   }
 
-//  override def visitUnary_oper(ctx: WACCParser.Unary_operContext): ASTNode = {
-//    // ⟨unary-oper⟩ ⟨expr⟩
-//    val unaryOperator: Char = ctx.getChild(0).getText.charAt(0)
-//    val expr: ExprNode = visit(ctx.getChild(1)).asInstanceOf[ExprNode]
-//
-//    // Now I need to figure out which unary operator it is from the context
-//    // then construct the relevant node.
-//  }
+  override def visitUnary_oper(ctx: WACCParser.Unary_operContext): ASTNode = {
+    // ⟨unary-oper⟩ ⟨expr⟩
+    val unaryOperator: String = ctx.getChild(0).getText
+    val expr: ExprNode = visit(ctx.getChild(1)).asInstanceOf[ExprNode]
+
+    // Now I need to figure out which unary operator it is from the context
+    // then construct the relevant node.
+
+    unaryOperator match {
+      case "!"   => new LogicalNotNode(expr)
+      case "-"   => new NegateNode(expr)
+      case "len" => new LenNode(expr)
+      case "ord" => new OrdNode(expr)
+      case "chr" => new ChrNode(expr)
+    }
+  }
 //
 //  override def visitBinary_oper(ctx: WACCParser.Binary_operContext): ASTNode = {
 //    // ⟨expr⟩ ⟨binary-oper⟩ ⟨expr⟩
