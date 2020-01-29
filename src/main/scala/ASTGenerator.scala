@@ -14,7 +14,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     val functions: IndexedSeq[FuncNode] = IndexedSeq[FuncNode]()
     val stat: StatNode = visit(ctx.getChild(childCount - 2)).asInstanceOf[StatNode]
 
-    for (i <- 1 to childCount - 3) {
+    for (i <- 1 to childCount - 2) {
       functions :+ visit(ctx.getChild(i)).asInstanceOf[FuncNode]
     }
 
@@ -207,12 +207,16 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
   }
 
   override def visitAssignRHSCall(ctx: WACCParser.AssignRHSCallContext): ASTNode = {
-    // ‘call’ ⟨ident ⟩ ‘(’ ⟨arg-list ⟩? ‘)’
+    // ‘call’ ⟨ident⟩ ‘(’ ⟨arg-list⟩? ‘)’
     val ident: IdentNode = visit(ctx.getChild(1)).asInstanceOf[IdentNode]
     // Have to make this optional.
-    val argList: ArgListNode = visit(ctx.getChild(3)).asInstanceOf[ArgListNode]
-
-    new CallNode(ident, argList)
+    // Can tell if arglist is present by number of children present.
+    if (ctx.getChildCount() == 5) {
+      val argList: ArgListNode = visit(ctx.getChild(3)).asInstanceOf[ArgListNode]
+      new CallNode(ident, argList)
+    } else {
+      new CallNode(ident, None.asInstanceOf[ArgListNode])
+    }
   }
   
   override def visitArg_list(ctx: WACCParser.Arg_listContext): ASTNode = {
