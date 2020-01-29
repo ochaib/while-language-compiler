@@ -43,7 +43,7 @@ pair_elem: FST expr                         #PairFst
          | SND expr                         #PairSnd;
 
 type: base_type                             #TypeBase_type
-    | array_type                            #TypeArray_type
+    | type OPEN_BRACKET CLOSE_BRACKET       #TypeArray_type
     | pair_type                             #TypePair_type;
 
 base_type: INT                              #IntBase_type
@@ -51,7 +51,6 @@ base_type: INT                              #IntBase_type
          | CHAR                             #CharBase_type
          | STRING                           #StringBase_type;
 
-// The following sets of rules are mutually left-recursive?
 array_type: type OPEN_BRACKET CLOSE_BRACKET ;
 
 pair_type: PAIR OPEN_PARENTHESES pair_elem_type COMMA pair_elem_type CLOSE_PARENTHESES ;
