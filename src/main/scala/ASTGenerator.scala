@@ -41,8 +41,11 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     val paramList: IndexedSeq[ParamNode] = IndexedSeq[ParamNode]()
 
     // Hope this is how you do it.
-    for (i <- 0 to childCount - 3) {
-      paramList :+ visit(ctx.getChild(i)).asInstanceOf[ParamNode]
+    // Now takes into account the comma.
+    for (i <- 0 to childCount - 1) {
+      if (!ctx.getChild(i).getText.charAt(0).equals(',')) {
+        paramList :+ visit(ctx.getChild(i)).asInstanceOf[ParamNode]
+      }
     }
 
     new ParamListNode(paramList)
