@@ -172,30 +172,31 @@ class ExprNode extends AssignRHSNode {
 
 }
 
-class IntLiteralNode(val _value: Int) extends ExprNode {
+class Int_literNode(val _intSign: Char, val _digits: IndexedSeq[Int]) extends ExprNode {
 
-  val value: Int = _value
+  val intSign: Char = _intSign
+  val digits: IndexedSeq[Int] = _digits
 
 }
 
-class BoolLiteralNode(val _value: Boolean) extends ExprNode {
+class Bool_literNode(val _value: Boolean) extends ExprNode {
 
   val value: Boolean = _value
 }
 
-class CharLiteralNode(val _value: Char) extends ExprNode {
+class Char_literNode(val _value: Char) extends ExprNode {
 
   val value: Char = _value
 
 }
 
-class StringLiteralNode(val _value: String) extends ExprNode {
+class Str_literNode(val _characters: IndexedSeq[Char]) extends ExprNode {
 
-  val value: String = _value
+  val characters: IndexedSeq[Char] = _characters
 
 }
 
-class PairLiteralNode extends ExprNode {
+class Pair_literNode extends ExprNode {
 
 }
 

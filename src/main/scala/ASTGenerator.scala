@@ -336,56 +336,60 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
   override def visitExprIntLiter(ctx: WACCParser.ExprIntLiterContext): ASTNode = {
     // ⟨int-liter⟩
-    visit(ctx.getChild(0)).asInstanceOf[IntLiteralNode]
+    visit(ctx.getChild(0)).asInstanceOf[Int_literNode]
   }
 
-  def visitIntLiteral(ctx: WACCParser.IntLiteralContext): ASTNode = {
+  override def visitInt_liter(ctx: WACCParser.Int_literContext): ASTNode = {
     // ⟨int-sign⟩? ⟨digit⟩+
-    // Need to create node for sign, needs to be optional.
-    val intSign: Char
     val childCount = ctx.getChildCount
+    var intSign: Char = None.asInstanceOf[Char]
+    // Need to create node for sign, needs to be optional.
+    if (ctx.getChildCount() == 2) {
+      intSign = ctx.getChild(0).getText.charAt(0)
+    }
+
     // Need to create list of digitNodes, or just chars...
 //    val digits: IndexedSeq[DigitNode] = IndexedSeq[DigitNode]()
-    val digits: IndexedSeq[Char] = IndexedSeq[Char]()
+    val digits: IndexedSeq[Int] = IndexedSeq[Int]()
 
 
     for (i <- 1 to childCount - 1) {
       digits :+ visit(ctx.getChild(i))
     }
 
-    new IntLiteralNode(intSign, digits)
+    new Int_literNode(intSign, digits)
   }
 
   override def visitExprBoolLiter(ctx: WACCParser.ExprBoolLiterContext): ASTNode = {
     // ⟨bool-liter⟩
-    visit(ctx.getChild(0)).asInstanceOf[BoolLiteralNode]
+    visit(ctx.getChild(0)).asInstanceOf[Bool_literNode]
   }
 
-  def visitBoolLiteral(ctx: WACCParser.BoolLiteralContext): ASTNode = {
+  override def visitBool_liter(ctx: WACCParser.Bool_literContext): ASTNode = {
     // ‘true’ | ‘false’
-    val boolValue: String = ctx.getChild(0).toBoolean
+    val boolValue: Boolean = ctx.getChild(0).getText.toBoolean
 
-    new BoolLiteralNode(boolValue)
+    new Bool_literNode(boolValue)
   }
 
   override def visitExprCharLiter(ctx: WACCParser.ExprCharLiterContext): ASTNode = {
     // ⟨char-liter⟩
-    visit(ctx.getChild(0)).asInstanceOf[CharLiteralNode]
+    visit(ctx.getChild(0)).asInstanceOf[Char_literNode]
   }
 
-  def visitCharLiteral(ctx: WACCParser.CharLiteralContext): ASTNode = {
+  override def visitChar_liter(ctx: WACCParser.Char_literContext): ASTNode = {
     // ‘’’ ⟨character ⟩ ‘’’
-    val charValue: CharLiteralNode = ctx.getChild(1).charAt(0)
+    val charValue: Char = ctx.getChild(1).getText.charAt(0)
 
-    new CharLiteralNode(charValue)
+    new Char_literNode(charValue)
   }
 
   override def visitExprStringLiter(ctx: WACCParser.ExprStringLiterContext): ASTNode = {
     // ⟨string-liter⟩
-    visit(ctx.getChild(0)).asInstanceOf[StringLiteralNode]
+    visit(ctx.getChild(0)).asInstanceOf[Str_literNode]
   }
 
-  def visitStringLiteral(ctx: WACCParser.StringLiteralContext): ASTNode = {
+  override def visitStr_liter(ctx: WACCParser.Str_literContext): ASTNode = {
     // ‘"’ ⟨character⟩* ‘"’
     val childCount = ctx.getChildCount
     val charList: IndexedSeq[Char] = IndexedSeq[Char]()
@@ -394,12 +398,12 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
       charList :+ visit(ctx.getChild(i))
     }
 
-    new StringLiteralNode(charList)
+    new Str_literNode(charList)
   }
 
   override def visitExprPairLiter(ctx: WACCParser.ExprPairLiterContext): ASTNode = {
     // ⟨pair-liter⟩
-    visit(ctx.getChild(0)).asInstanceOf[PairLiteralNode]
+    visit(ctx.getChild(0)).asInstanceOf[Pair_literNode]
   }
 
   override def visitExprIdent(ctx: WACCParser.ExprIdentContext): ASTNode = {
