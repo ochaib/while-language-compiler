@@ -59,9 +59,9 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     new ParamNode(paramType, ident)
   }
 
-  override def visitStat(ctx: WACCParser.StatContext): ASTNode = {
-
-  }
+//  override def visitStat(ctx: WACCParser.StatContext): ASTNode = {
+//
+//  }
 
   // Individual components of stat that must be visited.
   override def visitSkip(ctx: WACCParser.SkipContext): ASTNode = {
@@ -164,13 +164,13 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
   }
 
   // Need to traverse each possible option of assign-lhs
-  override def visitAssign_lhs(ctx: WACCParser.Assign_lhsContext): ASTNode = {
-
-  }
+//  override def visitAssign_lhs(ctx: WACCParser.Assign_lhsContext): ASTNode = {
+//
+//  }
 
   override def visitAssignLHSIdent(ctx: WACCParser.AssignLHSIdentContext): ASTNode = {
-    val LHSIdent: IdentNode = visit(ctx.getChild(0)).asInstanceOf[IdentNode]
-    // Now what?
+    visit(ctx.getChild(0)).asInstanceOf[IdentNode]
+    // This works now
   }
 
   override def visitAssignLHSArrayElem(ctx: WACCParser.AssignLHSArrayElemContext): ASTNode = {
@@ -181,9 +181,9 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     val LHSPairElem: PairElemNode = visit(ctx.getChild(0)).asInstanceOf[PairElemNode]
   }
 
-  override def visitAssign_rhs(ctx: WACCParser.Assign_rhsContext): ASTNode = {
-
-  }
+//  override def visitAssign_rhs(ctx: WACCParser.Assign_rhsContext): ASTNode = {
+//
+//  }
 
   override def visitAssignRHSExpr(ctx: WACCParser.AssignRHSExprContext): ASTNode = {
     val RHSExpr: ExprNode = visit(ctx.getChild(0)).asInstanceOf[ExprNode]
@@ -229,9 +229,9 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     new ArgListNode(exprChildren)
   }
 
-  override def visitPair_elem(ctx: WACCParser.Pair_elemContext): ASTNode = {
-
-  }
+//  override def visitPair_elem(ctx: WACCParser.Pair_elemContext): ASTNode = {
+//
+//  }
 
   override def visitPairFst(ctx: WACCParser.PairFstContext): ASTNode = {
     // ‘fst’ ⟨expr ⟩
@@ -247,9 +247,9 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     new SndNode(pairSndExpr)
   }
 
-  override def visitType(ctx: WACCParser.TypeContext): ASTNode = {
-    // ⟨type⟩
-  }
+//  override def visitType(ctx: WACCParser.TypeContext): ASTNode = {
+//    // ⟨type⟩
+//  }
 
   override def visitTypeBase_type(ctx: WACCParser.TypeBase_typeContext): ASTNode = {
     // ⟨base-type⟩
@@ -266,9 +266,9 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     val pairType: PairTypeNode = visit(ctx.getChild(0)).asInstanceOf[PairTypeNode]
   }
 
-  override def visitBase_type(ctx: WACCParser.Base_typeContext): ASTNode = {
-
-  }
+//  override def visitBase_type(ctx: WACCParser.Base_typeContext): ASTNode = {
+//
+//  }
 
   override def visitIntBase_type(ctx: WACCParser.IntBase_typeContext): ASTNode = {
     // 'int'
@@ -306,9 +306,9 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     new PairTypeNode(fstPairElem, sndPairElem)
   }
 
-  override def visitPair_elem_type(ctx: WACCParser.Pair_elemContext): ASTNode = {
-    // ⟨pair-elem-type⟩
-  }
+//  override def visitPair_elem_type(ctx: WACCParser.Pair_elemContext): ASTNode = {
+//    // ⟨pair-elem-type⟩
+//  }
 
   override def visitPETBaseType(ctx: WACCParser.PETBaseTypeContext): ASTNode = {
     // ⟨base-type⟩
@@ -326,9 +326,9 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     //  PairNode()
   }
 
-  override def visitExpr(ctx: WACCParser.ExprContext): ASTNode = {
-
-  }
+//  override def visitExpr(ctx: WACCParser.ExprContext): ASTNode = {
+//
+//  }
 
   override def visitExprIntLiter(ctx: WACCParser.ExprIntLiterContext): ASTNode = {
     // ⟨int-liter⟩
@@ -469,11 +469,5 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
     new ArrayLiteralNode(exprList)
   }
-
-  // Need to add remaining visiting methods for nodes defined in ASTNode however the
-  // WACCParserVisitor doesn't have these methods so they shouldn't be overrides.
-  // But then where do I get their contexts from.
-
-
 
 }
