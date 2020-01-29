@@ -416,37 +416,37 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     visit(ctx.getChild(0)).asInstanceOf[ArrayElemNode]
   }
 
-  override def visitUnary_oper(ctx: WACCParser.Unary_operContext): ASTNode = {
-    // ⟨unary-oper⟩ ⟨expr⟩
-    val unaryOperator: Char = ctx.getChild(0).getText.charAt(0)
-    val expr: ExprNode = visit(ctx.getChild(1)).asInstanceOf[ExprNode]
-
-    // Now I need to figure out which unary operator it is from the context
-    // then construct the relevant node.
-  }
-
-  override def visitBinary_oper(ctx: WACCParser.Binary_operContext): ASTNode = {
-    // ⟨expr⟩ ⟨binary-oper⟩ ⟨expr⟩
-    val firstExpr: ExprNode = visit(ctx.getChild(0)).asInstanceOf[ExprNode]
-    val binaryOperator: String = ctx.getChild(1).getText
-    val secondExpr: ExprNode = visit(ctx.getChild(2)).asInstanceOf[ExprNode]
-
-    // Need to deduce binary operator from context and construct node.
-  }
+//  override def visitUnary_oper(ctx: WACCParser.Unary_operContext): ASTNode = {
+//    // ⟨unary-oper⟩ ⟨expr⟩
+//    val unaryOperator: Char = ctx.getChild(0).getText.charAt(0)
+//    val expr: ExprNode = visit(ctx.getChild(1)).asInstanceOf[ExprNode]
+//
+//    // Now I need to figure out which unary operator it is from the context
+//    // then construct the relevant node.
+//  }
+//
+//  override def visitBinary_oper(ctx: WACCParser.Binary_operContext): ASTNode = {
+//    // ⟨expr⟩ ⟨binary-oper⟩ ⟨expr⟩
+//    val firstExpr: ExprNode = visit(ctx.getChild(0)).asInstanceOf[ExprNode]
+//    val binaryOperator: String = ctx.getChild(1).getText
+//    val secondExpr: ExprNode = visit(ctx.getChild(2)).asInstanceOf[ExprNode]
+//
+//    // Need to deduce binary operator from context and construct node.
+//  }
 
   override def visitBracketExpr(ctx: WACCParser.BracketExprContext): ASTNode = {
     // ‘(’ ⟨expr⟩ ‘)’
     visit(ctx.getChild(1)).asInstanceOf[ExprNode]
   }
 
-  def visitIdent(ctx: WACCParser.IdentContext): ASTNode = {
-    // Research how to get information from top level context because it would be
-    // inefficient to traverse each ctx.child in order to have to construct it
-    // again.
-    val stringStream: String
-
-    new IdentNode(stringStream)
-  }
+//  def visitIdent(ctx: WACCParser.IdentContext): ASTNode = {
+//    // Research how to get information from top level context because it would be
+//    // inefficient to traverse each ctx.child in order to have to construct it
+//    // again.
+//    val stringStream: String
+//
+//    new IdentNode(stringStream)
+//  }
 
   override def visitArray_elem(ctx: WACCParser.Array_elemContext): ASTNode = {
     // ⟨ident⟩ (‘[’ ⟨expr⟩ ‘]’)+
