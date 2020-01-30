@@ -57,9 +57,9 @@ export -f test
 
 find testcases/valid -type f -iname '*.wacc' -exec bash -c 'test "$1" -valid' bash {} \;
 
-if $no_semantic; then
+if [ $no_semantic ]; then
   find testcases/invalid/syntaxErr -type f -iname '*.wacc' -exec bash -c 'test "$1" -invalid' bash {} \;
-elif $no_syntax; then
+elif [ $no_syntax ]; then
   find testcases/invalid/semanticErr -type f -iname '*.wacc' -exec bash -c 'test "$1" -invalid' bash {} \;
 else
   find testcases/invalid -type f -iname '*.wacc' -exec bash -c 'test "$1" -invalid' bash {} \;
