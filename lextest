@@ -1,6 +1,21 @@
 #!/bin/bash
 
-# Run ./lextest to test all the test cases. Use the -log option to log the failed tests
+# Run ./lextest to test all the test cases. Use the --log option to log the failed tests
+#       Use the --nosemantic option to turn off semantic error tests
+#       Use the --nosyntax option to turn off the syntax error tests
+
+log=false
+no_syntax=false
+no_semantic=false
+
+while [ $# -gt 0 ] ; do
+  case $1 in
+    --log) log=true ;;
+    --nosemantic) no_semantic=true ;;
+    --nosyntax) no_syntax=true ;;
+  esac
+  shift
+done
 
 # formatting tools
 black="\033[30m"
@@ -41,7 +56,14 @@ test ()
 export -f test
 
 find testcases/valid -type f -iname '*.wacc' -exec bash -c 'test "$1" -valid' bash {} \;
-find testcases/invalid -type f -iname '*.wacc' -exec bash -c 'test "$1" -invalid' bash {} \;
+
+if [ $no_semantic ]; then
+  find testcases/invalid/syntaxErr -type f -iname '*.wacc' -exec bash -c 'test "$1" -invalid' bash {} \;
+elif [ $no_syntax ]; then
+  find testcases/invalid/semanticErr -type f -iname '*.wacc' -exec bash -c 'test "$1" -invalid' bash {} \;
+else
+  find testcases/invalid -type f -iname '*.wacc' -exec bash -c 'test "$1" -invalid' bash {} \;
+fi
 
 unset test
 
@@ -58,7 +80,7 @@ else
   echo -e "${invert}${yellow}The following files failed the tests:${normal}${red}"
   cat test_temp/failedfilestemp
   echo -e "${normal}----------------------------------"
-  if [ "$1" == "-log" ]; then
+  if [ $log ]; then
     mkdir -p test_logs
     cp test_temp/failedfilestemp "test_logs/testfailures_$(date +%F_%R)"
   fi
