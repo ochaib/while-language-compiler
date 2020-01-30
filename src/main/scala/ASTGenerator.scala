@@ -333,7 +333,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 //  override def visitExpr(ctx: WACCParser.ExprContext): ASTNode = {
 //
 //  }
-
+/*
   override def visitExprIntLiter(ctx: WACCParser.ExprIntLiterContext): ASTNode = {
     // ⟨int-liter⟩
     visit(ctx.getChild(0)).asInstanceOf[Int_literNode]
@@ -405,7 +405,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     // ⟨pair-liter⟩
     visit(ctx.getChild(0)).asInstanceOf[Pair_literNode]
   }
-
+*/
   override def visitExprIdent(ctx: WACCParser.ExprIdentContext): ASTNode = {
     // ⟨ident⟩
     visit(ctx.getChild(0)).asInstanceOf[IdentNode]
