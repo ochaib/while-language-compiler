@@ -59,29 +59,32 @@ pair_elem_type: base_type                   #PETBaseType
               | array_type                  #PETArrayType
               | PAIR                        #PETPair;
 
-expr: int_liter                             #ExprIntLiter
+expr:
+     OPEN_PARENTHESES expr CLOSE_PARENTHESES    #BracketExpr
+    | expr binary_oper expr                 #ExprBinaryOper
+    | unary_oper expr                       #ExprUnaryOper
+    | int_liter                             #ExprIntLiter
     | bool_liter                            #ExprBoolLiter
     | char_liter                            #ExprCharLiter
     | str_liter                             #ExprStringLiter
     | pair_liter                            #ExprPairLiter
     | ident                                 #ExprIdent
-    | array_elem                            #ExprArrayElem
-    | unary_oper expr                       #ExprUnaryOper
-    | expr binary_oper expr                 #ExprBinaryOper
-    | OPEN_PARENTHESES expr CLOSE_PARENTHESES    #BracketExpr;
+    | array_elem                            #ExprArrayElem;
 
 ident: IDENT;
 
-unary_oper: NOT | MINUS | LEN | ORD | CHR;
 
 binary_oper: MULTIPLY | DIVIDE | MODULO | PLUS | MINUS |
              GT | GTE | LT | LTE | EE | NE | AND | OR ;
+
+unary_oper: NOT | MINUS | LEN | ORD | CHR;
 
 array_elem: ident (OPEN_BRACKET expr CLOSE_BRACKET)+ ;
 
 array_liter: OPEN_BRACKET (expr (COMMA expr)*)? CLOSE_BRACKET ;
 
-int_liter: INT_LIT;
+sign: PLUS | MINUS;
+int_liter: sign? DIGIT+;
 
 bool_liter: BOOL_LIT;
 

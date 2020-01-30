@@ -80,13 +80,12 @@ OR: '||';
 
 // IDENT
 fragment UNDERSCORE: '_';
-fragment DIGIT: '0'..'9';
+DIGIT: '0'..'9';
 fragment LOWERCASE: 'a'..'z';
 fragment UPPERCASE: 'A'..'Z';
 
 // LITERALS
-SIGN: PLUS | MINUS;
-INT_LIT: SIGN? DIGIT+;
+
 PAIR_LIT: 'null';
 
 fragment TRUE: 'true';
