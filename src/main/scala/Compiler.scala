@@ -17,11 +17,14 @@ object Compiler extends App {
 
   println("Compiling: " + args(0))
   try {
+    // Build the lexer and parse out tokens
     val file : ANTLRCharStream = ANTLRCharStreams.fromFileName(args(0))
     val lexer : WACCLexer = new WACCLexer(file)
     val tokens : ANTLRTokenStream = new ANTLRTokenStream(lexer)
+    // Build a parser and fetch the program context
     val parser : WACCParser  = new WACCParser(tokens)
     val program : WACCParser.ProgramContext = parser.program()
+    // Build the AST
     val visitor : ASTGenerator = new ASTGenerator()
     val tree : ASTNode = visitor.visitProgram(program)
   }
