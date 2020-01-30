@@ -1,8 +1,13 @@
-import org.antlr.v4.runtime._
+import org.antlr.v4.runtime.{
+  CharStream => ANTLRCharStream,
+  CharStreams => ANTLRCharStreams
+}
 
 object Compiler extends App {
-  println("WACC Compiler!")
-  for(arg<-args) {
-      println(arg);
+  if (args.length == 0) {
+    println("Error: No filename provided")
+    System.exit(1)
   }
+
+  println("Compiling: " + args(0))
 }
