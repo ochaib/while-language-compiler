@@ -1,3 +1,5 @@
+package ast;
+
 import antlr.{WACCLexer, WACCParser, WACCParserBaseVisitor}
 import org.antlr.v4.runtime._
 

@@ -1,3 +1,5 @@
+package ast;
+
 // Every node necessary to generate AST. From the WACCLangSpec.
 
 class ASTNode {
