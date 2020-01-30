@@ -23,6 +23,7 @@ object Compiler extends App {
     val parser : WACCParser  = new WACCParser(tokens)
     val program : WACCParser.ProgramContext = parser.program()
     val visitor : ASTGenerator = new ASTGenerator()
+    val tree : ASTNode = visitor.visitProgram(program)
   }
   catch {
     case ioerror : IOException => error("Error: File does not exist")
