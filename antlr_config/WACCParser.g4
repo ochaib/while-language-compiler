@@ -66,16 +66,17 @@ expr: int_liter                             #ExprIntLiter
     | pair_liter                            #ExprPairLiter
     | ident                                 #ExprIdent
     | array_elem                            #ExprArrayElem
-    | unary_oper expr                       #ExprUnaryOper
     | expr binary_oper expr                 #ExprBinaryOper
+    | unary_oper expr                       #ExprUnaryOper
     | OPEN_PARENTHESES expr CLOSE_PARENTHESES    #BracketExpr;
 
 ident: IDENT;
 
-unary_oper: NOT | PLUS | MINUS | LEN | ORD | CHR;
 
 binary_oper: MULTIPLY | DIVIDE | MODULO | PLUS | MINUS |
              GT | GTE | LT | LTE | EE | NE | AND | OR ;
+
+unary_oper: NOT | PLUS | MINUS | LEN | ORD | CHR;
 
 array_elem: ident (OPEN_BRACKET expr CLOSE_BRACKET)+ ;
 
