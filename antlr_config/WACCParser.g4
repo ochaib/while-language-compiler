@@ -72,7 +72,7 @@ expr: int_liter                             #ExprIntLiter
 
 ident: IDENT;
 
-unary_oper: NOT | MINUS | LEN | ORD | CHR;
+unary_oper: NOT | PLUS | MINUS | LEN | ORD | CHR;
 
 binary_oper: MULTIPLY | DIVIDE | MODULO | PLUS | MINUS |
              GT | GTE | LT | LTE | EE | NE | AND | OR ;

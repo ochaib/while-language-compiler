@@ -85,8 +85,7 @@ fragment LOWERCASE: 'a'..'z';
 fragment UPPERCASE: 'A'..'Z';
 
 // LITERALS
-SIGN: PLUS | MINUS;
-INT_LIT: SIGN? DIGIT+;
+INT_LIT: DIGIT+;
 PAIR_LIT: 'null';
 
 fragment TRUE: 'true';
