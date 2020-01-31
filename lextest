@@ -59,17 +59,14 @@ test ()
 export -f test
 
 
-if  $test_valid  || $test_semantic || $test_syntax ; then
-  echo testing valid: $test_valid
-  if $test_valid ; then
-    find testcases/valid -type f -iname '*.wacc' -exec bash -c 'test "$1" -valid' bash {} \;
-  fi
-  if $test_semantic ; then
-    find testcases/invalid/syntaxErr -type f -iname '*.wacc' -exec bash -c 'test "$1" -invalid' bash {} \;
-  fi
-  if $test_syntax ; then
-    find testcases/invalid/semanticErr -type f -iname '*.wacc' -exec bash -c 'test "$1" -invalid' bash {} \;
-  fi
+if $test_valid ; then
+  find testcases/valid -type f -iname '*.wacc' -exec bash -c 'test "$1" -valid' bash {} \;
+fi
+if $test_semantic ; then
+  find testcases/invalid/syntaxErr -type f -iname '*.wacc' -exec bash -c 'test "$1" -invalid' bash {} \;
+fi
+if $test_syntax ; then
+  find testcases/invalid/semanticErr -type f -iname '*.wacc' -exec bash -c 'test "$1" -invalid' bash {} \;
 fi
 
 unset test
