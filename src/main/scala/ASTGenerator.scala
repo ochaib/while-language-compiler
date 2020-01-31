@@ -226,8 +226,10 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     val exprChildren: IndexedSeq[ExprNode] = IndexedSeq[ExprNode]()
 
     // Change this to account for the comma...
-    for (i <- 0 to childCount - 2) {
-      exprChildren :+ visit(ctx.getChild(i)).asInstanceOf[ExprNode]
+    for (i <- 0 until childCount) {
+      if (!ctx.getChild(i).getText.charAt(0).equals(',')) {
+        exprChildren :+ visit(ctx.getChild(i)).asInstanceOf[ExprNode]
+      }
     }
 
     new ArgListNode(exprChildren)
@@ -490,8 +492,10 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
     // To get every expr in the exprList but I don't think it works here because
     // it would be separated by commas, need to get every next expr after comma.
-    for (i <- 0 to childCount - 2) {
-      exprList :+ visit(ctx.getChild(i)).asInstanceOf[ExprNode]
+    for (i <- 1 to childCount - 2) {
+      if (!ctx.getChild(i).getText.charAt(0).equals(',')) {
+        exprList :+ visit(ctx.getChild(i)).asInstanceOf[ExprNode]
+      }
     }
 
     new ArrayLiteralNode(exprList)
