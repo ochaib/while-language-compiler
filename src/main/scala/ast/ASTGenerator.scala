@@ -16,7 +16,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     val functions: IndexedSeq[FuncNode] = IndexedSeq[FuncNode]()
     val stat: StatNode = visit(ctx.getChild(childCount - 2)).asInstanceOf[StatNode]
 
-    for (i <- 1 to childCount - 3) {
+    for (i <- 1 until childCount - 3) {
       functions :+ visit(ctx.getChild(i)).asInstanceOf[FuncNode]
     }
 
