@@ -102,7 +102,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
     new FreeNode(freeExpr)
   }
-/*
+
   override def visitReturn(ctx: WACCParser.ReturnContext): ASTNode = {
     // ‘return’ ⟨expr ⟩
     val returnExpr: ExprNode = visit(ctx.getChild(1)).asInstanceOf[ExprNode]
@@ -116,7 +116,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
     new ExitNode(exitExpr)
   }
-*/
+
   override def visitPrint(ctx: WACCParser.PrintContext): ASTNode = {
     // ‘print’ ⟨expr ⟩
     val printExpr: ExprNode = visit(ctx.getChild(1)).asInstanceOf[ExprNode]

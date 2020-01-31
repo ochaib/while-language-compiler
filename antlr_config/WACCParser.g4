@@ -7,7 +7,7 @@ options {
 // EOF indicates that the program must consume to the end of the input.
 program: BEGIN func* stat END EOF;
 
-func: type ident OPEN_PARENTHESES param_list? CLOSE_PARENTHESES IS stat? (RETURN expr | EXIT expr) END ;
+func: type ident OPEN_PARENTHESES param_list? CLOSE_PARENTHESES IS stat END ;
 
 param_list: param (COMMA param)* ;
 
@@ -18,6 +18,8 @@ stat: SKIP_                                 #Skip
       | assign_lhs EQUALS assign_rhs        #Assignment
       | READ assign_lhs                     #Read
       | FREE expr                           #Free
+      | RETURN expr                         #Return
+      | EXIT expr                           #Exit
       | PRINT expr                          #Print
       | PRINTLN expr                        #Println
       | IF expr THEN stat ELSE stat FI      #If
