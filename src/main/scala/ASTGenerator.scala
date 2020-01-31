@@ -209,14 +209,13 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
   override def visitAssignRHSCall(ctx: WACCParser.AssignRHSCallContext): AssignRHSNode = {
     // ‘call’ ⟨ident⟩ ‘(’ ⟨arg-list⟩? ‘)’
     val ident: IdentNode = visit(ctx.getChild(1)).asInstanceOf[IdentNode]
-    // Have to make this optional.
-    // Can tell if arglist is present by number of children present.
+    val argList: Option[ArgListNode] = None
+
     if (ctx.getChildCount() == 5) {
-      val argList: ArgListNode = visit(ctx.getChild(3)).asInstanceOf[ArgListNode]
-      new CallNode(ident, argList)
-    } else {
-      new CallNode(ident, None.asInstanceOf[ArgListNode])
+      val argList: Option[ArgListNode] = Some(visit(ctx.getChild(3)).asInstanceOf[ArgListNode])
     }
+
+    new CallNode(ident, argList)
   }
   
   override def visitArg_list(ctx: WACCParser.Arg_listContext): ArgListNode = {
@@ -344,10 +343,10 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
   override def visitInt_liter(ctx: WACCParser.Int_literContext): Int_literNode = {
     // ⟨int-sign⟩? ⟨digit⟩+
     val childCount = ctx.getChildCount
-    var intSign: Char = None.asInstanceOf[Char]
+    var intSign: Option[Char] = None
     // Need to create node for sign, needs to be optional.
     if (ctx.getChildCount() == 2) {
-      intSign = ctx.getChild(0).getText.charAt(0)
+      intSign = Some(ctx.getChild(0).getText.charAt(0))
     }
 
     // Need to create list of digitNodes, or just chars...
