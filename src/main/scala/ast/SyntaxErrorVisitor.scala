@@ -9,13 +9,22 @@ class SyntaxErrorVisitor {
     val functions: IndexedSeq[FuncNode] = programNode.functions
     val statNode: StatNode = programNode.stat
 
-    var accBool: Boolean = true
+//    var accBool: Boolean = true
 
-    for (f <- functions) accBool &&= functionReturnsOrExits(f.stat)
-
-    if (!(accBool && functionReturnsOrExits(statNode))) {
-      println("Syntax Error: Statement does not return or exit.")
+    if (functionReturnsOrExits(statNode)) {
+      // Instead of printing, add to syntax error log.
+      println("Syntax Error: Program statement does not return or exit.")
     }
+
+    for (f <- functions) {
+//      accBool &&= functionReturnsOrExits(f.stat)
+      if (functionReturnsOrExits(f.stat)) {
+        // Add to syntax error log.
+        println(s"Syntax Error: Function ${f.ident} does not return or exit")
+      }
+    }
+
+
   }
 
   def functionReturnsOrExits(statNode: StatNode): Boolean = {
