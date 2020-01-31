@@ -7,7 +7,7 @@ class ErrorListener extends BaseErrorListener {
   override def syntaxError(recognizer: Recognizer[_, _], offendingSymbol: AnyRef, line: Int,
                            charPositionInLine: Int, msg: String, e: RecognitionException) {
 
-     println("Syntax Error on Line " + line + ":" + charPositionInLine + " " + msg)
+    println("Syntax Error on Line " + line + ":" + charPositionInLine + " " + msg)
   }
 
 }
