@@ -139,11 +139,11 @@ class NewPairNode(val _fstElem: ExprNode, val _sndElem: ExprNode) extends Assign
 
 }
 
-class CallNode(val _ident: IdentNode, val _argList: ArgListNode) extends AssignRHSNode {
+class CallNode(val _ident: IdentNode, val _argList: Option[ArgListNode]) extends AssignRHSNode {
 
   val ident: IdentNode = _ident
   // How do I make this optional?
-  val argList: ArgListNode = _argList
+  val argList: Option[ArgListNode] = _argList
 
 }
 
@@ -174,9 +174,9 @@ class ExprNode extends AssignRHSNode {
 
 }
 
-class Int_literNode(val _intSign: Char, val _digits: IndexedSeq[Int]) extends ExprNode {
+class Int_literNode(val _intSign: Option[Char], val _digits: IndexedSeq[Int]) extends ExprNode {
 
-  val intSign: Char = _intSign
+  val intSign: Option[Char] = _intSign
   val digits: IndexedSeq[Int] = _digits
 
 }

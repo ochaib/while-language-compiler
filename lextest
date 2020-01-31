@@ -3,16 +3,19 @@
 # Run ./lextest to test all the test cases. Use the --log option to log the failed tests
 #       Use the --nosemantic option to turn off semantic error tests
 #       Use the --nosyntax option to turn off the syntax error tests
+#       Use the --novalid option to turn off testing for valid cases
 
 log=false
-no_syntax=false
-no_semantic=false
+test_syntax=true
+test_semantic=true
+test_valid=true
 
 while [ $# -gt 0 ] ; do
   case $1 in
     --log) log=true ;;
-    --nosemantic) no_semantic=true ;;
-    --nosyntax) no_syntax=true ;;
+    --novalid) test_valid=false ;;
+    --nosemantic) test_semantic=false ;;
+    --nosyntax) test_syntax=false ;;
   esac
   shift
 done
@@ -55,14 +58,15 @@ test ()
 
 export -f test
 
-find testcases/valid -type f -iname '*.wacc' -exec bash -c 'test "$1" -valid' bash {} \;
 
-if [ $no_semantic ]; then
+if $test_valid ; then
+  find testcases/valid -type f -iname '*.wacc' -exec bash -c 'test "$1" -valid' bash {} \;
+fi
+if $test_semantic ; then
   find testcases/invalid/syntaxErr -type f -iname '*.wacc' -exec bash -c 'test "$1" -invalid' bash {} \;
-elif [ $no_syntax ]; then
+fi
+if $test_syntax ; then
   find testcases/invalid/semanticErr -type f -iname '*.wacc' -exec bash -c 'test "$1" -invalid' bash {} \;
-else
-  find testcases/invalid -type f -iname '*.wacc' -exec bash -c 'test "$1" -invalid' bash {} \;
 fi
 
 unset test
@@ -71,7 +75,7 @@ if [ ! -f test_temp/failedfilestemp ] ; then
   echo "----------------------------------"
   echo "----------------------------------"
   echo -e "${invert}${green}All tests passed...${normal}"
-  if [ "$1" == "-log" ]; then
+  if $log ; then
     mkdir -p test_logs
     echo "ALL tests passed..." >> "test_logs/testfailures_$(date +%F_%R)"
   fi
@@ -80,9 +84,17 @@ else
   echo -e "${invert}${yellow}The following files failed the tests:${normal}${red}"
   cat test_temp/failedfilestemp
   echo -e "${normal}----------------------------------"
-  if [ $log ]; then
+  # from https://askubuntu.com/questions/454564/count-total-number-of-files-in-particular-directory-with-specific-extension
+  total=$(find testcases -mindepth 1 -type f -name "*.wacc" -exec printf x \; | wc -c)
+  failed=$(wc -l test_temp/failedfilestemp | awk '{print $1}');
+  difference="$((total - failed))"
+  percentage="$((difference * 100 / total ))"
+  echo "coverage: $percentage% ($difference / $total)"
+
+  if $log ; then
     mkdir -p test_logs
     cp test_temp/failedfilestemp "test_logs/testfailures_$(date +%F_%R)"
+    echo "coverage: $percentage% ($difference / $total)" >> "test_logs/testfailures_$(date +%F_%R)"
   fi
-  exit 1
+  exit 0
 fi
