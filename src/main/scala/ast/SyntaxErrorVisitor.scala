@@ -6,8 +6,16 @@ class SyntaxErrorVisitor {
 
   def SyntaxErrorVisitor(programNode: ProgramNode): Unit = {
 
+    val functions: IndexedSeq[FuncNode] = programNode.functions
+    val statNode: StatNode = programNode.stat
 
+    var accBool: Boolean = true
 
+    for (f <- functions) accBool &&= functionReturnsOrExits(f.stat)
+
+    if (!(accBool && functionReturnsOrExits(statNode))) {
+      println("Syntax Error: Statement does not return or exit.")
+    }
   }
 
   def functionReturnsOrExits(statNode: StatNode): Boolean = {
