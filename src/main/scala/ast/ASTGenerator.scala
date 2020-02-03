@@ -333,24 +333,14 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
   }
 
   override def visitInt_liter(ctx: WACCParser.Int_literContext): Int_literNode = {
-    // ⟨int-sign⟩? ⟨digit⟩+
     val childCount = ctx.getChildCount
-    var intSign: Option[Char] = None
-    // Need to create node for sign, needs to be optional.
-    if (ctx.getChildCount() == 2) {
-      intSign = Some(ctx.getChild(0).getText.charAt(0))
-    }
+    // negative numbers are handled by the unary oper
 
     // Need to create list of digitNodes, or just chars...
-//    val digits: IndexedSeq[DigitNode] = IndexedSeq[DigitNode]()
-    val digits: IndexedSeq[Int] = IndexedSeq[Int]()
+    // val digits: IndexedSeq[DigitNode] = IndexedSeq[DigitNode]()
+    val digits: IndexedSeq[Int] = for (i<-0 to childCount - 1) yield visit(ctx.getChild(i)).asInstanceOf[Int]
 
-
-    for (i <- 1 to childCount - 1) {
-      digits :+ visit(ctx.getChild(i))
-    }
-
-    new Int_literNode(intSign, digits)
+    new Int_literNode(digits)
   }
 
   override def visitExprBoolLiter(ctx: WACCParser.ExprBoolLiterContext): ExprNode = {
@@ -411,7 +401,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     visit(ctx.getChild(0)).asInstanceOf[ArrayElemNode]
   }
 
-  override def visitUnary_oper(ctx: WACCParser.Unary_operContext): ExprNode = {
+  override def visitExprUnaryOper(ctx: WACCParser.ExprUnaryOperContext): ExprNode = {
     // ⟨unary-oper⟩ ⟨expr⟩
     val unaryOperator: String = ctx.getChild(0).getText
     val expr: ExprNode = visit(ctx.getChild(1)).asInstanceOf[ExprNode]

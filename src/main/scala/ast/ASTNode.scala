@@ -85,42 +85,42 @@ class ReadNode(val _lhs: AssignLHSNode) extends StatNode {
 
   val lhs: AssignLHSNode = _lhs
 
-  override def toString: String = console.color("read", fg=Console.BLUE) + s"(${lhs.toString})"
+  override def toString: String = console.color("read ", fg=Console.BLUE) + lhs.toString
 }
 
 class FreeNode(val _expr: ExprNode) extends StatNode {
 
   val expr: ExprNode = _expr
 
-  override def toString: String = console.color("free", fg=Console.BLUE) + s"(${expr.toString})"
+  override def toString: String = console.color("free ", fg=Console.BLUE) + expr.toString
 }
 
 class ReturnNode(val _expr: ExprNode) extends StatNode {
 
   val expr: ExprNode = _expr
 
-  override def toString: String = console.color("return", fg=Console.BLUE) + s"(${expr.toString})"
+  override def toString: String = console.color("return ", fg=Console.BLUE) + expr.toString
 }
 
 class ExitNode(val _expr: ExprNode) extends StatNode {
 
   val expr: ExprNode = _expr
 
-  override def toString: String = console.color("exit", fg=Console.BLUE) + s"(${expr.toString})"
+  override def toString: String = console.color("exit ", fg=Console.BLUE) + expr.toString
 }
 
 class PrintNode(val _expr: ExprNode) extends StatNode {
 
   val expr: ExprNode = _expr
 
-  override def toString: String = console.color("print", fg=Console.BLUE) + s"(${expr.toString})"
+  override def toString: String = console.color("print ", fg=Console.BLUE) + expr.toString
 }
 
 class PrintlnNode(val _expr: ExprNode) extends StatNode {
 
   val expr: ExprNode = _expr
 
-  override def toString: String = console.color("println", fg=Console.BLUE) + s"(${expr.toString})"
+  override def toString: String = console.color("println ", fg=Console.BLUE) + expr.toString
 }
 
 class IfNode(val _conditionExpr: ExprNode, val _thenStat: StatNode, val _elseStat: StatNode)
@@ -225,15 +225,11 @@ class ExprNode extends AssignRHSNode {
   override def toString: String = console.color("<EXPR>", fg=Console.RED)
 }
 
-class Int_literNode(val _intSign: Option[Char], val _digits: IndexedSeq[Int]) extends ExprNode {
+class Int_literNode(val _digits: IndexedSeq[Int]) extends ExprNode {
 
-  val intSign: Option[Char] = _intSign
   val digits: IndexedSeq[Int] = _digits
 
-  override def toString: String = intSign match {
-    case Some(s) => console.color(s"${intSign} ${digits.map(_.toString).mkString("")}", fg=Console.MAGENTA)
-    case None => console.color(digits.map(_.toString).mkString(""), fg=Console.MAGENTA)
-  }
+  override def toString: String = console.color(digits.map(_.toString).mkString(""), fg=Console.MAGENTA)
 }
 
 class Bool_literNode(val _value: Boolean) extends ExprNode {
