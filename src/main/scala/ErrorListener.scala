@@ -8,6 +8,7 @@ class ErrorListener extends BaseErrorListener {
                            charPositionInLine: Int, msg: String, e: RecognitionException) {
 
     println("Syntax Error on Line " + line + ":" + charPositionInLine + " " + msg)
+    // ErrorLog.add
   }
 
 }

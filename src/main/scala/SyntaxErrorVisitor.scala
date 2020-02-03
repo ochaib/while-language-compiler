@@ -1,4 +1,4 @@
-package main.scala.ast
+package main.scala
 
 import ast._
 
