@@ -13,13 +13,9 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     // ‘begin’ ⟨func⟩* ⟨stat⟩ ‘end’
     //    0     1-n     n+1    n+2
     val childCount = ctx.getChildCount
-    val functions: IndexedSeq[FuncNode] = IndexedSeq[FuncNode]()
-    val stat: StatNode = visit(ctx.getChild(childCount - 2)).asInstanceOf[StatNode]
+    val stat: StatNode = visit(ctx.getChild(childCount - 3)).asInstanceOf[StatNode]
 
-    for (i <- 1 until childCount - 3) {
-      functions :+ visit(ctx.getChild(i)).asInstanceOf[FuncNode]
-    }
-
+    val functions: IndexedSeq[FuncNode] = for (i<-1 until childCount - 3) yield visit(ctx.getChild(i)).asInstanceOf[FuncNode]
     // Then create program node from the two
     new ProgramNode(stat, functions)
   }
@@ -28,7 +24,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     // ⟨type⟩ ⟨ident⟩ ‘(’ ⟨param-list⟩? ‘)’ ‘is’ ⟨stat⟩ ‘end’
     val funcType: TypeNode = visit(ctx.getChild(0)).asInstanceOf[TypeNode]
     val ident: IdentNode = visit(ctx.getChild(1)).asInstanceOf[IdentNode]
-    // Needs to be optional... so either an empty list or populated.
+    // TODO: Needs to be optional... so either an empty list or populated.
     val paramList: ParamListNode = visit(ctx.getChild(3)).asInstanceOf[ParamListNode]
     val statement: StatNode = visit(ctx.getChild(6)).asInstanceOf[StatNode]
 
@@ -39,16 +35,10 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     // ⟨param⟩ ( ‘,’ ⟨param⟩ )*
     // Multiple params... a param list
     val childCount = ctx.getChildCount
-    // Apparently IndexedSeq is much better than an array so I'll use it instead
-    val paramList: IndexedSeq[ParamNode] = IndexedSeq[ParamNode]()
 
-    // Hope this is how you do it.
-    // Now takes into account the comma.
-    for (i <- 0 until childCount) {
-      if (!ctx.getChild(i).getText.charAt(0).equals(',')) {
-        paramList :+ visit(ctx.getChild(i)).asInstanceOf[ParamNode]
-      }
-    }
+    val paramList: IndexedSeq[ParamNode] =
+      for (i <- 0 until childCount; if ctx.getChild(i).getText.charAt(0).equals(',')) yield
+        visit(ctx.getChild(i)).asInstanceOf[ParamNode]
 
     new ParamListNode(paramList)
   }

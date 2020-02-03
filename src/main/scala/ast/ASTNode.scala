@@ -16,9 +16,13 @@ class ProgramNode(val _stat: StatNode, val _functions: IndexedSeq[FuncNode]) ext
   val stat: StatNode = _stat
 
   override def toString: String = {
-    val funcs : String = functions.map(_.toString).mkString("\n")
-    if (stat != null) s"begin\n$funcs\n${stat.toString}\nend"
-    else s"begin\n$funcs\nend"
+    val funcs : String = functions.map(_.toString).mkString("\n  ")
+    val begin: String = console.color("begin", fg=Console.BLUE)
+    val end: String = console.color("end", fg=Console.BLUE)
+    if (stat != null)
+      s"$begin\n$funcs\n${stat.toString}\n$end"
+    else
+      s"$begin\n$funcs\n$end"
   }
 }
 
@@ -30,7 +34,11 @@ class FuncNode(val _funcType: TypeNode, val _ident: IdentNode, val _paramList: P
   val paramList: ParamListNode = _paramList
   val stat: StatNode = _stat
 
-  override def toString: String = s"${funcType.toString} ${ident.toString} (${paramList.toString}) {\n${stat.toString}\n}"
+  override def toString: String = {
+    val params: String = if (paramList != null) paramList.toString else ""
+    val stats: String = if (stat != null) stat.toString else ""
+    s"${funcType.toString} ${ident.toString} (${params}) is\n${stats}\nend"
+  }
 }
 
 class ParamListNode(val _paramList: IndexedSeq[ParamNode]) extends ASTNode {
@@ -143,7 +151,11 @@ class BeginNode(val _stat: StatNode) extends StatNode {
 
   val stat: StatNode = _stat
 
-  override def toString: String = console.color("begin", fg=Console.BLUE)
+  override def toString: String = {
+    val begin: String = console.color("begin", fg=Console.BLUE)
+    val end: String = console.color("end", fg=Console.BLUE)
+    s"$begin\n${stat.toString}\n$end"
+  }
 }
 
 class SequenceNode(val _statOne: StatNode, val _statTwo: StatNode) extends StatNode {
