@@ -24,12 +24,11 @@ class SyntaxErrorVisitor {
       }
     }
 
-
   }
 
   def functionReturnsOrExits(statNode: StatNode): Boolean = {
     statNode match {
-      case returnNode: ReturnNode | exitNode: ExitNode =>
+      case ReturnNode(_) | ExitNode(_) =>
         true
       case ifNode: IfNode =>
         functionReturnsOrExits(ifNode.thenStat) && functionReturnsOrExits(ifNode.elseStat)
@@ -42,6 +41,10 @@ class SyntaxErrorVisitor {
       case _ =>
         false
     }
+  }
+
+  def intLiterOverflowCheck(intLiter: Int_literNode): Boolean = {
+    intLiter.toString.toInt > Int.MaxValue
   }
 
 }
