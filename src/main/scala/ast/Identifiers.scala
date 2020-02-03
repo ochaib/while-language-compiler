@@ -1,3 +1,5 @@
+package ast
+
 class IDENTIFIER {}
 
 class TYPE extends IDENTIFIER {}
@@ -24,7 +26,7 @@ class FUNCTION(returnType: TYPE) extends IDENTIFIER {
   var this.returnType: TYPE = returnType
 }
 
-class BASE_FUNCTION extends IDENTIFIER {}
+// class BASE_FUNCTION extends ast.IDENTIFIER {}
 
 class PARAM(_type:TYPE) extends IDENTIFIER {
   var this._type: TYPE = _type

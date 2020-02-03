@@ -2,8 +2,12 @@ package ast;
 
 // Every node necessary to generate AST. From the WACCLangSpec.
 
-class ASTNode {
+abstract class ASTNode {
 
+}
+
+trait Checkable {
+  def check(TopST:SymbolTable, ST: SymbolTable): Unit
 }
 
 class ProgramNode(val _stat: StatNode, val _functions: IndexedSeq[FuncNode]) extends ASTNode {
@@ -16,13 +20,14 @@ class ProgramNode(val _stat: StatNode, val _functions: IndexedSeq[FuncNode]) ext
 }
 
 class FuncNode(val _funcType: TypeNode, val _ident: IdentNode, val _paramList: ParamListNode,
-               val _stat: StatNode) extends ASTNode {
+               val _stat: StatNode) extends ASTNode with Checkable {
 
   val funcType: TypeNode = _funcType
   val ident: IdentNode = _ident
   val paramList: ParamListNode = _paramList
   val stat: StatNode = _stat
 
+  override def check(TopST: SymbolTable, ST: SymbolTable): Unit = ???
 }
 
 class ParamListNode(val _paramList: IndexedSeq[ParamNode]) extends ASTNode {
@@ -42,19 +47,30 @@ class SkipNode extends StatNode {
 
 }
 
-class DeclarationNode(val _type: TypeNode, val _ident: IdentNode, val _rhs: AssignRHSNode) extends StatNode {
-
-  val typeNode: TypeNode = _type
-  val ident: IdentNode = _ident
-  val rhs: AssignRHSNode = _rhs
-
+class DeclarationNode(val _type: TypeNode, val _ident: IdentNode, val _rhs: AssignRHSNode)
+  extends StatNode with Checkable {
+  override def check(TopST:SymbolTable, ST: SymbolTable): Unit = {
+    var T = ST.lookupAll(_type.toString)
+    val V = ST.lookup(_ident.toString)
+    // WACC language grammar does not account for user-generated types or classes
+    if (T.isEmpty){
+      val typeIdentifier: TYPE = _type.getType
+      TopST.add(T.toString, typeIdentifier)
+      ST.add(T.toString, new VARIABLE(typeIdentifier))
+    } else if (! T.get.isInstanceOf[TYPE]) {
+      throw new TypeException(_type.toString + " is not a type");
+    } else if (V.isDefined) {
+      ST.add(_ident.toString, new VARIABLE(T.get.asInstanceOf[TYPE]))
+    }
+  }
 }
 
-class AssignmentNode(val _lhs: AssignLHSNode, val _rhs: AssignRHSNode) extends StatNode {
+class AssignmentNode(val _lhs: AssignLHSNode, val _rhs: AssignRHSNode) extends StatNode with Checkable{
 
   val lhs: AssignLHSNode = _lhs
   val rhs: AssignRHSNode = _rhs
 
+  override def check(TopST: SymbolTable, ST: SymbolTable): Unit = ???
 }
 
 class ReadNode(val _lhs: AssignLHSNode) extends StatNode {
@@ -170,7 +186,7 @@ class SndNode(val _expr: ExprNode) extends PairElemNode {
 
 }
 
-class ExprNode extends AssignRHSNode {
+abstract class ExprNode extends AssignRHSNode with Checkable {
 
 }
 
@@ -179,61 +195,77 @@ class Int_literNode(val _intSign: Option[Char], val _digits: IndexedSeq[Int]) ex
   val intSign: Option[Char] = _intSign
   val digits: IndexedSeq[Int] = _digits
 
+  override def check(TopST: SymbolTable, ST: SymbolTable): Unit = ???
 }
 
 class Bool_literNode(val _value: Boolean) extends ExprNode {
 
   val value: Boolean = _value
+
+  override def check(TopST: SymbolTable, ST: SymbolTable): Unit = ???
 }
 
 class Char_literNode(val _value: Char) extends ExprNode {
 
   val value: Char = _value
 
+  override def check(TopST: SymbolTable, ST: SymbolTable): Unit = ???
 }
 
 class Str_literNode(val _characters: IndexedSeq[Char]) extends ExprNode {
 
   val characters: IndexedSeq[Char] = _characters
 
+  override def check(TopST: SymbolTable, ST: SymbolTable): Unit = ???
 }
 
 class Pair_literNode extends ExprNode {
-
+  override def check(TopST: SymbolTable, ST: SymbolTable): Unit = ???
 }
 
 class ParenExprNode extends ExprNode {
-
+  override def check(TopST: SymbolTable, ST: SymbolTable): Unit = ???
 }
 
-class TypeNode extends ASTNode {
-
+abstract class TypeNode extends ASTNode {
+  def getType: TYPE
+  def toKey: String
+  override def toString: String = toKey
 }
 
-class BaseTypeNode extends TypeNode with PairElemTypeNode {
+abstract class BaseTypeNode extends TypeNode with PairElemTypeNode {
 
 }
 
 class IntTypeNode extends BaseTypeNode {
-
+  override def getType: TYPE = new SCALAR(Int.MinValue, Int.MaxValue)
+  override def toKey(): String = "int"
 }
 
 class BoolTypeNode extends BaseTypeNode {
-
+  override def getType: TYPE = ???
+  override def toKey: String = ???
 }
 
 class CharTypeNode extends BaseTypeNode {
+  override def toKey(): String = "char"
 
+  override def getType: TYPE = ???
 }
 
 class StringTypeNode extends BaseTypeNode {
+  override def toKey(): String = "string"
 
+  override def getType: TYPE = ???
 }
 
 class ArrayTypeNode(val _typeNode: TypeNode) extends TypeNode with PairElemTypeNode {
 
   val typeNode: TypeNode = _typeNode
 
+  override def toKey(): String = _typeNode + "[]"
+
+  override def getType: TYPE = ???
 }
 
 class PairTypeNode(val _firstPairElem: PairElemTypeNode, val _secondPairElem: PairElemTypeNode) extends TypeNode {
@@ -241,18 +273,26 @@ class PairTypeNode(val _firstPairElem: PairElemTypeNode, val _secondPairElem: Pa
   val firstPairElem: PairElemTypeNode = _firstPairElem
   val secondPairElem: PairElemTypeNode = _secondPairElem
 
+  override def toKey(): String = "pair (" + _firstPairElem + "," + _secondPairElem + ")"
+
+  override def getType: TYPE = ???
 }
 
+// <pair-elem-type> in the WACCLangSpec
 trait PairElemTypeNode extends ASTNode {
-
+  override def toString: String = toKey
+  def toKey: String
 }
 
+// 'pair' in the WACCLangSpec
 class PairElemTypePairNode extends PairElemTypeNode {
-
+  override def toKey: String = "pair"
 }
 
 class IdentNode(val _ident: String) extends ExprNode with AssignLHSNode {
-  val ident: String = _ident
+  override def toString: String = _ident
+
+  override def check(TopST: SymbolTable, ST: SymbolTable): Unit = ???
 }
 
 class ArrayElemNode(val _ident: IdentNode, val _exprNodes: IndexedSeq[ExprNode]) extends ExprNode with AssignLHSNode {
@@ -260,6 +300,7 @@ class ArrayElemNode(val _ident: IdentNode, val _exprNodes: IndexedSeq[ExprNode])
   val ident: IdentNode = _ident
   val exprNodes: IndexedSeq[ExprNode] = _exprNodes
 
+  override def check(TopST: SymbolTable, ST: SymbolTable): Unit = ???
 }
 
 class ArrayLiteralNode(val _exprNodes: IndexedSeq[ExprNode]) extends AssignRHSNode {
@@ -279,78 +320,104 @@ class MultiplyNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryO
   override def argOne: ExprNode = _argOne
 
   override def argTwo: ExprNode = _argTwo
+
+  override def check(TopST: SymbolTable, ST: SymbolTable): Unit = ???
 }
 
 class DivideNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
   override def argOne: ExprNode = _argOne
 
   override def argTwo: ExprNode = _argTwo
+
+  override def check(TopST: SymbolTable, ST: SymbolTable): Unit = ???
 }
 
 class ModNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
   override def argOne: ExprNode = _argOne
 
   override def argTwo: ExprNode = _argTwo
+
+  override def check(TopST: SymbolTable, ST: SymbolTable): Unit = ???
 }
 
 class PlusNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
   override def argOne: ExprNode = _argOne
 
   override def argTwo: ExprNode = _argTwo
+
+  override def check(TopST: SymbolTable, ST: SymbolTable): Unit = ???
 }
 
 class MinusNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
   override def argOne: ExprNode = _argOne
 
   override def argTwo: ExprNode = _argTwo
+
+  override def check(TopST: SymbolTable, ST: SymbolTable): Unit = ???
 }
 
 class GreaterThanNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
   override def argOne: ExprNode = _argOne
 
   override def argTwo: ExprNode = _argTwo
+
+  override def check(TopST: SymbolTable, ST: SymbolTable): Unit = ???
 }
 
 class GreaterEqualNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
   override def argOne: ExprNode = _argOne
 
   override def argTwo: ExprNode = _argTwo
+
+  override def check(TopST: SymbolTable, ST: SymbolTable): Unit = ???
 }
 
 class LessThanNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
   override def argOne: ExprNode = _argOne
 
   override def argTwo: ExprNode = _argTwo
+
+  override def check(TopST: SymbolTable, ST: SymbolTable): Unit = ???
 }
 
 class LessEqualNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
   override def argOne: ExprNode = _argOne
 
   override def argTwo: ExprNode = _argTwo
+
+  override def check(TopST: SymbolTable, ST: SymbolTable): Unit = ???
 }
 
 class EqualToNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
   override def argOne: ExprNode = _argOne
 
   override def argTwo: ExprNode = _argTwo
+
+  override def check(TopST: SymbolTable, ST: SymbolTable): Unit = ???
 }
 
 class NotEqualNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
   override def argOne: ExprNode = _argOne
 
   override def argTwo: ExprNode = _argTwo
+
+  override def check(TopST: SymbolTable, ST: SymbolTable): Unit = ???
 }
 
 class LogicalAndNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
   override def argOne: ExprNode = _argOne
 
   override def argTwo: ExprNode = _argTwo
+
+  override def check(TopST: SymbolTable, ST: SymbolTable): Unit = ???
 }
 
 class LogicalOrNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
   override def argOne: ExprNode = _argOne
 
   override def argTwo: ExprNode = _argTwo
+
+  override def check(TopST: SymbolTable, ST: SymbolTable): Unit = ???
 }
 
 trait UnaryOperationNode extends ExprNode {
@@ -359,20 +426,30 @@ trait UnaryOperationNode extends ExprNode {
 
 class LogicalNotNode(val _expr: ExprNode) extends UnaryOperationNode {
   override def expr: ExprNode = _expr
+
+  override def check(TopST: SymbolTable, ST: SymbolTable): Unit = ???
 }
 
 class NegateNode(val _expr: ExprNode) extends UnaryOperationNode {
   override def expr: ExprNode = _expr
+
+  override def check(TopST: SymbolTable, ST: SymbolTable): Unit = ???
 }
 
 class LenNode(val _expr: ExprNode) extends UnaryOperationNode {
   override def expr: ExprNode = _expr
+
+  override def check(TopST: SymbolTable, ST: SymbolTable): Unit = ???
 }
 
 class OrdNode(val _expr: ExprNode) extends UnaryOperationNode {
   override def expr: ExprNode = _expr
+
+  override def check(TopST: SymbolTable, ST: SymbolTable): Unit = ???
 }
 
 class ChrNode(val _expr: ExprNode) extends UnaryOperationNode {
   override def expr: ExprNode = _expr
+
+  override def check(TopST: SymbolTable, ST: SymbolTable): Unit = ???
 }

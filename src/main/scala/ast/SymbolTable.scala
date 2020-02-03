@@ -1,3 +1,5 @@
+package ast
+
 
 class SymbolTable(var map: Map[String, IDENTIFIER], var encSymbolTable: SymbolTable) {
 
