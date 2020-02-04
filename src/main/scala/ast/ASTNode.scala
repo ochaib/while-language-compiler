@@ -26,12 +26,12 @@ class ProgramNode(val _stat: StatNode, val _functions: IndexedSeq[FuncNode]) ext
   }
 }
 
-class FuncNode(val _funcType: TypeNode, val _ident: IdentNode, val _paramList: ParamListNode,
+class FuncNode(val _funcType: TypeNode, val _ident: IdentNode, val _paramList: Option[ParamListNode],
                val _stat: StatNode) extends ASTNode {
 
   val funcType: TypeNode = _funcType
   val ident: IdentNode = _ident
-  val paramList: ParamListNode = _paramList
+  val paramList: Option[ParamListNode] = _paramList
   val stat: StatNode = _stat
 
   override def toString: String = {
@@ -43,7 +43,6 @@ class FuncNode(val _funcType: TypeNode, val _ident: IdentNode, val _paramList: P
 
 class ParamListNode(val _paramList: IndexedSeq[ParamNode]) extends ASTNode {
 
-  // TODO: should be option if its null
   val paramList: IndexedSeq[ParamNode] = _paramList
 
   override def toString: String = paramList.map(_.toString).mkString(", ")
