@@ -10,6 +10,7 @@ class SymbolTableFunctions {
       "char" -> charScalar,
       "bool" -> new SCALAR(min=0, max=1),
       "string" -> new ARRAY(charScalar),
+      "pair" -> new GENERAL_PAIR
       /*"read" -> new BASE_FUNCTION,
       "free" -> new BASE_FUNCTION,
       "return" -> new BASE_FUNCTION,
