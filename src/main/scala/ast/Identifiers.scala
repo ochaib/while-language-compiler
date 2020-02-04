@@ -1,33 +1,16 @@
 package ast
 
-class IDENTIFIER {}
+class IDENTIFIER
 
-class TYPE extends IDENTIFIER {}
+class VARIABLE(_type: TYPE) extends IDENTIFIER
 
-class VARIABLE(_type: TYPE) extends IDENTIFIER {
-  var this._type: TYPE = _type
-}
+// Types
+abstract class TYPE extends IDENTIFIER
+class SCALAR(min: Int, max: Int) extends TYPE
+class ARRAY(_type: TYPE) extends TYPE
+class PAIR(type1: TYPE, type2: TYPE) extends TYPE
 
-class SCALAR(min: Int, max: Int) extends TYPE {
-  var this.min: Int = min
-  var this.max: Int = max
-}
-
-class ARRAY(_type: TYPE) extends TYPE {
-  var this._type: TYPE = _type
-}
-
-class PAIR(type1: TYPE, type2: TYPE) extends TYPE{
-  var this.type1: TYPE = type1
-  var this.type2: TYPE = type2
-}
-
-class FUNCTION(returnType: TYPE) extends IDENTIFIER {
-  var this.returnType: TYPE = returnType
-}
-
+class FUNCTION(returnType: TYPE, paramTypes: IndexedSeq[TYPE]) extends IDENTIFIER
 // class BASE_FUNCTION extends ast.IDENTIFIER {}
 
-class PARAM(_type:TYPE) extends IDENTIFIER {
-  var this._type: TYPE = _type
-}
+class PARAM(_type:TYPE) extends IDENTIFIER
