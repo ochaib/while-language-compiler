@@ -26,12 +26,12 @@ class ProgramNode(val _stat: StatNode, val _functions: IndexedSeq[FuncNode]) ext
   }
 }
 
-class FuncNode(val _funcType: TypeNode, val _ident: IdentNode, val _paramList: Option[ParamListNode],
+class FuncNode(val _funcType: TypeNode, val _ident: IdentNode, val _paramList: ParamListNode,
                val _stat: StatNode) extends ASTNode {
 
   val funcType: TypeNode = _funcType
   val ident: IdentNode = _ident
-  val paramList: Option[ParamListNode] = _paramList
+  val paramList: ParamListNode = _paramList
   val stat: StatNode = _stat
 
   override def toString: String = {
