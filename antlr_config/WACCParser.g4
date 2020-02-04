@@ -84,7 +84,7 @@ array_elem: ident (OPEN_BRACKET expr CLOSE_BRACKET)+ ;
 array_liter: OPEN_BRACKET (expr (COMMA expr)*)? CLOSE_BRACKET ;
 
 int_sign: PLUS | MINUS;
-int_liter: INT_LIT;
+int_liter: int_sign? INT_LIT;
 
 bool_liter: BOOL_LIT;
 
