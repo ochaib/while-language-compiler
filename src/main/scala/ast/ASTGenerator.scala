@@ -41,7 +41,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     val childCount = ctx.getChildCount
 
     val paramList: IndexedSeq[ParamNode] =
-      for (i <- 0 until childCount; if ctx.getChild(i).getText.charAt(0).equals(',')) yield
+      for (i <- 0 until childCount; if !(ctx.getChild(i).getText.charAt(0).equals(','))) yield
         visit(ctx.getChild(i)).asInstanceOf[ParamNode]
 
     new ParamListNode(paramList)
@@ -205,27 +205,21 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
   override def visitAssignRHSCall(ctx: WACCParser.AssignRHSCallContext): AssignRHSNode = {
     // ‘call’ ⟨ident⟩ ‘(’ ⟨arg-list⟩? ‘)’
     val ident: IdentNode = visit(ctx.getChild(1)).asInstanceOf[IdentNode]
-    val argList: Option[ArgListNode] = None
-
-    if (ctx.getChildCount() == 5) {
-      val argList: Option[ArgListNode] = Some(visit(ctx.getChild(3)).asInstanceOf[ArgListNode])
-    }
+    val argList: Option[ArgListNode] =
+      if (ctx.getChildCount() == 5)
+        Some(visit(ctx.getChild(3)).asInstanceOf[ArgListNode])
+      else None
 
     new CallNode(ident, argList)
   }
-  
+
   override def visitArg_list(ctx: WACCParser.Arg_listContext): ArgListNode = {
     // ⟨expr ⟩ (‘,’ ⟨expr ⟩ )*
     val childCount = ctx.getChildCount
 
-    val exprChildren: IndexedSeq[ExprNode] = IndexedSeq[ExprNode]()
-
-    // Change this to account for the comma...
-    for (i <- 0 until childCount) {
-      if (!ctx.getChild(i).getText.charAt(0).equals(',')) {
-        exprChildren :+ visit(ctx.getChild(i)).asInstanceOf[ExprNode]
-      }
-    }
+    val exprChildren: IndexedSeq[ExprNode] =
+      for (i <- 0 until childCount; if !(ctx.getChild(i).getText.charAt(0).equals(','))) yield
+        visit(ctx.getChild(i)).asInstanceOf[ExprNode]
 
     new ArgListNode(exprChildren)
   }
@@ -366,7 +360,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
   override def visitChar_liter(ctx: WACCParser.Char_literContext): Char_literNode = {
     // ‘’’ ⟨character ⟩ ‘’’
-    val charValue: Char = ctx.getChild(0).getText.charAt(0)
+    val charValue: Char = ctx.getChild(0).getText.charAt(1)
 
     new Char_literNode(charValue)
   }
@@ -378,14 +372,9 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
   override def visitStr_liter(ctx: WACCParser.Str_literContext): Str_literNode = {
     // ‘"’ ⟨character⟩* ‘"’
-    val childCount = ctx.getChildCount
-    val charList: IndexedSeq[Char] = IndexedSeq[Char]()
+    val str: String = ctx.getChild(0).getText
 
-    for (i <- 1 to childCount - 2) {
-      charList :+ visit(ctx.getChild(i))
-    }
-
-    new Str_literNode(charList)
+    new Str_literNode(str)
   }
 
   override def visitExprPairLiter(ctx: WACCParser.ExprPairLiterContext): ExprNode = {
@@ -460,12 +449,9 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     // ⟨ident⟩ (‘[’ ⟨expr⟩ ‘]’)+
     val ident: IdentNode = visit(ctx.getChild(0)).asInstanceOf[IdentNode]
     val childCount = ctx.getChildCount
-    val exprList: IndexedSeq[ExprNode] = IndexedSeq[ExprNode]()
 
-    // To get every expr in the exprList
-    for (i <- 2 to childCount - 2) {
-      exprList :+ visit(ctx.getChild(i)).asInstanceOf[ExprNode]
-    }
+    val exprList: IndexedSeq[ExprNode] =
+      for (i <- 2 to childCount - 2) yield visit(ctx.getChild(i)).asInstanceOf[ExprNode]
 
     new ArrayElemNode(ident, exprList)
   }
@@ -473,15 +459,10 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
   override def visitArray_liter(ctx: WACCParser.Array_literContext): ArrayLiteralNode = {
     // ‘[’ ( ⟨expr⟩ (‘,’ ⟨expr⟩)* )? ‘]’
     val childCount = ctx.getChildCount
-    val exprList: IndexedSeq[ExprNode] = IndexedSeq[ExprNode]()
 
-    // To get every expr in the exprList but I don't think it works here because
-    // it would be separated by commas, need to get every next expr after comma.
-    for (i <- 1 to childCount - 2) {
-      if (!ctx.getChild(i).getText.charAt(0).equals(',')) {
-        exprList :+ visit(ctx.getChild(i)).asInstanceOf[ExprNode]
-      }
-    }
+    val exprList: IndexedSeq[ExprNode] =
+        for (i <- 1 until childCount - 1; if !(ctx.getChild(i).getText.charAt(0).equals(','))) yield
+          visit(ctx.getChild(i)).asInstanceOf[ExprNode]
 
     new ArrayLiteralNode(exprList)
   }

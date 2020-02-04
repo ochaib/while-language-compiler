@@ -250,11 +250,9 @@ class Char_literNode(val _value: Char) extends ExprNode {
   override def toString: String = console.color(s"'$value'", fg=Console.YELLOW)
 }
 
-class Str_literNode(val _characters: IndexedSeq[Char]) extends ExprNode {
+class Str_literNode(val str: String) extends ExprNode {
 
-  val characters: IndexedSeq[Char] = _characters
-
-  override def toString: String = "\"" + console.color(characters.mkString(""), fg=Console.YELLOW) + "\""
+  override def toString: String = console.color(str, fg=Console.YELLOW)
 }
 
 class Pair_literNode extends ExprNode {
@@ -293,7 +291,7 @@ class ArrayTypeNode(val _typeNode: TypeNode) extends TypeNode with PairElemTypeN
 
   val typeNode: TypeNode = _typeNode
 
-  override def toString: String = typeNode.toString
+  override def toString: String = typeNode.toString + "[]"
 }
 
 class PairTypeNode(val _firstPairElem: PairElemTypeNode, val _secondPairElem: PairElemTypeNode) extends TypeNode {
