@@ -24,11 +24,11 @@ class ProgramNode(val _stat: StatNode, val _functions: IndexedSeq[FuncNode]) ext
 class FuncNode(val _funcType: TypeNode, val _ident: IdentNode, val _paramList: ParamListNode,
                val _stat: StatNode) extends ASTNode with Checkable {
   override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
-    val typeIdentifier: TYPE = _funcType.getTypeIdentifier(topST, ST)
+    val typeIdentifier: TYPE = _funcType.getIdentifier(topST, ST).asInstanceOf[TYPE]
     if (ST.lookup(_ident.toString).isDefined){
       throw new TypeException("function " + _ident.toString + " has already been defined")
     } else {
-      ST.add(_ident.toString, new FUNCTION(typeIdentifier, _paramList.getTypeIdentifierList(ST)))
+      ST.add(_ident.toString, new FUNCTION(typeIdentifier, _paramList.getIdentifierList(ST)))
     }
   }
 }
@@ -38,11 +38,11 @@ class ParamListNode(val _paramList: IndexedSeq[ParamNode]) extends ASTNode {
   val paramList: IndexedSeq[ParamNode] = _paramList
 
   // TODO loop through the _paramList and return a list of the TYPE IDENTIFIERS
-  def getTypeIdentifierList(ST: SymbolTable): IndexedSeq[TYPE] = ???
+  def getIdentifierList(ST: SymbolTable): IndexedSeq[TYPE] = ???
 }
 
-class ParamNode(val _paramType: TypeNode, val _ident: IdentNode) extends ASTNode with Typeable {
-  override def getTypeIdentifier(topST: SymbolTable, ST: SymbolTable): TYPE = ???
+class ParamNode(val _paramType: TypeNode, val _ident: IdentNode) extends ASTNode with Identifiable {
+  override def getIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = ???
 }
 
 class StatNode extends ASTNode {
@@ -56,17 +56,17 @@ class SkipNode extends StatNode {
 class DeclarationNode(val _type: TypeNode, val _ident: IdentNode, val _rhs: AssignRHSNode)
   extends StatNode with Checkable {
   override def check(topST:SymbolTable, ST: SymbolTable): Unit = {
-    val typeIdentifier: TYPE = _type.getTypeIdentifier(topST, ST)
+    val typeIdentifier: IDENTIFIER = _type.getIdentifier(topST, ST)
     _rhs.check(topST, ST)
 
     // If the type and the rhs dont match, throw exception
-    if (typeIdentifier != _rhs.getTypeIdentifier(topST, ST)) {
-      throw new TypeException(typeIdentifier.toString + " expected but got " + _rhs.getTypeIdentifier(topST, ST).toString)
+    if (typeIdentifier != _rhs.getIdentifier(topST, ST)) {
+      throw new TypeException(typeIdentifier.toString + " expected but got " + _rhs.getIdentifier(topST, ST).toString)
     } else if (ST.lookup(_ident.toString).isDefined) {
       // If variable is already defined throw exception
       throw new TypeException(_ident.toString + " has already been declared")
     } else {
-      ST.add(_ident.toString, new VARIABLE(typeIdentifier))
+      ST.add(_ident.toString, new VARIABLE(typeIdentifier.asInstanceOf[TYPE]))
     }
   }
 }
@@ -80,7 +80,7 @@ class AssignmentNode(val _lhs: AssignLHSNode, val _rhs: AssignRHSNode) extends S
     _lhs.check(topST, ST)
     _rhs.check(topST, ST)
 
-    if (_lhs.getTypeIdentifier != _rhs.getTypeIdentifier){
+    if (_lhs.getIdentifier != _rhs.getIdentifier){
       throw new TypeException(_lhs.toString + " and " + _rhs.toString + " have non-matching types")
     }
   }
@@ -153,11 +153,11 @@ class SequenceNode(val _statOne: StatNode, val _statTwo: StatNode) extends StatN
 }
 
 // Both of these need to be traits (abstract classes) in order to be extended later.
-trait AssignLHSNode extends ASTNode with Checkable with Typeable {
+trait AssignLHSNode extends ASTNode with Checkable with Identifiable {
 
 }
 
-trait AssignRHSNode extends ASTNode with Checkable with Typeable{
+trait AssignRHSNode extends ASTNode with Checkable with Identifiable{
 
 }
 
@@ -166,7 +166,7 @@ class NewPairNode(val _fstElem: ExprNode, val _sndElem: ExprNode) extends Assign
   val fstElem: ExprNode = _fstElem
   val sndElem: ExprNode = _sndElem
 
-  override def getTypeIdentifier(topST: SymbolTable, ST: SymbolTable): TYPE = ???
+  override def getIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = ???
 
   override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
     _fstElem.check(topST, ST)
@@ -180,7 +180,7 @@ class CallNode(val _ident: IdentNode, val _argList: Option[ArgListNode]) extends
   // How do I make this optional?
   val argList: Option[ArgListNode] = _argList
 
-  override def getTypeIdentifier(topST: SymbolTable, ST: SymbolTable): TYPE = ???
+  override def getIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = ???
 
   override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
     _ident.check(topST, ST)
@@ -205,7 +205,7 @@ class FstNode(val _expr: ExprNode) extends PairElemNode {
 
   override def check(topST: SymbolTable, ST: SymbolTable): Unit = _expr.check(topST, ST)
 
-  override def getTypeIdentifier(topST: SymbolTable, ST: SymbolTable): TYPE = _expr.getTypeIdentifier(topST, ST)
+  override def getIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = _expr.getIdentifier(topST, ST)
 }
 
 class SndNode(val _expr: ExprNode) extends PairElemNode {
@@ -214,7 +214,7 @@ class SndNode(val _expr: ExprNode) extends PairElemNode {
 
   override def check(topST: SymbolTable, ST: SymbolTable): Unit = _expr.check(topST, ST)
 
-  override def getTypeIdentifier(topST: SymbolTable, ST: SymbolTable): TYPE = _expr.getTypeIdentifier(topST, ST)
+  override def getIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = _expr.getIdentifier(topST, ST)
 }
 
 abstract class ExprNode extends AssignRHSNode {
@@ -226,75 +226,72 @@ abstract class ExprNode extends AssignRHSNode {
     case _ => assert(assertion = true, "Unaccounted for check case")
   }
 
-  override def getTypeIdentifier(topST: SymbolTable, ST: SymbolTable): TYPE = {
-    case Int_literNode(_, _) => IntTypeNode.getTypeIdentifier(topST, ST)
-    case Bool_literNode(_) => BoolTypeNode.getTypeIdentifier(topST, ST)
-    case Char_literNode(_) => CharTypeNode.getTypeIdentifier(topST, ST)
-    case Str_literNode(_) => StringTypeNode.getTypeIdentifier(topST, ST)
-    case _ => assert(assertion = true, "Unaccounted for getTypeIdentifier for expressions")
+  override def getIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
+    case Int_literNode(_, _) => IntTypeNode.getIdentifier(topST, ST)
+    case Bool_literNode(_) => BoolTypeNode.getIdentifier(topST, ST)
+    case Char_literNode(_) => CharTypeNode.getIdentifier(topST, ST)
+    case Str_literNode(_) => StringTypeNode.getIdentifier(topST, ST)
+    case _ => assert(assertion = true, "Unaccounted for getIdentifier for expressions")
   }
 }
 
-case class Int_literNode(val _intSign: Option[Char], val _digits: IndexedSeq[Int]) extends ExprNode
-case class Bool_literNode(val _value: Boolean) extends ExprNode
-case class Char_literNode(val _value: Char) extends ExprNode
-case class Str_literNode(val _characters: IndexedSeq[Char]) extends ExprNode
+case class Int_literNode(_intSign: Option[Char],  _digits: IndexedSeq[Int]) extends ExprNode
+case class Bool_literNode(_value: Boolean) extends ExprNode
+case class Char_literNode(_value: Char) extends ExprNode
+case class Str_literNode(_characters: IndexedSeq[Char]) extends ExprNode
 
 class Pair_literNode extends ExprNode {
   override def check(topST: SymbolTable, ST: SymbolTable): Unit = ???
 
-  override def getTypeIdentifier(topST: SymbolTable, ST: SymbolTable): TYPE = ???
+  override def getIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = ???
 }
 
 class ParenExprNode(_expr: ExprNode) extends ExprNode {
   override def check(topST: SymbolTable, ST: SymbolTable): Unit = _expr.check(topST, ST)
 
-  override def getTypeIdentifier(topST: SymbolTable, ST: SymbolTable): TYPE = _expr.getTypeIdentifier(topST, ST)
+  override def getIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = _expr.getIdentifier(topST, ST)
 }
 
 // looks up the type identifier from all parent symbol tables and returns the appropriate identifier object
-trait Typeable {
+trait Identifiable {
   @throws(classOf[TypeException])
-  abstract def getTypeIdentifier(topST: SymbolTable, ST: SymbolTable): TYPE
+  abstract def getIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER
 }
 
-abstract class TypeNode extends ASTNode with Typeable {
+abstract class TypeNode extends ASTNode with Identifiable {
   def toKey: String
   override def toString: String = toKey
 }
 
 abstract class BaseTypeNode extends TypeNode with PairElemTypeNode {
-  override def getTypeIdentifier(topST: SymbolTable, ST: SymbolTable): TYPE = {
+  override def getIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
     val T: Option[IDENTIFIER] = topST.lookup(toString)
     assert(T.isDefined, "Base Type Nodes MUST be predefined in the top level symbol table")
     assert(T.get.isInstanceOf[TYPE], "Base type identifiers must be an instance of TYPE")
     T.get.asInstanceOf[TYPE]
   }
+
+  override def toKey: String = {
+    case IntTypeNode => "int"
+    case BoolTypeNode => "bool"
+    case CharTypeNode => "char"
+    case StringTypeNode => "string"
+    case _ => assert(assertion = true, "undefined case for toKey")
+  }
 }
 
-object IntTypeNode extends BaseTypeNode {
-  override def toKey: String = "int"
-}
-
-object BoolTypeNode extends BaseTypeNode {
-  override def toKey: String = "bool"
-}
-
-object CharTypeNode extends BaseTypeNode {
-  override def toKey: String = "char"
-}
-
-object StringTypeNode extends BaseTypeNode {
-  override def toKey: String = "string"
-}
+case object IntTypeNode extends BaseTypeNode
+case object BoolTypeNode extends BaseTypeNode
+case object CharTypeNode extends BaseTypeNode
+case object StringTypeNode extends BaseTypeNode
 
 class ArrayTypeNode(val _typeNode: TypeNode) extends TypeNode with PairElemTypeNode {
   override def toKey: String = _typeNode + "[]"
 
-  override def getTypeIdentifier(topST: SymbolTable, ST: SymbolTable): TYPE = {
+  override def getIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
     val T: Option[IDENTIFIER] = topST.lookup(toString)
     if (T.isEmpty) {
-      val arrayIdentifier = new ARRAY(_typeNode.getTypeIdentifier(topST, ST))
+      val arrayIdentifier = new ARRAY(_typeNode.getIdentifier(topST, ST).asInstanceOf[TYPE])
       topST.add(toString, arrayIdentifier)
       arrayIdentifier
     } else if (! T.get.isInstanceOf[TYPE]) {
@@ -313,7 +310,7 @@ class PairTypeNode(val _firstPairElem: PairElemTypeNode, val _secondPairElem: Pa
 
   override def toKey: String = "pair (" + _firstPairElem + "," + _secondPairElem + ")"
 
-  override def getTypeIdentifier(topST: SymbolTable, ST: SymbolTable): TYPE = ???
+  override def getIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = ???
 }
 
 // <pair-elem-type> in the WACCLangSpec
@@ -332,7 +329,7 @@ class IdentNode(val _ident: String) extends ExprNode with AssignLHSNode {
 
   override def check(topST: SymbolTable, ST: SymbolTable): Unit = ???
 
-  override def getTypeIdentifier(topST: SymbolTable, ST: SymbolTable): TYPE = {
+  override def getIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
     val T: Option[IDENTIFIER] = ST.lookupAll(toString)
     if (T.isEmpty) {
       throw new TypeException(toString + " has not been declared")
@@ -359,150 +356,75 @@ class ArrayLiteralNode(val _exprNodes: IndexedSeq[ExprNode]) extends AssignRHSNo
 
   override def check(topST: SymbolTable, ST: SymbolTable): Unit = ???
 
-  override def getTypeIdentifier(topST: SymbolTable, ST: SymbolTable): TYPE = ???
+  override def getIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = ???
 }
 
-trait BinaryOperationNode extends ExprNode {
-
-  def argOne: ExprNode
-  def argTwo: ExprNode
-
-}
-
-class MultiplyNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
-  override def argOne: ExprNode = _argOne
-
-  override def argTwo: ExprNode = _argTwo
+sealed abstract class BinaryOperationNode extends ExprNode {
+  override def getIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
+    case MultiplyNode(_, _) => IntTypeNode.getIdentifier(topST, ST)
+    case DivideNode(_, _) => IntTypeNode.getIdentifier(topST, ST)
+    case ModNode(_, _) => IntTypeNode.getIdentifier(topST, ST)
+    case PlusNode(_, _) => IntTypeNode.getIdentifier(topST, ST)
+    case MinusNode(_, _) => IntTypeNode.getIdentifier(topST, ST)
+    case GreaterEqualNode(_, _) => BoolTypeNode.getIdentifier(topST, ST)
+    case GreaterEqualNode(_, _) => BoolTypeNode.getIdentifier(topST, ST)
+    case LessThanNode(_, _) => BoolTypeNode.getIdentifier(topST, ST)
+    case LessEqualNode(_, _) => BoolTypeNode.getIdentifier(topST, ST)
+    case EqualToNode(_, _) => BoolTypeNode.getIdentifier(topST, ST)
+    case NotEqualNode(_, _) => BoolTypeNode.getIdentifier(topST, ST)
+    case LogicalAndNode(_, _) => BoolTypeNode.getIdentifier(topST, ST)
+    case LogicalOrNode(_, _) => BoolTypeNode.getIdentifier(topST, ST)
+  }
 
   override def check(topST: SymbolTable, ST: SymbolTable): Unit = ???
 }
 
-class DivideNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
-  override def argOne: ExprNode = _argOne
+case class MultiplyNode(_argOne: ExprNode, _argTwo: ExprNode) extends BinaryOperationNode
+case class DivideNode(_argOne: ExprNode, _argTwo: ExprNode) extends BinaryOperationNode
+case class ModNode(_argOne: ExprNode, _argTwo: ExprNode) extends BinaryOperationNode
+case class PlusNode(_argOne: ExprNode, _argTwo: ExprNode) extends BinaryOperationNode
+case class MinusNode(_argOne: ExprNode, _argTwo: ExprNode) extends BinaryOperationNode
+case class GreaterThanNode(_argOne: ExprNode, _argTwo: ExprNode) extends BinaryOperationNode
+case class GreaterEqualNode(_argOne: ExprNode, _argTwo: ExprNode) extends BinaryOperationNode
+case class LessThanNode(_argOne: ExprNode, _argTwo: ExprNode) extends BinaryOperationNode
+case class LessEqualNode(_argOne: ExprNode, _argTwo: ExprNode) extends BinaryOperationNode
+case class EqualToNode(_argOne: ExprNode, _argTwo: ExprNode) extends BinaryOperationNode
+case class NotEqualNode(_argOne: ExprNode, _argTwo: ExprNode) extends BinaryOperationNode
+case class LogicalAndNode(_argOne: ExprNode, _argTwo: ExprNode) extends BinaryOperationNode
+case class LogicalOrNode(_argOne: ExprNode, _argTwo: ExprNode) extends BinaryOperationNode
 
-  override def argTwo: ExprNode = _argTwo
+sealed abstract class UnaryOperationNode extends ExprNode {
+  override def getIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
+    case LogicalNotNode(_) => BoolTypeNode.getIdentifier(topST, _)
+    case NegateNode(_) => BoolTypeNode.getIdentifier(topST, _)
+    case LenNode(_) => IntTypeNode.getIdentifier(topST, _)
+    case OrdNode(_) => IntTypeNode.getIdentifier(topST, _)
+    case ChrNode(_) => CharTypeNode.getIdentifier(topST, _)
+  }
+  override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
+    case LogicalNotNode(expr) => checkHelper(expr, "bool", topST, ST)
+    case NegateNode(expr) => checkHelper(expr, "int", topST, ST)
+    case LenNode(expr) => lenHelper(expr, topST, ST)
+    case OrdNode(expr) => checkHelper(expr, "char", topST, ST)
+    case ChrNode(expr) => checkHelper(expr, "int", topST, ST)
+  }
 
-  override def check(topST: SymbolTable, ST: SymbolTable): Unit = ???
+  private def checkHelper(expr: ExprNode, expected: String, topST: SymbolTable, ST: SymbolTable): Unit = {
+    val identifier: IDENTIFIER = expr.getIdentifier(topST, ST)
+    if (identifier != topST.lookup(expected).get){
+      throw new TypeException("Expected " + expected + " but got " + identifier)
+    }
+  }
+  private def lenHelper(expr: ExprNode, topST: SymbolTable, ST: SymbolTable): Unit = {
+    val identifier: IDENTIFIER = expr.getIdentifier(topST, ST)
+    if (! identifier.isInstanceOf[ARRAY]) {
+      throw new TypeException("Expected an array but got " + identifier)
+    }
+  }
 }
 
-class ModNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
-  override def argOne: ExprNode = _argOne
-
-  override def argTwo: ExprNode = _argTwo
-
-  override def check(topST: SymbolTable, ST: SymbolTable): Unit = ???
-}
-
-class PlusNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
-  override def argOne: ExprNode = _argOne
-
-  override def argTwo: ExprNode = _argTwo
-
-  override def check(topST: SymbolTable, ST: SymbolTable): Unit = ???
-}
-
-class MinusNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
-  override def argOne: ExprNode = _argOne
-
-  override def argTwo: ExprNode = _argTwo
-
-  override def check(topST: SymbolTable, ST: SymbolTable): Unit = ???
-}
-
-class GreaterThanNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
-  override def argOne: ExprNode = _argOne
-
-  override def argTwo: ExprNode = _argTwo
-
-  override def check(topST: SymbolTable, ST: SymbolTable): Unit = ???
-}
-
-class GreaterEqualNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
-  override def argOne: ExprNode = _argOne
-
-  override def argTwo: ExprNode = _argTwo
-
-  override def check(topST: SymbolTable, ST: SymbolTable): Unit = ???
-}
-
-class LessThanNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
-  override def argOne: ExprNode = _argOne
-
-  override def argTwo: ExprNode = _argTwo
-
-  override def check(topST: SymbolTable, ST: SymbolTable): Unit = ???
-}
-
-class LessEqualNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
-  override def argOne: ExprNode = _argOne
-
-  override def argTwo: ExprNode = _argTwo
-
-  override def check(topST: SymbolTable, ST: SymbolTable): Unit = ???
-}
-
-class EqualToNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
-  override def argOne: ExprNode = _argOne
-
-  override def argTwo: ExprNode = _argTwo
-
-  override def check(topST: SymbolTable, ST: SymbolTable): Unit = ???
-}
-
-class NotEqualNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
-  override def argOne: ExprNode = _argOne
-
-  override def argTwo: ExprNode = _argTwo
-
-  override def check(topST: SymbolTable, ST: SymbolTable): Unit = ???
-}
-
-class LogicalAndNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
-  override def argOne: ExprNode = _argOne
-
-  override def argTwo: ExprNode = _argTwo
-
-  override def check(topST: SymbolTable, ST: SymbolTable): Unit = ???
-}
-
-class LogicalOrNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
-  override def argOne: ExprNode = _argOne
-
-  override def argTwo: ExprNode = _argTwo
-
-  override def check(topST: SymbolTable, ST: SymbolTable): Unit = ???
-}
-
-trait UnaryOperationNode extends ExprNode {
-  def expr: ExprNode
-}
-
-class LogicalNotNode(val _expr: ExprNode) extends UnaryOperationNode {
-  override def expr: ExprNode = _expr
-
-  override def check(topST: SymbolTable, ST: SymbolTable): Unit = ???
-}
-
-class NegateNode(val _expr: ExprNode) extends UnaryOperationNode {
-  override def expr: ExprNode = _expr
-
-  override def check(topST: SymbolTable, ST: SymbolTable): Unit = ???
-}
-
-class LenNode(val _expr: ExprNode) extends UnaryOperationNode {
-  override def expr: ExprNode = _expr
-
-  override def check(topST: SymbolTable, ST: SymbolTable): Unit = ???
-}
-
-class OrdNode(val _expr: ExprNode) extends UnaryOperationNode {
-  override def expr: ExprNode = _expr
-
-  override def check(topST: SymbolTable, ST: SymbolTable): Unit = ???
-}
-
-class ChrNode(val _expr: ExprNode) extends UnaryOperationNode {
-  override def expr: ExprNode = _expr
-
-  override def check(topST: SymbolTable, ST: SymbolTable): Unit = ???
-}
+case class LogicalNotNode(_expr: ExprNode) extends UnaryOperationNode
+case class NegateNode(_expr: ExprNode) extends UnaryOperationNode
+case class LenNode(_expr: ExprNode) extends UnaryOperationNode
+case class OrdNode(_expr: ExprNode) extends UnaryOperationNode
+case class ChrNode(_expr: ExprNode) extends UnaryOperationNode

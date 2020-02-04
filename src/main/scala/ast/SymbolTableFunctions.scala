@@ -6,7 +6,7 @@ class SymbolTableFunctions {
   def topLevelSymbolTable(astTree: ASTNode): SymbolTable = {
     // return a symbol table with the map of all the standard types, global constants, global functions
     val charScalar: TYPE = new SCALAR(min=0, max=255)
-    new SymbolTable(HashMap("int" -> new SCALAR(min= -2147483647, max= 2147483647),
+    new SymbolTable(HashMap("int" -> new SCALAR(min= Int.MinValue, max= Int.MaxValue),
       "char" -> charScalar,
       "bool" -> new SCALAR(min=0, max=1),
       "string" -> new ARRAY(charScalar),
