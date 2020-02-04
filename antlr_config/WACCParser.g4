@@ -77,13 +77,14 @@ ident: IDENT;
 binary_oper: MULTIPLY | DIVIDE | MODULO | PLUS | MINUS |
              GT | GTE | LT | LTE | EE | NE | AND | OR ;
 
-unary_oper: NOT | MINUS | PLUS | LEN | ORD | CHR;
+unary_oper: NOT | MINUS | LEN | ORD | CHR;
 
 array_elem: ident (OPEN_BRACKET expr CLOSE_BRACKET)+ ;
 
 array_liter: OPEN_BRACKET (expr (COMMA expr)*)? CLOSE_BRACKET ;
 
-int_liter: INT_LIT;
+int_sign: PLUS | MINUS;
+int_liter: int_sign? INT_LIT;
 
 bool_liter: BOOL_LIT;
 
