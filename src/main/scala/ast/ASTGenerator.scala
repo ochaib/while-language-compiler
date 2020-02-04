@@ -6,6 +6,10 @@ import org.antlr.v4.runtime._
 // Class used to traverse the parse tree built by ANTLR
 class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
+  def debugCtx(ctx: ParserRuleContext) = {
+    for (i<-0 until ctx.getChildCount) println(i + ":: " + ctx.getChild(i).getClass + ": " + ctx.getChild(i).getText)
+  }
+
   override def visitProgram(ctx: WACCParser.ProgramContext): ProgramNode = {
     // Need to retrieve program information from parser context,
     // Need to visit all the functions (as many as there are due to the *)
@@ -255,7 +259,9 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
   override def visitTypeArray_type(ctx: WACCParser.TypeArray_typeContext): TypeNode = {
     // ⟨array-type⟩
-    visit(ctx.getChild(0)).asInstanceOf[ArrayTypeNode]
+    val arrayType: TypeNode = visit(ctx.getChild(0)).asInstanceOf[TypeNode]
+
+    new ArrayTypeNode(arrayType)
   }
 
   override def visitTypePair_type(ctx: WACCParser.TypePair_typeContext): TypeNode = {
@@ -360,7 +366,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
   override def visitChar_liter(ctx: WACCParser.Char_literContext): Char_literNode = {
     // ‘’’ ⟨character ⟩ ‘’’
-    val charValue: Char = ctx.getChild(1).getText.charAt(0)
+    val charValue: Char = ctx.getChild(0).getText.charAt(0)
 
     new Char_literNode(charValue)
   }
