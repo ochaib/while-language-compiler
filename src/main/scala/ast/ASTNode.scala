@@ -225,11 +225,11 @@ class ExprNode extends AssignRHSNode {
   override def toString: String = console.color("<EXPR>", fg=Console.RED)
 }
 
-class Int_literNode(val _digits: IndexedSeq[Int]) extends ExprNode {
+class Int_literNode(val _num: Int) extends ExprNode {
 
-  val digits: IndexedSeq[Int] = _digits
+  val num: Int = _num
 
-  override def toString: String = console.color(digits.map(_.toString).mkString(""), fg=Console.MAGENTA)
+  override def toString: String = console.color(num.toString, fg=Console.MAGENTA)
 }
 
 class Bool_literNode(val _value: Boolean) extends ExprNode {
