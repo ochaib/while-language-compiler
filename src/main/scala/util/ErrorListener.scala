@@ -1,5 +1,4 @@
-package main.scala
-
+package util
 import org.antlr.v4.runtime.{BaseErrorListener, RecognitionException, Recognizer}
 
 class ErrorListener extends BaseErrorListener {

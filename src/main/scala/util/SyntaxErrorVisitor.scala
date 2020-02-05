@@ -1,3 +1,4 @@
+package util
 import ast._
 
 class SyntaxErrorVisitor {
