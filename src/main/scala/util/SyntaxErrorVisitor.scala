@@ -27,7 +27,9 @@ class SyntaxErrorVisitor {
 
   def functionReturnsOrExits(statNode: StatNode): Boolean = {
     statNode match {
-      case ReturnNode(_) | ExitNode(_) =>
+      case exitNode: ExitNode =>
+        true
+      case returnNode: ReturnNode =>
         true
       case ifNode: IfNode =>
         functionReturnsOrExits(ifNode.thenStat) && functionReturnsOrExits(ifNode.elseStat)

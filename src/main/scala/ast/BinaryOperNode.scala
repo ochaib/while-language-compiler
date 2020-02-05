@@ -74,7 +74,6 @@ sealed abstract class BinaryOperationNode(argOne: ExprNode, argTwo: ExprNode) ex
         s" but got ${argOneIdentifier.getKey} and ${argTwoIdentifier.getKey} instead")
     }
   }
-}
 
 case class MultiplyNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(argOne, argTwo)
 case class DivideNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(argOne, argTwo)
