@@ -23,24 +23,24 @@ class ProgramNode(val _stat: StatNode, val _functions: IndexedSeq[FuncNode]) ext
   }
 }
 
-class FuncNode(val funcType: TypeNode, val ident: IdentNode, val paramList: Option[ParamListNode],
+class FuncNode(val funcType: TypeNode, val identNode: IdentNode, val paramList: Option[ParamListNode],
                val stat: StatNode) extends ASTNode with Checkable {
 
   override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
     val typeIdentifier: TYPE = funcType.getIdentifier(topST, ST).asInstanceOf[TYPE]
-    if (ST.lookup(ident.getKey).isDefined){
-      throw new TypeException("function " + ident.getKey + " has already been defined")
+    if (ST.lookup(identNode.getKey).isDefined){
+      throw new TypeException("function " + identNode.getKey + " has already been defined")
     } else {
       paramList match {
-        case Some(params) => ST.add(ident.getKey, new FUNCTION(ident.getKey, typeIdentifier, params.getIdentifierList(ST)))
-        case None => ST.add(ident.getKey, new FUNCTION(ident.getKey, typeIdentifier, IndexedSeq[TYPE]()))
+        case Some(params) => ST.add(identNode.getKey, new FUNCTION(identNode.getKey, typeIdentifier, params.getIdentifierList(ST)))
+        case None => ST.add(identNode.getKey, new FUNCTION(identNode.getKey, typeIdentifier, IndexedSeq[TYPE]()))
       }
     }
   }
 
   override def toString: String = paramList match {
-    case Some(params) => s"${funcType.toString} ${ident.toString} (${params.toString}) is\n${stat.toString}\nend"
-    case None => s"${funcType.toString} ${ident.toString} () is\n${stat.toString}\nend"
+    case Some(params) => s"${funcType.toString} ${identNode.toString} (${params.toString}) is\n${stat.toString}\nend"
+    case None => s"${funcType.toString} ${identNode.toString} () is\n${stat.toString}\nend"
   }
 }
 
@@ -52,13 +52,13 @@ class ParamListNode(val paramList: IndexedSeq[ParamNode]) extends ASTNode {
   override def toString: String = paramList.map(_.toString).mkString(", ")
 }
 
-class ParamNode(val paramType: TypeNode, val ident: IdentNode) extends ASTNode with Identifiable {
+class ParamNode(val paramType: TypeNode, val identNode: IdentNode) extends ASTNode with Identifiable {
 
   override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = paramType.getIdentifier(topST, ST)
 
   override def initKey: String = paramType.getKey
 
-  override def toString: String = s"${paramType.toString} ${ident.toString}"
+  override def toString: String = s"${paramType.toString} ${identNode.toString}"
 }
 
 // Both of these need to be traits (abstract classes) in order to be extended later.
@@ -111,20 +111,20 @@ class NewPairNode(val fstElem: ExprNode, val sndElem: ExprNode) extends AssignRH
   override def toString: String = console.color(s"newpair (${fstElem.toString}, ${sndElem.toString})", fg=Console.BLUE)
 }
 
-class CallNode(val ident: IdentNode, val argList: Option[ArgListNode]) extends AssignRHSNode {
+class CallNode(val identNode: IdentNode, val argList: Option[ArgListNode]) extends AssignRHSNode {
 
   // TODO lookup and check if it's defined, if not exception, if it is return it
-  override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = ident.getIdentifier(topST, ST)
+  override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = identNode.getIdentifier(topST, ST)
 
   override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
-    ident.check(topST, ST)
+    identNode.check(topST, ST)
     // TODO check through each of argList
   }
-  override def initKey: String = ident.getKey
+  override def initKey: String = identNode.getKey
 
   override def toString: String = argList match {
-    case Some(args) => console.color(s"call ${ident.toString} (${args.toString})", fg=Console.BLUE)
-    case None => console.color(s"call ${ident.toString} ()", fg=Console.BLUE)
+    case Some(args) => console.color(s"call ${identNode.toString} (${args.toString})", fg=Console.BLUE)
+    case None => console.color(s"call ${identNode.toString} ()", fg=Console.BLUE)
   }
 }
 
@@ -222,11 +222,11 @@ class IdentNode(val ident: String) extends ExprNode with AssignLHSNode {
   override def toString: String = console.color(ident, fg=Console.GREEN)
 }
 
-class ArrayElemNode(val ident: IdentNode, val exprNodes: IndexedSeq[ExprNode]) extends ExprNode with AssignLHSNode {
+class ArrayElemNode(val identNode: IdentNode, val exprNodes: IndexedSeq[ExprNode]) extends ExprNode with AssignLHSNode {
 
   override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
-    ident.check(topST, ST)
-    val identIdentifier: IDENTIFIER = ident.getIdentifier(topST, ST)
+    identNode.check(topST, ST)
+    val identIdentifier: IDENTIFIER = identNode.getIdentifier(topST, ST)
     for (expr <- exprNodes) expr.check(topST, ST)
     if (! identIdentifier.isInstanceOf[ARRAY]) {
       throw new TypeException(s"Expected array type but got ${identIdentifier.getKey} instead")
@@ -243,7 +243,7 @@ class ArrayElemNode(val ident: IdentNode, val exprNodes: IndexedSeq[ExprNode]) e
 
   override def toString: String = {
     val exprs : String = exprNodes.map("[" + _.toString + "]").mkString("")
-    s"${ident.toString}${exprs}"
+    s"${identNode.toString}${exprs}"
   }
 }
 
