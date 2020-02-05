@@ -7,7 +7,7 @@ import org.antlr.v4.runtime._
 class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
   def debugCtx(ctx: ParserRuleContext) = {
-    for (i<-0 until ctx.getChildCount) println(i + ":: " + ctx.getChild(i).getClass + ": " + ctx.getChild(i).getText)
+    for (i<-0 until ctx.getChildCount) println(s"$i:: " + ctx.getChild(i).getClass + ": " + ctx.getChild(i).getText)
   }
 
   override def visitProgram(ctx: WACCParser.ProgramContext): ProgramNode = {
@@ -389,10 +389,11 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
   override def visitExprPairLiter(ctx: WACCParser.ExprPairLiterContext): ExprNode = {
     // ⟨pair-liter⟩
-    visit(ctx.getChild(0)).asInstanceOf[Pair_literNode]
+    visit(ctx.getChild(0))
+    Pair_literNode
   }
 
-  override def visitPair_liter(ctx: WACCParser.Pair_literContext): Pair_literNode = new Pair_literNode
+  override def visitPair_liter(ctx: WACCParser.Pair_literContext): Pair_literNode.type = Pair_literNode
 
   override def visitExprIdent(ctx: WACCParser.ExprIdentContext): ExprNode = {
     // ⟨ident⟩

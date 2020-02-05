@@ -158,7 +158,7 @@ class FstNode(expr: ExprNode) extends PairElemNode(expr: ExprNode) {
 
   override def initKey: String = {
     val exprKey: String = expr.getKey
-    if (expr.isInstanceOf[Pair_literNode]) {
+    if (expr == Pair_literNode) {
       // TODO in backend throw error
       throw new TypeException(s"Expected a pair type but got a null pair literal instead")
     } else if (exprKey.slice(0, 1) != "(" || ")" != exprKey.slice(exprKey.length() - 1, exprKey.length)) {
@@ -185,7 +185,7 @@ class SndNode(expr: ExprNode) extends PairElemNode(expr) {
 
   override def initKey: String = {
     val exprKey: String = expr.getKey
-    if (expr.isInstanceOf[Pair_literNode]) {
+    if (expr == Pair_literNode) {
       // TODO in backend throw error
       throw new TypeException(s"Expected a pair type but got a null pair literal instead")
     } else if (exprKey.slice(0, 1) != "(" || ")" != exprKey.slice(exprKey.length() - 1, exprKey.length)) {

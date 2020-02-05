@@ -50,7 +50,7 @@ case class Str_literNode(str: String) extends ExprNode {
   override def toString: String = console.color(str, fg=Console.YELLOW)
 }
 
-class Pair_literNode extends ExprNode {
+object Pair_literNode extends ExprNode {
 
   override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
     val T: Option[IDENTIFIER] = topST.lookup(getKey)

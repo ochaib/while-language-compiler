@@ -10,7 +10,7 @@ import util.{ColoredConsole => console, ErrorListener}
 
 
 object Compiler extends App {
-  def error(msg : String) {
+  def error(msg : String): Unit = {
     console.error(msg)
     System.exit(1)
   }
