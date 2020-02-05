@@ -341,6 +341,12 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     // childCount - 1 in case it is signed
     // TODO: maybe we handle overflow here?
     val num: Int = ctx.getChild(childCount - 1).getText.toInt
+    
+    if (Math.abs(num) > Int.MaxValue) {
+        // Log to syntax error.
+        println("Syntax Error: Integer overflow when trying to generate IntLiteral.")
+        // Create error node instead or something?.
+    }
 
     new Int_literNode(num)
   }
