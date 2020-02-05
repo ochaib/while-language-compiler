@@ -2,7 +2,7 @@ package ast
 
 import ast.{IDENTIFIER, SymbolTable}
 
-sealed abstract class BinaryOperationNode extends ExprNode {
+sealed trait BinaryOperationNode extends ExprNode {
   override def getIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = this match {
     case MultiplyNode(_, _) => IntTypeNode.getIdentifier(topST, ST)
     case DivideNode(_, _) => IntTypeNode.getIdentifier(topST, ST)
@@ -16,25 +16,73 @@ sealed abstract class BinaryOperationNode extends ExprNode {
     case NotEqualNode(_, _) => BoolTypeNode.getIdentifier(topST, ST)
     case LogicalAndNode(_, _) => BoolTypeNode.getIdentifier(topST, ST)
     case LogicalOrNode(_, _) => BoolTypeNode.getIdentifier(topST, ST)
-    case _ => {
-      assert(assertion = false, "Binary identifier not defined")
-      null
-    }
   }
 
   override def check(topST: SymbolTable, ST: SymbolTable): Unit = ???
+
+  override def toString: String = argOne.toString + " " + console.color("<BINARY-OP>", fg=Console.RED) + " " + argTwo.toString
 }
 
-case class MultiplyNode(_argOne: ExprNode, _argTwo: ExprNode) extends BinaryOperationNode
-case class DivideNode(_argOne: ExprNode, _argTwo: ExprNode) extends BinaryOperationNode
-case class ModNode(_argOne: ExprNode, _argTwo: ExprNode) extends BinaryOperationNode
-case class PlusNode(_argOne: ExprNode, _argTwo: ExprNode) extends BinaryOperationNode
-case class MinusNode(_argOne: ExprNode, _argTwo: ExprNode) extends BinaryOperationNode
-case class GreaterThanNode(_argOne: ExprNode, _argTwo: ExprNode) extends BinaryOperationNode
-case class GreaterEqualNode(_argOne: ExprNode, _argTwo: ExprNode) extends BinaryOperationNode
-case class LessThanNode(_argOne: ExprNode, _argTwo: ExprNode) extends BinaryOperationNode
-case class LessEqualNode(_argOne: ExprNode, _argTwo: ExprNode) extends BinaryOperationNode
-case class EqualToNode(_argOne: ExprNode, _argTwo: ExprNode) extends BinaryOperationNode
-case class NotEqualNode(_argOne: ExprNode, _argTwo: ExprNode) extends BinaryOperationNode
-case class LogicalAndNode(_argOne: ExprNode, _argTwo: ExprNode) extends BinaryOperationNode
-case class LogicalOrNode(_argOne: ExprNode, _argTwo: ExprNode) extends BinaryOperationNode
+case class MultiplyNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode {
+
+  override def toString: String = s"${argOne.toString} * ${argTwo.toString}"
+}
+
+case class DivideNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode {
+
+  override def toString: String = s"${argOne.toString} / ${argTwo.toString}"
+}
+
+case class ModNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode {
+
+  override def toString: String = s"${argOne.toString} % ${argTwo.toString}"
+}
+
+case class PlusNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode {
+
+  override def toString: String = s"${argOne.toString} + ${argTwo.toString}"
+}
+
+case class MinusNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode {
+
+  override def toString: String = s"${argOne.toString} - ${argTwo.toString}"
+}
+
+case class GreaterThanNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode {
+
+  override def toString: String = s"${argOne.toString} > ${argTwo.toString}"
+}
+
+case class GreaterEqualNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode {
+
+  override def toString: String = s"${argOne.toString} >= ${argTwo.toString}"
+}
+
+case class LessThanNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode {
+
+  override def toString: String = s"${argOne.toString} < ${argTwo.toString}"
+}
+
+case class LessEqualNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode {
+
+  override def toString: String = s"${argOne.toString} <= ${argTwo.toString}"
+}
+
+case class EqualToNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode {
+
+  override def toString: String = s"${argOne.toString} == ${argTwo.toString}"
+}
+
+case class NotEqualNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode {
+
+  override def toString: String = s"${argOne.toString} != ${argTwo.toString}"
+}
+
+case class LogicalAndNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode {
+
+  override def toString: String = s"${argOne.toString} && ${argTwo.toString}"
+}
+
+case class LogicalOrNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode {
+  override def toString: String = s"${argOne.toString} || ${argTwo.toString}"
+}
