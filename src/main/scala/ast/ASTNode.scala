@@ -224,12 +224,12 @@ class ArrayElemNode(val ident: IdentNode, val exprNodes: IndexedSeq[ExprNode]) e
   override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
     identNode.check(topST, ST)
     val identIdentifier: IDENTIFIER = identNode.getIdentifier(topST, ST)
-    for (expr <- _exprNodes) expr.check(topST, ST)
+    for (expr <- exprNodes) expr.check(topST, ST)
     if (! identIdentifier.isInstanceOf[ARRAY]) {
       throw new TypeException(s"Expected array type but got ${identIdentifier.getKey} instead")
     } else {
       val identArrayType: IDENTIFIER = identIdentifier.asInstanceOf[ARRAY]._type
-      for (expr <- _exprNodes) {
+      for (expr <- exprNodes) {
         val exprIdentifier: IDENTIFIER = expr.getIdentifier(topST, ST)
         if (exprIdentifier != identArrayType) {
           throw new TypeException(s"Expected ${identArrayType.getKey} but got ${exprIdentifier.getKey} instead")
@@ -249,8 +249,8 @@ class ArrayLiteralNode(val exprNodes: IndexedSeq[ExprNode]) extends AssignRHSNod
   val exprNodes: IndexedSeq[ExprNode] = exprNodes
 
   override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
-    val firstIdentifier: IDENTIFIER = _exprNodes.apply(0).getIdentifier(topST, ST)
-    for (expr <- _exprNodes) {
+    val firstIdentifier: IDENTIFIER = exprNodes.apply(0).getIdentifier(topST, ST)
+    for (expr <- exprNodes) {
       val exprIdentifier = expr.getIdentifier(topST, ST)
       if (exprIdentifier != firstIdentifier) {
         throw new TypeException(s"Expected type ${firstIdentifier.getKey} but got ${exprIdentifier.getKey}")
@@ -261,7 +261,7 @@ class ArrayLiteralNode(val exprNodes: IndexedSeq[ExprNode]) extends AssignRHSNod
   override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
     val arrayIdentifierOption: Option[IDENTIFIER] = topST.lookup(getKey)
     if (arrayIdentifierOption.isEmpty) {
-      val arrayIdentifier = new ARRAY(getKey, _exprNodes.apply(0).getIdentifier(topST, ST).asInstanceOf[TYPE])
+      val arrayIdentifier = new ARRAY(getKey, exprNodes.apply(0).getIdentifier(topST, ST).asInstanceOf[TYPE])
       topST.add(toString, arrayIdentifier)
       arrayIdentifier
     } else {
@@ -272,5 +272,5 @@ class ArrayLiteralNode(val exprNodes: IndexedSeq[ExprNode]) extends AssignRHSNod
 
   override def toString: String = "[" + exprNodes.map(_.toString).mkString(", ") + "]"
 
-  override def initKey: String = _exprNodes.apply(0).getKey + "[]"
+  override def initKey: String = exprNodes.apply(0).getKey + "[]"
 }
