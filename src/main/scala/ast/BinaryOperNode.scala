@@ -4,6 +4,9 @@ import util.{ColoredConsole => console}
 
 trait BinaryOperationNode extends ExprNode {
 
+  def argOne: ExprNode
+  def argTwo: ExprNode
+
   override def getIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = this match {
     case MultiplyNode(_, _) => IntTypeNode.getIdentifier(topST, ST)
     case DivideNode(_, _) => IntTypeNode.getIdentifier(topST, ST)

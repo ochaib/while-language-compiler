@@ -1,5 +1,3 @@
-package main.scala
-
 import ast._
 
 class SyntaxErrorVisitor {
