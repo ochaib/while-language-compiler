@@ -90,7 +90,6 @@ class NewPairNode(val fstElem: ExprNode, val sndElem: ExprNode) extends AssignRH
 
 class CallNode(val identNode: IdentNode, val _argList: Option[ArgListNode]) extends AssignRHSNode {
 
-  // TODO lookup and check if it's defined, if not exception, if it is return it
   override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = identNode.getIdentifier(topST, ST)
 
   override def check(topST: SymbolTable, ST: SymbolTable): Unit = {

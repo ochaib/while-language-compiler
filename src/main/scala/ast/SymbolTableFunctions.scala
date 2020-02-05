@@ -1,5 +1,6 @@
 package ast
 
+import main.scala.ast.ASTNode
 import scala.collection.immutable.HashMap
 
 class SymbolTableFunctions {
