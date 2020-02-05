@@ -1,4 +1,4 @@
-package main.scala.ast
+package ast
 
 import ast.{ARRAY, GENERAL_PAIR, IDENTIFIER, PAIR, SymbolTable, TYPE}
 

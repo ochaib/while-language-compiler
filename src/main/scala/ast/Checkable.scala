@@ -1,4 +1,4 @@
-package main.scala.ast
+package ast
 
 import ast.{SymbolTable, TypeException}
 
