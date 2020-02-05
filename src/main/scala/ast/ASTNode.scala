@@ -69,13 +69,13 @@ class FreeNode(val _expr: ExprNode) extends StatNode {
 
 }
 
-class ReturnNode(val _expr: ExprNode) extends StatNode {
+case class ReturnNode(_expr: ExprNode) extends StatNode {
 
   val expr: ExprNode = _expr
 
 }
 
-class ExitNode(val _expr: ExprNode) extends StatNode {
+case class ExitNode(_expr: ExprNode) extends StatNode {
 
   val expr: ExprNode = _expr
 
