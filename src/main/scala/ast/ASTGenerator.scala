@@ -453,8 +453,12 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     val ident: IdentNode = visit(ctx.getChild(0)).asInstanceOf[IdentNode]
     val childCount = ctx.getChildCount
 
+    // i [ e ] [ e ] ...
+    // 0 1 2 3 4 5 6...
+    // first expr has index 2
+    // index of next expr = index of previous expr + 3
     val exprList: IndexedSeq[ExprNode] =
-      for (i <- 2 to childCount - 2) yield visit(ctx.getChild(i)).asInstanceOf[ExprNode]
+      for (i <- 2 until childCount by 3) yield visit(ctx.getChild(i)).asInstanceOf[ExprNode]
 
     new ArrayElemNode(ident, exprList)
   }
