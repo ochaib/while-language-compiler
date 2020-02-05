@@ -1,5 +1,5 @@
 package ast
-
+import ast._
 import antlr.{WACCLexer, WACCParser, WACCParserBaseVisitor}
 import org.antlr.v4.runtime._
 
@@ -341,7 +341,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     // childCount - 1 in case it is signed
     // TODO: maybe we handle overflow here?
     val num: Int = ctx.getChild(childCount - 1).getText.toInt
-    
+
     if (Math.abs(num) > Int.MaxValue) {
         // Log to syntax error.
         println("Syntax Error: Integer overflow when trying to generate IntLiteral.")

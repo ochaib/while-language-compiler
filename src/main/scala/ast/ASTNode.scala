@@ -23,21 +23,21 @@ class ProgramNode(val _stat: StatNode, val _functions: IndexedSeq[FuncNode]) ext
   }
 }
 
-class FuncNode(val funcType: TypeNode, val identNode: IdentNode, val paramList: Option[ParamListNode],
+class FuncNode(val funcType: TypeNode, val ident: IdentNode, val paramList: Option[ParamListNode],
                val stat: StatNode) extends ASTNode with Checkable {
 
   override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
     val typeIdentifier: TYPE = funcType.getIdentifier(topST, ST).asInstanceOf[TYPE]
-    if (ST.lookup(identNode.getKey).isDefined){
-      throw new TypeException("function " + identNode.getKey + " has already been defined")
+    if (ST.lookup(ident.getKey).isDefined){
+      throw new TypeException("function " + ident.getKey + " has already been defined")
     } else {
-      ST.add(identNode.getKey, new FUNCTION(identNode.getKey, typeIdentifier, paramList.getIdentifierList(ST)))
+      ST.add(ident.getKey, new FUNCTION(ident.getKey, typeIdentifier, paramList.getIdentifierList(ST)))
     }
   }
 
   override def toString: String = paramList match {
-    case Some(params) => s"${funcType.toString} ${identNode.toString} (${params.toString}) is\n${stat.toString}\nend"
-    case None => s"${funcType.toString} ${identNode.toString} () is\n${stat.toString}\nend"
+    case Some(params) => s"${funcType.toString} ${ident.toString} (${params.toString}) is\n${stat.toString}\nend"
+    case None => s"${funcType.toString} ${ident.toString} () is\n${stat.toString}\nend"
   }
 }
 
@@ -222,8 +222,8 @@ class IdentNode(val ident: String) extends ExprNode with AssignLHSNode {
 class ArrayElemNode(val identNode: IdentNode, val exprNodes: IndexedSeq[ExprNode]) extends ExprNode with AssignLHSNode {
 
   override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
-    identNode.check(topST, ST)
-    val identIdentifier: IDENTIFIER = identNode.getIdentifier(topST, ST)
+    ident.check(topST, ST)
+    val identIdentifier: IDENTIFIER = ident.getIdentifier(topST, ST)
     for (expr <- exprNodes) expr.check(topST, ST)
     if (! identIdentifier.isInstanceOf[ARRAY]) {
       throw new TypeException(s"Expected array type but got ${identIdentifier.getKey} instead")
