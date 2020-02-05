@@ -103,9 +103,10 @@ class CallNode(val identNode: IdentNode, val _argList: Option[ArgListNode]) exte
 class ArgListNode(val _exprNodes: IndexedSeq[ExprNode]) extends ASTNode
 
 abstract class PairElemNode(val _expr: ExprNode) extends AssignLHSNode with AssignRHSNode {
+
   override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
     val pairIdentifier: IDENTIFIER = _expr.getIdentifier(topST, ST)
-    if (! pairIdentifier.isInstanceOf[PAIR]) {
+    if (!pairIdentifier.isInstanceOf[PAIR]) {
       throw new TypeException("Expected pair type but got " + pairIdentifier)
     } else {
       _expr.check(topST, ST)

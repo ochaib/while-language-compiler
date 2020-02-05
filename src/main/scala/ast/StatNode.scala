@@ -18,10 +18,10 @@ class DeclarationNode(val _type: TypeNode, val identNode: IdentNode, val _rhs: A
 
     // If the type and the rhs dont match, throw exception
     if (typeIdentifier != _rhs.getIdentifier(topST, ST)) {
-      throw new TypeException(typeIdentifier.getKey + " expected but got " + _rhs.getIdentifier(topST, ST).getKey)
+      throw new TypeException(s"${typeIdentifier.getKey} expected but got ${_rhs.getIdentifier(topST, ST).getKey}")
     } else if (ST.lookup(identNode.identKey).isDefined) {
       // If variable is already defined throw exception
-      throw new TypeException(identNode.identKey + " has already been declared")
+      throw new TypeException(s"${identNode.identKey} has already been declared")
     } else {
       ST.add(identNode.identKey, new VARIABLE(identNode.getKey, typeIdentifier.asInstanceOf[TYPE]))
     }
@@ -38,7 +38,7 @@ class AssignmentNode(val _lhs: AssignLHSNode, val _rhs: AssignRHSNode) extends S
     _rhs.check(topST, ST)
 
     if (_lhs.getIdentifier(topST, ST) != _rhs.getIdentifier(topST, ST)){
-      throw new TypeException(_lhs.getKey + " and " + _rhs.getKey + " have non-matching types")
+      throw new TypeException(s"${_lhs.getKey} and ${_rhs.getKey} have non-matching types")
     }
   }
 }
