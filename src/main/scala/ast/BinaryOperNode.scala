@@ -16,10 +16,9 @@ sealed abstract class BinaryOperationNode extends ExprNode {
     case NotEqualNode(_, _) => BoolTypeNode.getIdentifier(topST, ST)
     case LogicalAndNode(_, _) => BoolTypeNode.getIdentifier(topST, ST)
     case LogicalOrNode(_, _) => BoolTypeNode.getIdentifier(topST, ST)
-    case _ => {
+    case _ =>
       assert(assertion = false, "Binary identifier not defined")
       null
-    }
   }
 
   override def check(topST: SymbolTable, ST: SymbolTable): Unit ={
@@ -50,7 +49,7 @@ sealed abstract class BinaryOperationNode extends ExprNode {
     val argOneIdentifier: IDENTIFIER = argOne.getIdentifier(topST, ST)
     val argTwoIdentifier: IDENTIFIER = argTwo.getIdentifier(topST, ST)
     if (! ((argOneIdentifier == expectedIdentifier1 || argOneIdentifier == expectedIdentifier2)
-      && (argTwoIdentifier == expectedIdentifier2 || argTwoIdentifier == expectedIdentifier2))) {
+      && (argTwoIdentifier == expectedIdentifier1 || argTwoIdentifier == expectedIdentifier2))) {
       throw new TypeException(s"Expected input types ${expectedIdentifier1.getKey} or ${expectedIdentifier2.getKey}" +
         s" but got ${argOneIdentifier.getKey} and ${argTwoIdentifier.getKey} instead")
     }
