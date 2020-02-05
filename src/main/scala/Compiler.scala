@@ -1,9 +1,14 @@
 import antlr.{WACCLexer, WACCParser}
-import ast._
-import java.io.IOException
+import ast.{ASTGenerator, ASTNode}
+import java.io.{IOException}
+import main.scala.{ErrorListener}
+import org.antlr.v4.runtime.{
+    CharStream => ANTLRCharStream,
+    CharStreams => ANTLRCharStreams,
+    CommonTokenStream => ANTLRTokenStream
+}
+import util.{ColoredConsole => console}
 
-import main.scala.ErrorListener
-import org.antlr.v4.runtime.{CharStream => ANTLRCharStream, CharStreams => ANTLRCharStreams, CommonTokenStream => ANTLRTokenStream}
 
 object Compiler extends App {
   def error(msg : String) {
