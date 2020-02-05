@@ -1,17 +1,22 @@
 package ast
 
-class IDENTIFIER
+// key denotes the unique name of the identifier in a symbol table
+abstract class IDENTIFIER(key: String) {
+  def getKey: String = key
+}
 
-class VARIABLE(_type: TYPE) extends IDENTIFIER
+class VARIABLE(key:String, _type: TYPE) extends IDENTIFIER(key)
+
 
 // Types
-abstract class TYPE extends IDENTIFIER
-class SCALAR(min: Int, max: Int) extends TYPE
-class ARRAY(_type: TYPE) extends TYPE
-class GENERAL_PAIR extends TYPE
-class PAIR(val _type1: TYPE, val _type2: TYPE) extends TYPE
+abstract class TYPE(key: String) extends IDENTIFIER(key)
 
-class FUNCTION(returnType: TYPE, paramTypes: IndexedSeq[TYPE]) extends IDENTIFIER
+class SCALAR(key: String, min: Int, max: Int) extends TYPE(key)
+class ARRAY(key: String, _type: TYPE) extends TYPE(key)
+object GENERAL_PAIR extends TYPE(key = "pair")
+class PAIR(key: String, val _type1: TYPE, val _type2: TYPE) extends TYPE(key)
+
+class FUNCTION(key: String, returnType: TYPE, paramTypes: IndexedSeq[TYPE]) extends IDENTIFIER(key)
 // class BASE_FUNCTION extends ast.IDENTIFIER {}
 
-class PARAM(_type:TYPE) extends IDENTIFIER
+class PARAM(key: String, _type:TYPE) extends IDENTIFIER(key)
