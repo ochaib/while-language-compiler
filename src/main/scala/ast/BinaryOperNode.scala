@@ -1,6 +1,4 @@
 package ast
-import ast.{IDENTIFIER, SymbolTable, TypeException}
-import util.{ColoredConsole => console}
 
 sealed abstract class BinaryOperationNode(argOne: ExprNode, argTwo: ExprNode) extends ExprNode {
   override def getIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = this match {

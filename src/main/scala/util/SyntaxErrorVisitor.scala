@@ -1,5 +1,4 @@
-package main.scala
-
+package util
 import ast._
 
 class SyntaxErrorVisitor {

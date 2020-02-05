@@ -31,7 +31,10 @@ class FuncNode(val funcType: TypeNode, val ident: IdentNode, val paramList: Opti
     if (ST.lookup(ident.getKey).isDefined){
       throw new TypeException("function " + ident.getKey + " has already been defined")
     } else {
-      ST.add(ident.getKey, new FUNCTION(ident.getKey, typeIdentifier, paramList.getIdentifierList(ST)))
+      paramList match {
+        case Some(params) => ST.add(ident.getKey, new FUNCTION(ident.getKey, typeIdentifier, params.getIdentifierList(ST)))
+        case None => ST.add(ident.getKey, new FUNCTION(ident.getKey, typeIdentifier, IndexedSeq[TYPE]()))
+      }
     }
   }
 
@@ -155,7 +158,8 @@ class FstNode(expr: ExprNode) extends PairElemNode(expr: ExprNode) {
 
   override def initKey: String = {
     val exprKey: String = expr.getKey
-    if (expr == Pair_literNode) {
+    //if (expr == Pair_literNode) {
+    if (false) { // TODO: fix this
       // TODO in backend throw error
       throw new TypeException(s"Expected a pair type but got a null pair literal instead")
     } else if (exprKey.slice(0, 1) != "(" || ")" != exprKey.slice(exprKey.length() - 1, exprKey.length)) {
@@ -182,7 +186,7 @@ class SndNode(expr: ExprNode) extends PairElemNode(expr) {
 
   override def initKey: String = {
     val exprKey: String = expr.getKey
-    if (expr == Pair_literNode) {
+    if (expr.isInstanceOf[Pair_literNode]) {
       // TODO in backend throw error
       throw new TypeException(s"Expected a pair type but got a null pair literal instead")
     } else if (exprKey.slice(0, 1) != "(" || ")" != exprKey.slice(exprKey.length() - 1, exprKey.length)) {
@@ -219,7 +223,7 @@ class IdentNode(val ident: String) extends ExprNode with AssignLHSNode {
   override def toString: String = console.color(ident, fg=Console.GREEN)
 }
 
-class ArrayElemNode(val identNode: IdentNode, val exprNodes: IndexedSeq[ExprNode]) extends ExprNode with AssignLHSNode {
+class ArrayElemNode(val ident: IdentNode, val exprNodes: IndexedSeq[ExprNode]) extends ExprNode with AssignLHSNode {
 
   override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
     ident.check(topST, ST)
@@ -240,7 +244,7 @@ class ArrayElemNode(val identNode: IdentNode, val exprNodes: IndexedSeq[ExprNode
 
   override def toString: String = {
     val exprs : String = exprNodes.map("[" + _.toString + "]").mkString("")
-    s"${identNode.toString}${exprs}"
+    s"${ident.toString}${exprs}"
   }
 }
 
