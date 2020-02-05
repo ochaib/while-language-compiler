@@ -90,14 +90,14 @@ class FreeNode(val _expr: ExprNode) extends StatNode {
   override def toString: String = console.color("free ", fg=Console.BLUE) + expr.toString
 }
 
-class ReturnNode(val _expr: ExprNode) extends StatNode {
+case class ReturnNode(_expr: ExprNode) extends StatNode {
 
   val expr: ExprNode = _expr
 
   override def toString: String = console.color("return ", fg=Console.BLUE) + expr.toString
 }
 
-class ExitNode(val _expr: ExprNode) extends StatNode {
+case class ExitNode(_expr: ExprNode) extends StatNode {
 
   val expr: ExprNode = _expr
 
