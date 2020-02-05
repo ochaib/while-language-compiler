@@ -1,8 +1,8 @@
 package ast
-
 import ast._
+import util.{ColoredConsole => console}
 
-sealed trait ExprNode extends AssignRHSNode {
+sealed class ExprNode extends AssignRHSNode {
   override def check(topST: SymbolTable, ST: SymbolTable): Unit = this match {
     case Int_literNode(_, _) =>
     case Bool_literNode(_) =>

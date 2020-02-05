@@ -1,6 +1,6 @@
 package ast
-
 import ast.{IDENTIFIER, SymbolTable, TypeException}
+import util.{ColoredConsole => console}
 
 sealed trait BinaryOperationNode extends ExprNode {
 
@@ -96,7 +96,7 @@ case class MinusNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperation
 case class GreaterThanNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode {
 
   override def toString: String = s"${argOne.toString} > ${argTwo.toString}"
-
+}
 
 case class GreaterEqualNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode {
 
