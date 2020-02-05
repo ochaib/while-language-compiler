@@ -338,8 +338,9 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
   override def visitInt_liter(ctx: WACCParser.Int_literContext): Int_literNode = {
     val childCount = ctx.getChildCount
     // negative numbers are handled by the unary oper
+    // childCount - 1 in case it is signed
     // TODO: maybe we handle overflow here?
-    val num: Int = ctx.getChild(0).getText.toInt
+    val num: Int = ctx.getChild(childCount - 1).getText.toInt
 
     new Int_literNode(num)
   }
