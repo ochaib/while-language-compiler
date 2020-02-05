@@ -189,7 +189,22 @@ class ArrayElemNode(val identNode: IdentNode, val _exprNodes: IndexedSeq[ExprNod
   val ident: IdentNode = identNode
   val exprNodes: IndexedSeq[ExprNode] = _exprNodes
 
-  override def check(topST: SymbolTable, ST: SymbolTable): Unit = ???
+  override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
+    identNode.check(topST, ST)
+    val identIdentifier: IDENTIFIER = identNode.getIdentifier(topST, ST)
+    for (expr <- _exprNodes) expr.check(topST, ST)
+    if (! identIdentifier.isInstanceOf[ARRAY]) {
+      throw new TypeException(s"Expected array type but got ${identIdentifier.getKey} instead")
+    } else {
+      val identArrayType: IDENTIFIER = identIdentifier.asInstanceOf[ARRAY]._type
+      for (expr <- _exprNodes) {
+        val exprIdentifier: IDENTIFIER = expr.getIdentifier(topST, ST)
+        if (exprIdentifier != identArrayType) {
+          throw new TypeException(s"Expected ${identArrayType.getKey} but got ${exprIdentifier.getKey} instead")
+        }
+      }
+    }
+  }
 }
 
 class ArrayLiteralNode(val _exprNodes: IndexedSeq[ExprNode]) extends AssignRHSNode {
