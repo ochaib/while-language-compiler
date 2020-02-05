@@ -1,8 +1,4 @@
 package ast
-
-import scala.math.LowPriorityOrderingImplicits
-;
-
 // Every node necessary to generate AST. From the WACCLangSpec.
 
 abstract class ASTNode {
@@ -61,7 +57,7 @@ class DeclarationNode(val _type: TypeNode, val identNode: IdentNode, val _rhs: A
 
     // If the type and the rhs dont match, throw exception
     if (typeIdentifier != _rhs.getIdentifier(topST, ST)) {
-      throw new TypeException(typeIdentifier.toString + " expected but got " + _rhs.getIdentifier(topST, ST).toString)
+      throw new TypeException(typeIdentifier.getKey + " expected but got " + _rhs.getIdentifier(topST, ST).getKey)
     } else if (ST.lookup(identNode.identKey).isDefined) {
       // If variable is already defined throw exception
       throw new TypeException(identNode.identKey + " has already been declared")
@@ -143,7 +139,7 @@ class NewPairNode(val fstElem: ExprNode, val sndElem: ExprNode) extends AssignRH
 class CallNode(val identNode: IdentNode, val _argList: Option[ArgListNode]) extends AssignRHSNode {
 
   // TODO lookup and check if it's defined, if not exception, if it is return it
-  override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = ???
+  override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = identNode.getIdentifier(topST, ST)
 
   override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
     identNode.check(topST, ST)
@@ -315,7 +311,7 @@ class ArrayTypeNode(val _typeNode: TypeNode) extends TypeNode with PairElemTypeN
       topST.add(toString, arrayIdentifier)
       arrayIdentifier
     } else {
-      assert(T.get.isInstanceOf[ARRAY], s"Something went wrong... ${getKey} should be a type but isn't")
+      assert(T.get.isInstanceOf[ARRAY], s"Something went wrong... $getKey should be a type but isn't")
       T.get
     }
   }
@@ -334,7 +330,7 @@ class PairTypeNode(val _firstPairElem: PairElemTypeNode, val _secondPairElem: Pa
       new PAIR(getKey, firstPairIdentifier.asInstanceOf[TYPE], secondPairIdentifier.asInstanceOf[TYPE])
     } else {
       val pairIdentifier = identifierLookupOption.get
-      assert(pairIdentifier.isInstanceOf[PAIR], s"Expected pair type but got ${getKey} instead")
+      assert(pairIdentifier.isInstanceOf[PAIR], s"Expected pair type but got $getKey instead")
       pairIdentifier
     }
   }
@@ -346,11 +342,14 @@ trait PairElemTypeNode extends ASTNode with Identifiable
 
 // 'pair' in the WACCLangSpec
 class PairElemTypePairNode extends PairElemTypeNode {
-  override def initKey: String = "pair"
+  override def initKey: String = GENERAL_PAIR.getKey
 
-  override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = ???
+  override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
+    val generalPairIdentifierOption: Option[IDENTIFIER] = topST.lookup(getKey)
+    assert(generalPairIdentifierOption.isDefined, "Something went wrong, the general pair was not defined")
+    generalPairIdentifierOption.get
+  }
 }
-
 
 class IdentNode(val identKey: String) extends ExprNode with AssignLHSNode {
   override def initKey: String = identKey
@@ -396,7 +395,7 @@ class ArrayLiteralNode(val _exprNodes: IndexedSeq[ExprNode]) extends AssignRHSNo
       topST.add(toString, arrayIdentifier)
       arrayIdentifier
     } else {
-      assert(arrayIdentifierOption.get.isInstanceOf[ARRAY], s"Something went wrong... ${getKey} should be a an array type but isn't")
+      assert(arrayIdentifierOption.get.isInstanceOf[ARRAY], s"Something went wrong... $getKey should be a an array type but isn't")
       arrayIdentifierOption.get
     }
 
@@ -449,10 +448,9 @@ sealed abstract class UnaryOperationNode extends ExprNode {
     case LenNode(_) => IntTypeNode.getIdentifier(topST, ST)
     case OrdNode(_) => IntTypeNode.getIdentifier(topST, ST)
     case ChrNode(_) => CharTypeNode.getIdentifier(topST, ST)
-    case _ => {
+    case _ =>
       assert(assertion = false, "unaccounted for unary getIdentifier")
       null
-    }
   }
   override def check(topST: SymbolTable, ST: SymbolTable): Unit = this match {
     case LogicalNotNode(expr: ExprNode) => checkHelper(expr, "bool", topST, ST)
@@ -463,10 +461,10 @@ sealed abstract class UnaryOperationNode extends ExprNode {
     case _ => assert(assertion = false, "unaccounted for unary check")
   }
 
-  private def checkHelper(expr: ExprNode, expected: String, topST: SymbolTable, ST: SymbolTable): Unit = {
+  private def checkHelper(expr: ExprNode, expectedIdentifier: String, topST: SymbolTable, ST: SymbolTable): Unit = {
     val identifier: IDENTIFIER = expr.getIdentifier(topST, ST)
-    if (identifier != topST.lookup(expected).get){
-      throw new TypeException("Expected " + expected + " but got " + identifier)
+    if (identifier != topST.lookup(expectedIdentifier).get){
+      throw new TypeException("Expected " + expectedIdentifier + " but got " + identifier)
     }
   }
   private def lenHelper(expr: ExprNode, topST: SymbolTable, ST: SymbolTable): Unit = {
