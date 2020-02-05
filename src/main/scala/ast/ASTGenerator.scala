@@ -6,6 +6,10 @@ import org.antlr.v4.runtime._
 // Class used to traverse the parse tree built by ANTLR
 class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
+  def debugCtx(ctx: ParserRuleContext) = {
+    for (i<-0 until ctx.getChildCount) println(i + ":: " + ctx.getChild(i).getClass + ": " + ctx.getChild(i).getText)
+  }
+
   override def visitProgram(ctx: WACCParser.ProgramContext): ProgramNode = {
     // Need to retrieve program information from parser context,
     // Need to visit all the functions (as many as there are due to the *)
@@ -13,13 +17,9 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     // ‘begin’ ⟨func⟩* ⟨stat⟩ ‘end’
     //    0     1-n     n+1    n+2
     val childCount = ctx.getChildCount
-    val functions: IndexedSeq[FuncNode] = IndexedSeq[FuncNode]()
-    val stat: StatNode = visit(ctx.getChild(childCount - 2)).asInstanceOf[StatNode]
+    val stat: StatNode = visit(ctx.getChild(childCount - 3)).asInstanceOf[StatNode]
 
-    for (i <- 1 until childCount - 3) {
-      functions :+ visit(ctx.getChild(i)).asInstanceOf[FuncNode]
-    }
-
+    val functions: IndexedSeq[FuncNode] = for (i<-1 until childCount - 3) yield visit(ctx.getChild(i)).asInstanceOf[FuncNode]
     // Then create program node from the two
     new ProgramNode(stat, functions)
   }
@@ -28,9 +28,12 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     // ⟨type⟩ ⟨ident⟩ ‘(’ ⟨param-list⟩? ‘)’ ‘is’ ⟨stat⟩ ‘end’
     val funcType: TypeNode = visit(ctx.getChild(0)).asInstanceOf[TypeNode]
     val ident: IdentNode = visit(ctx.getChild(1)).asInstanceOf[IdentNode]
-    // Needs to be optional... so either an empty list or populated.
-    val paramList: ParamListNode = visit(ctx.getChild(3)).asInstanceOf[ParamListNode]
-    val statement: StatNode = visit(ctx.getChild(6)).asInstanceOf[StatNode]
+    // TODO: Needs to be optional... so either an empty list or populated.
+    val paramList: Option[ParamListNode] = Option(visit(ctx.getChild(3)).asInstanceOf[ParamListNode])
+    val statement: StatNode = paramList match {
+      case Some(_) => visit(ctx.getChild(6)).asInstanceOf[StatNode]
+      case None => visit(ctx.getChild(5)).asInstanceOf[StatNode]
+    }
 
     new FuncNode(funcType, ident, paramList, statement)
   }
@@ -39,16 +42,10 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     // ⟨param⟩ ( ‘,’ ⟨param⟩ )*
     // Multiple params... a param list
     val childCount = ctx.getChildCount
-    // Apparently IndexedSeq is much better than an array so I'll use it instead
-    val paramList: IndexedSeq[ParamNode] = IndexedSeq[ParamNode]()
 
-    // Hope this is how you do it.
-    // Now takes into account the comma.
-    for (i <- 0 until childCount) {
-      if (!ctx.getChild(i).getText.charAt(0).equals(',')) {
-        paramList :+ visit(ctx.getChild(i)).asInstanceOf[ParamNode]
-      }
-    }
+    val paramList: IndexedSeq[ParamNode] =
+      for (i <- 0 until childCount; if !(ctx.getChild(i).getText.charAt(0).equals(','))) yield
+        visit(ctx.getChild(i)).asInstanceOf[ParamNode]
 
     new ParamListNode(paramList)
   }
@@ -211,27 +208,21 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
   override def visitAssignRHSCall(ctx: WACCParser.AssignRHSCallContext): AssignRHSNode = {
     // ‘call’ ⟨ident⟩ ‘(’ ⟨arg-list⟩? ‘)’
     val ident: IdentNode = visit(ctx.getChild(1)).asInstanceOf[IdentNode]
-    val argList: Option[ArgListNode] = None
-
-    if (ctx.getChildCount() == 5) {
-      val argList: Option[ArgListNode] = Some(visit(ctx.getChild(3)).asInstanceOf[ArgListNode])
-    }
+    val argList: Option[ArgListNode] =
+      if (ctx.getChildCount() == 5)
+        Some(visit(ctx.getChild(3)).asInstanceOf[ArgListNode])
+      else None
 
     new CallNode(ident, argList)
   }
-  
+
   override def visitArg_list(ctx: WACCParser.Arg_listContext): ArgListNode = {
     // ⟨expr ⟩ (‘,’ ⟨expr ⟩ )*
     val childCount = ctx.getChildCount
 
-    val exprChildren: IndexedSeq[ExprNode] = IndexedSeq[ExprNode]()
-
-    // Change this to account for the comma...
-    for (i <- 0 until childCount) {
-      if (!ctx.getChild(i).getText.charAt(0).equals(',')) {
-        exprChildren :+ visit(ctx.getChild(i)).asInstanceOf[ExprNode]
-      }
-    }
+    val exprChildren: IndexedSeq[ExprNode] =
+      for (i <- 0 until childCount; if !(ctx.getChild(i).getText.charAt(0).equals(','))) yield
+        visit(ctx.getChild(i)).asInstanceOf[ExprNode]
 
     new ArgListNode(exprChildren)
   }
@@ -265,7 +256,9 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
   override def visitTypeArray_type(ctx: WACCParser.TypeArray_typeContext): TypeNode = {
     // ⟨array-type⟩
-    visit(ctx.getChild(0)).asInstanceOf[ArrayTypeNode]
+    val arrayType: TypeNode = visit(ctx.getChild(0)).asInstanceOf[TypeNode]
+
+    new ArrayTypeNode(arrayType)
   }
 
   override def visitTypePair_type(ctx: WACCParser.TypePair_typeContext): TypeNode = {
@@ -343,24 +336,19 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
   }
 
   override def visitInt_liter(ctx: WACCParser.Int_literContext): Int_literNode = {
-    // ⟨int-sign⟩? ⟨digit⟩+
     val childCount = ctx.getChildCount
-    var intSign: Option[Char] = None
-    // Need to create node for sign, needs to be optional.
-    if (ctx.getChildCount() == 2) {
-      intSign = Some(ctx.getChild(0).getText.charAt(0))
+    // negative numbers are handled by the unary oper
+    // childCount - 1 in case it is signed
+    // TODO: maybe we handle overflow here?
+    val num: Int = ctx.getChild(childCount - 1).getText.toInt
+    
+    if (Math.abs(num) > Int.MaxValue) {
+        // Log to syntax error.
+        println("Syntax Error: Integer overflow when trying to generate IntLiteral.")
+        // Create error node instead or something?.
     }
 
-    // Need to create list of digitNodes, or just chars...
-//    val digits: IndexedSeq[DigitNode] = IndexedSeq[DigitNode]()
-    val digits: IndexedSeq[Int] = IndexedSeq[Int]()
-
-
-    for (i <- 1 to childCount - 1) {
-      digits :+ visit(ctx.getChild(i))
-    }
-
-    new Int_literNode(intSign, digits)
+    new Int_literNode(num)
   }
 
   override def visitExprBoolLiter(ctx: WACCParser.ExprBoolLiterContext): ExprNode = {
@@ -382,7 +370,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
   override def visitChar_liter(ctx: WACCParser.Char_literContext): Char_literNode = {
     // ‘’’ ⟨character ⟩ ‘’’
-    val charValue: Char = ctx.getChild(1).getText.charAt(0)
+    val charValue: Char = ctx.getChild(0).getText.charAt(1)
 
     new Char_literNode(charValue)
   }
@@ -394,14 +382,9 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
   override def visitStr_liter(ctx: WACCParser.Str_literContext): Str_literNode = {
     // ‘"’ ⟨character⟩* ‘"’
-    val childCount = ctx.getChildCount
-    val charList: IndexedSeq[Char] = IndexedSeq[Char]()
+    val str: String = ctx.getChild(0).getText
 
-    for (i <- 1 to childCount - 2) {
-      charList :+ visit(ctx.getChild(i))
-    }
-
-    new Str_literNode(charList)
+    new Str_literNode(str)
   }
 
   override def visitExprPairLiter(ctx: WACCParser.ExprPairLiterContext): ExprNode = {
@@ -409,7 +392,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     visit(ctx.getChild(0)).asInstanceOf[Pair_literNode]
   }
 
-  // Pair_liternode?
+  override def visitPair_liter(ctx: WACCParser.Pair_literContext): Pair_literNode = new Pair_literNode
 
   override def visitExprIdent(ctx: WACCParser.ExprIdentContext): ExprNode = {
     // ⟨ident⟩
@@ -421,7 +404,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     visit(ctx.getChild(0)).asInstanceOf[ArrayElemNode]
   }
 
-  override def visitUnary_oper(ctx: WACCParser.Unary_operContext): ExprNode = {
+  override def visitExprUnaryOper(ctx: WACCParser.ExprUnaryOperContext): ExprNode = {
     // ⟨unary-oper⟩ ⟨expr⟩
     val unaryOperator: String = ctx.getChild(0).getText
     val expr: ExprNode = visit(ctx.getChild(1)).asInstanceOf[ExprNode]
@@ -438,7 +421,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     }
   }
 
-  override def visitBinary_oper(ctx: WACCParser.Binary_operContext): ExprNode = {
+  override def visitExprBinaryOper(ctx: WACCParser.ExprBinaryOperContext): ExprNode = {
     // ⟨expr⟩ ⟨binary-oper⟩ ⟨expr⟩
     val firstExpr: ExprNode = visit(ctx.getChild(0)).asInstanceOf[ExprNode]
     val binaryOperator: String = ctx.getChild(1).getText
@@ -476,12 +459,13 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     // ⟨ident⟩ (‘[’ ⟨expr⟩ ‘]’)+
     val ident: IdentNode = visit(ctx.getChild(0)).asInstanceOf[IdentNode]
     val childCount = ctx.getChildCount
-    val exprList: IndexedSeq[ExprNode] = IndexedSeq[ExprNode]()
 
-    // To get every expr in the exprList
-    for (i <- 2 to childCount - 2) {
-      exprList :+ visit(ctx.getChild(i)).asInstanceOf[ExprNode]
-    }
+    // i [ e ] [ e ] ...
+    // 0 1 2 3 4 5 6...
+    // first expr has index 2
+    // index of next expr = index of previous expr + 3
+    val exprList: IndexedSeq[ExprNode] =
+      for (i <- 2 until childCount by 3) yield visit(ctx.getChild(i)).asInstanceOf[ExprNode]
 
     new ArrayElemNode(ident, exprList)
   }
@@ -489,15 +473,10 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
   override def visitArray_liter(ctx: WACCParser.Array_literContext): ArrayLiteralNode = {
     // ‘[’ ( ⟨expr⟩ (‘,’ ⟨expr⟩)* )? ‘]’
     val childCount = ctx.getChildCount
-    val exprList: IndexedSeq[ExprNode] = IndexedSeq[ExprNode]()
 
-    // To get every expr in the exprList but I don't think it works here because
-    // it would be separated by commas, need to get every next expr after comma.
-    for (i <- 1 to childCount - 2) {
-      if (!ctx.getChild(i).getText.charAt(0).equals(',')) {
-        exprList :+ visit(ctx.getChild(i)).asInstanceOf[ExprNode]
-      }
-    }
+    val exprList: IndexedSeq[ExprNode] =
+        for (i <- 1 until childCount - 1; if !(ctx.getChild(i).getText.charAt(0).equals(','))) yield
+          visit(ctx.getChild(i)).asInstanceOf[ExprNode]
 
     new ArrayLiteralNode(exprList)
   }

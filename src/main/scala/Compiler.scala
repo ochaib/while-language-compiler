@@ -1,19 +1,24 @@
 import antlr.{WACCLexer, WACCParser}
-import ast._
-import java.io.IOException
+import ast.{ASTGenerator, ASTNode}
+import java.io.{IOException}
+import main.scala.{ErrorListener}
+import org.antlr.v4.runtime.{
+    CharStream => ANTLRCharStream,
+    CharStreams => ANTLRCharStreams,
+    CommonTokenStream => ANTLRTokenStream
+}
+import util.{ColoredConsole => console}
 
-import main.scala.ErrorListener
-import org.antlr.v4.runtime.{CharStream => ANTLRCharStream, CharStreams => ANTLRCharStreams, CommonTokenStream => ANTLRTokenStream}
 
 object Compiler extends App {
   def error(msg : String) {
-    println(msg)
+    console.error(msg)
     System.exit(1)
   }
 
-  if (args.length == 0) error("Error: No filename provided")
+  if (args.length == 0) error("No filename provided")
 
-  println("Compiling: " + args(0))
+  console.info("Compiling: " + args(0))
   try {
     // Build the lexer and parse out tokens
     val file : ANTLRCharStream = ANTLRCharStreams.fromFileName(args(0))
@@ -33,11 +38,10 @@ object Compiler extends App {
     val program : WACCParser.ProgramContext = parser.program()
     // Build the AST
     val visitor : ASTGenerator = new ASTGenerator()
-    val tree : ASTNode = visitor.visitProgram(program)
-
-    // Perform semantic analysis, generate symbolTable, and analyse tree.
+    val tree : ASTNode = visitor.visit(program)
+    println(tree.toString)
   }
   catch {
-    case ioerror : IOException => error("Error: File does not exist")
+    case ioerror : IOException => error("File does not exist")
   }
 }
