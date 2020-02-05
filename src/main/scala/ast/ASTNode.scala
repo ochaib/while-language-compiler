@@ -28,10 +28,10 @@ class FuncNode(val funcType: TypeNode, val ident: IdentNode, val paramList: Opti
 
   override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
     val typeIdentifier: TYPE = funcType.getIdentifier(topST, ST).asInstanceOf[TYPE]
-    if (ST.lookup(identNode.identKey).isDefined){
-      throw new TypeException("function " + identNode.identKey + " has already been defined")
+    if (ST.lookup(ident.getKey).isDefined){
+      throw new TypeException("function " + ident.getKey + " has already been defined")
     } else {
-      ST.add(identNode.identKey, new FUNCTION(identNode.getKey, typeIdentifier, paramList.getIdentifierList(ST)))
+      ST.add(ident.getKey, new FUNCTION(ident.getKey, typeIdentifier, paramList.getIdentifierList(ST)))
     }
   }
 
@@ -117,7 +117,7 @@ class CallNode(val ident: IdentNode, val argList: Option[ArgListNode]) extends A
     ident.check(topST, ST)
     // TODO check through each of argList
   }
-  override def initKey: String = ident.identKey
+  override def initKey: String = ident.getKey
 
   override def toString: String = argList match {
     case Some(args) => console.color(s"call ${ident.toString} (${args.toString})", fg=Console.BLUE)
@@ -222,8 +222,8 @@ class IdentNode(val ident: String) extends ExprNode with AssignLHSNode {
 class ArrayElemNode(val ident: IdentNode, val exprNodes: IndexedSeq[ExprNode]) extends ExprNode with AssignLHSNode {
 
   override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
-    identNode.check(topST, ST)
-    val identIdentifier: IDENTIFIER = identNode.getIdentifier(topST, ST)
+    ident.check(topST, ST)
+    val identIdentifier: IDENTIFIER = ident.getIdentifier(topST, ST)
     for (expr <- exprNodes) expr.check(topST, ST)
     if (! identIdentifier.isInstanceOf[ARRAY]) {
       throw new TypeException(s"Expected array type but got ${identIdentifier.getKey} instead")

@@ -2,7 +2,7 @@ package ast
 import ast.{IDENTIFIER, SymbolTable, TypeException}
 import util.{ColoredConsole => console}
 
-sealed trait BinaryOperationNode extends ExprNode {
+trait BinaryOperationNode extends ExprNode {
 
   override def getIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = this match {
     case MultiplyNode(_, _) => IntTypeNode.getIdentifier(topST, ST)

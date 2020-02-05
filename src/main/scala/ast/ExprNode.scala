@@ -2,23 +2,23 @@ package ast
 import ast._
 import util.{ColoredConsole => console}
 
-sealed class ExprNode extends AssignRHSNode {
+class ExprNode extends AssignRHSNode {
   override def check(topST: SymbolTable, ST: SymbolTable): Unit = this match {
-    case Int_literNode(_, _) =>
+    case Int_literNode(_) =>
     case Bool_literNode(_) =>
     case Char_literNode(_) =>
     case Str_literNode(_) =>
   }
 
   override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = this match {
-    case Int_literNode(_, _) => IntTypeNode.getIdentifier(topST, ST)
+    case Int_literNode(_) => IntTypeNode.getIdentifier(topST, ST)
     case Bool_literNode(_) => BoolTypeNode.getIdentifier(topST, ST)
     case Char_literNode(_) => CharTypeNode.getIdentifier(topST, ST)
     case Str_literNode(_) => StringTypeNode.getIdentifier(topST, ST)
   }
 
   override def initKey: String = this match {
-    case Int_literNode(_, _) => IntTypeNode.getKey
+    case Int_literNode(_) => IntTypeNode.getKey
     case Bool_literNode(_) => BoolTypeNode.getKey
     case Char_literNode(_) => CharTypeNode.getKey
     case Str_literNode(_) => StringTypeNode.getKey

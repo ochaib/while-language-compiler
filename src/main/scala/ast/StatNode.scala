@@ -12,7 +12,7 @@ class SkipNode extends StatNode {
   override def toString: String = console.color("skip", fg=Console.BLUE)
 }
 
-class DeclarationNode(val _type: TypeNode, val identNode: IdentNode, val rhs: AssignRHSNode)
+class DeclarationNode(val _type: TypeNode, val ident: IdentNode, val rhs: AssignRHSNode)
   extends StatNode {
   override def check(topST:SymbolTable, ST: SymbolTable): Unit = {
     val typeIdentifier: IDENTIFIER = _type.getIdentifier(topST, ST)
@@ -21,15 +21,15 @@ class DeclarationNode(val _type: TypeNode, val identNode: IdentNode, val rhs: As
     // If the type and the rhs dont match, throw exception
     if (typeIdentifier != rhs.getIdentifier(topST, ST)) {
       throw new TypeException(typeIdentifier.getKey + " expected but got " + rhs.getIdentifier(topST, ST).getKey)
-    } else if (ST.lookup(identNode.identKey).isDefined) {
+    } else if (ST.lookup(ident.getKey).isDefined) {
       // If variable is already defined throw exception
-      throw new TypeException(s"${identNode.identKey} has already been declared")
+      throw new TypeException(s"${ident.getKey} has already been declared")
     } else {
-      ST.add(identNode.identKey, new VARIABLE(identNode.getKey, typeIdentifier.asInstanceOf[TYPE]))
+      ST.add(ident.getKey, new VARIABLE(ident.getKey, typeIdentifier.asInstanceOf[TYPE]))
     }
   }
 
-  override def toString: String = s"${typeNode.toString} ${ident.toString} = ${rhs.toString}"
+  override def toString: String = s"${_type.toString} ${ident.toString} = ${rhs.toString}"
 }
 
 class AssignmentNode(val lhs: AssignLHSNode, val rhs: AssignRHSNode) extends StatNode {
