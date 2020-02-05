@@ -211,8 +211,15 @@ class ArrayLiteralNode(val _exprNodes: IndexedSeq[ExprNode]) extends AssignRHSNo
 
   val exprNodes: IndexedSeq[ExprNode] = _exprNodes
 
-  // TODO check all exprNode identifiers against the first one
-  override def check(topST: SymbolTable, ST: SymbolTable): Unit = ???
+  override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
+    val firstIdentifier: IDENTIFIER = _exprNodes.apply(0).getIdentifier(topST, ST)
+    for (expr <- _exprNodes) {
+      val exprIdentifier = expr.getIdentifier(topST, ST)
+      if (exprIdentifier != firstIdentifier) {
+        throw new TypeException(s"Expected type ${firstIdentifier.getKey} but got ${exprIdentifier.getKey}")
+      }
+    }
+  }
 
   override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
     val arrayIdentifierOption: Option[IDENTIFIER] = topST.lookup(getKey)
