@@ -49,7 +49,7 @@ class ParamListNode(val paramList: IndexedSeq[ParamNode]) extends ASTNode {
   override def toString: String = paramList.map(_.toString).mkString(", ")
 }
 
-class ParamNode(val paramType: TypeNode, val ident: IdentNode) extends ASTNode {
+class ParamNode(val paramType: TypeNode, val ident: IdentNode) extends ASTNode with Identifiable {
 
   override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = paramType.getIdentifier(topST, ST)
 
@@ -149,7 +149,7 @@ class FstNode(expr: ExprNode) extends PairElemNode(expr: ExprNode) {
     if (! pairIdentifier.isInstanceOf[PAIR]) {
       throw new TypeException(s"Expected pair type but got a non-pair type: ${expr.getKey}}")
     } else {
-      pairIdentifier.asInstanceOf[PAIR].type1
+      pairIdentifier.asInstanceOf[PAIR]._type1
     }
   }
 
@@ -175,7 +175,7 @@ class SndNode(expr: ExprNode) extends PairElemNode(expr) {
     if (! pairIdentifier.isInstanceOf[PAIR]) {
       throw new TypeException("Expected pair type but got a non-pair type")
     } else {
-      pairIdentifier.asInstanceOf[PAIR].type2
+      pairIdentifier.asInstanceOf[PAIR]._type2
     }
   }
 
@@ -219,7 +219,7 @@ class IdentNode(val ident: String) extends ExprNode with AssignLHSNode {
   override def toString: String = console.color(ident, fg=Console.GREEN)
 }
 
-class ArrayElemNode(val ident: IdentNode, val exprNodes: IndexedSeq[ExprNode]) extends ExprNode with AssignLHSNode {
+class ArrayElemNode(val identNode: IdentNode, val exprNodes: IndexedSeq[ExprNode]) extends ExprNode with AssignLHSNode {
 
   override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
     ident.check(topST, ST)
@@ -240,13 +240,11 @@ class ArrayElemNode(val ident: IdentNode, val exprNodes: IndexedSeq[ExprNode]) e
 
   override def toString: String = {
     val exprs : String = exprNodes.map("[" + _.toString + "]").mkString("")
-    s"${ident.toString}${exprs}"
+    s"${identNode.toString}${exprs}"
   }
 }
 
 class ArrayLiteralNode(val exprNodes: IndexedSeq[ExprNode]) extends AssignRHSNode {
-
-  val exprNodes: IndexedSeq[ExprNode] = exprNodes
 
   override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
     val firstIdentifier: IDENTIFIER = exprNodes.apply(0).getIdentifier(topST, ST)
