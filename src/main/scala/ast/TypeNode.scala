@@ -1,6 +1,7 @@
 package ast
-
 import ast.{ARRAY, GENERAL_PAIR, IDENTIFIER, PAIR, SymbolTable, TYPE}
+import util.{ColoredConsole => console}
+
 
 abstract class TypeNode extends ASTNode with Identifiable {
 

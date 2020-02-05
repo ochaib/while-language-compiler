@@ -1,6 +1,6 @@
 package ast
-
 import ast._
+import util.{ColoredConsole => console}
 
 abstract class StatNode extends ASTNode with Checkable {
   override def toString: String = console.color("<STATEMENT>", fg=Console.RED)
@@ -12,10 +12,10 @@ class SkipNode extends StatNode {
   override def toString: String = console.color("skip", fg=Console.BLUE)
 }
 
-class DeclarationNode(val type: TypeNode, val identNode: IdentNode, val rhs: AssignRHSNode)
+class DeclarationNode(val _type: TypeNode, val identNode: IdentNode, val rhs: AssignRHSNode)
   extends StatNode {
   override def check(topST:SymbolTable, ST: SymbolTable): Unit = {
-    val typeIdentifier: IDENTIFIER = type.getIdentifier(topST, ST)
+    val typeIdentifier: IDENTIFIER = _type.getIdentifier(topST, ST)
     rhs.check(topST, ST)
 
     // If the type and the rhs dont match, throw exception

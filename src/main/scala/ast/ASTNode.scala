@@ -212,7 +212,7 @@ class IdentNode(val ident: String) extends ExprNode with AssignLHSNode {
       assert(assertion = false, s"Something went wrong... $toString should be a variable but isn't")
       null
     } else {
-      T.get.asInstanceOf[VARIABLE].type
+      T.get.asInstanceOf[VARIABLE]._type
     }
   }
 
