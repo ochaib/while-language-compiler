@@ -7,6 +7,7 @@ sealed abstract class BinaryOperationNode(argOne: ExprNode, argTwo: ExprNode) ex
     case ModNode(_, _) => IntTypeNode.getIdentifier(topST, ST)
     case PlusNode(_, _) => IntTypeNode.getIdentifier(topST, ST)
     case MinusNode(_, _) => IntTypeNode.getIdentifier(topST, ST)
+    case GreaterThanNode(_, _) => BoolTypeNode.getIdentifier(topST, ST)
     case GreaterEqualNode(_, _) => BoolTypeNode.getIdentifier(topST, ST)
     case LessThanNode(_, _) => BoolTypeNode.getIdentifier(topST, ST)
     case LessEqualNode(_, _) => BoolTypeNode.getIdentifier(topST, ST)
@@ -16,7 +17,7 @@ sealed abstract class BinaryOperationNode(argOne: ExprNode, argTwo: ExprNode) ex
     case LogicalOrNode(_, _) => BoolTypeNode.getIdentifier(topST, ST)
   }
 
-  override def check(topST: SymbolTable, ST: SymbolTable): Unit ={
+  override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
     val intIdentifier: IDENTIFIER = IntTypeNode.getIdentifier(topST, ST)
     val boolIdentifier: IDENTIFIER = BoolTypeNode.getIdentifier(topST, ST)
     val charIdentifier: IDENTIFIER = CharTypeNode.getIdentifier(topST, ST)
@@ -31,7 +32,7 @@ sealed abstract class BinaryOperationNode(argOne: ExprNode, argTwo: ExprNode) ex
       case LessThanNode(argOne, argTwo) => comparatorsCheckerHelper(argOne, argTwo, intIdentifier, charIdentifier, topST, ST)
       case LessEqualNode(argOne, argTwo) => comparatorsCheckerHelper(argOne, argTwo, intIdentifier, charIdentifier, topST, ST)
       case EqualToNode(argOne, argTwo) => binaryCheckerHelper(argOne, argTwo,
-      argOne.getIdentifier(topST, ST), argOne.getIdentifier(topST, ST), topST, ST)
+        argOne.getIdentifier(topST, ST), argOne.getIdentifier(topST, ST), topST, ST)
       case NotEqualNode(argOne, argTwo) => binaryCheckerHelper(argOne, argTwo,
         argOne.getIdentifier(topST, ST), argOne.getIdentifier(topST, ST), topST, ST)
       case LogicalAndNode(argOne, argTwo) => binaryCheckerHelper(argOne, argTwo, boolIdentifier, boolIdentifier, topST, ST)
@@ -46,7 +47,7 @@ sealed abstract class BinaryOperationNode(argOne: ExprNode, argTwo: ExprNode) ex
     case PlusNode(argOne, argTwo) => s"${argOne.toString} + ${argTwo.toString}"
     case MinusNode(argOne, argTwo) => s"${argOne.toString} - ${argTwo.toString}"
     case GreaterThanNode(argOne, argTwo) => s"${argOne.toString} > ${argTwo.toString}"
-    case GreaterEqualNode(argOne, argTwo) =>  s"${argOne.toString} >= ${argTwo.toString}"
+    case GreaterEqualNode(argOne, argTwo) => s"${argOne.toString} >= ${argTwo.toString}"
     case LessThanNode(argOne, argTwo) => s"${argOne.toString} < ${argTwo.toString}"
     case LessEqualNode(argOne, argTwo) => s"${argOne.toString} <= ${argTwo.toString}"
     case EqualToNode(argOne, argTwo) => s"${argOne.toString} == ${argTwo.toString}"
@@ -54,11 +55,12 @@ sealed abstract class BinaryOperationNode(argOne: ExprNode, argTwo: ExprNode) ex
     case LogicalAndNode(argOne, argTwo) => s"${argOne.toString} && ${argTwo.toString}"
     case LogicalOrNode(argOne, argTwo) => s"${argOne.toString} || ${argTwo.toString}"
   }
+
   private def comparatorsCheckerHelper(argOne: ExprNode, argTwo: ExprNode,
-                                      expectedIdentifier1: IDENTIFIER, expectedIdentifier2: IDENTIFIER, topST: SymbolTable, ST: SymbolTable): Unit = {
+                                       expectedIdentifier1: IDENTIFIER, expectedIdentifier2: IDENTIFIER, topST: SymbolTable, ST: SymbolTable): Unit = {
     val argOneIdentifier: IDENTIFIER = argOne.getIdentifier(topST, ST)
     val argTwoIdentifier: IDENTIFIER = argTwo.getIdentifier(topST, ST)
-    if (! ((argOneIdentifier == expectedIdentifier1 || argOneIdentifier == expectedIdentifier2)
+    if (!((argOneIdentifier == expectedIdentifier1 || argOneIdentifier == expectedIdentifier2)
       && (argTwoIdentifier == expectedIdentifier1 || argTwoIdentifier == expectedIdentifier2))) {
       throw new TypeException(s"Expected input types ${expectedIdentifier1.getKey} or ${expectedIdentifier2.getKey}" +
         s" but got ${argOneIdentifier.getKey} and ${argTwoIdentifier.getKey} instead")
@@ -69,11 +71,12 @@ sealed abstract class BinaryOperationNode(argOne: ExprNode, argTwo: ExprNode) ex
                                   expectedIdentifier2: IDENTIFIER, topST: SymbolTable, ST: SymbolTable): Unit = {
     val argOneIdentifier: IDENTIFIER = argOne.getIdentifier(topST, ST)
     val argTwoIdentifier: IDENTIFIER = argTwo.getIdentifier(topST, ST)
-    if (! (argOneIdentifier == expectedIdentifier1 && argTwoIdentifier == expectedIdentifier2)) {
+    if (!(argOneIdentifier == expectedIdentifier1 && argTwoIdentifier == expectedIdentifier2)) {
       throw new TypeException(s"Expected input types ${expectedIdentifier1.getKey} and ${expectedIdentifier2.getKey}" +
         s" but got ${argOneIdentifier.getKey} and ${argTwoIdentifier.getKey} instead")
     }
   }
+}
 
 case class MultiplyNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(argOne, argTwo)
 case class DivideNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(argOne, argTwo)
