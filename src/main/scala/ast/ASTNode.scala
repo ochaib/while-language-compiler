@@ -306,7 +306,7 @@ trait PairElemTypeNode extends ASTNode {
 }
 
 class PairElemTypePairNode extends PairElemTypeNode {
-  override def toString: String = console.color("<PAIR ELEM TYPE PAIR>", fg=Console.RED)
+  override def toString: String = console.color("pair", fg=Console.RED)
 }
 
 class IdentNode(val _ident: String) extends ExprNode with AssignLHSNode {
