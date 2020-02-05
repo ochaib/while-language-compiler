@@ -66,8 +66,6 @@ trait BinaryOperationNode extends ExprNode {
     }
   }
 
-  override def check(topST: SymbolTable, ST: SymbolTable): Unit = ???
-
   override def toString: String = argOne.toString + " " + console.color("<BINARY-OP>", fg=Console.RED) + " " + argTwo.toString
 }
 
