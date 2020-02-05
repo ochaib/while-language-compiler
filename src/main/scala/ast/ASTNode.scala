@@ -1,4 +1,5 @@
 package ast;
+import ast._
 import util.{ColoredConsole => console}
 
 // Every node necessary to generate AST. From the WACCLangSpec.
@@ -22,13 +23,17 @@ class ProgramNode(val _stat: StatNode, val _functions: IndexedSeq[FuncNode]) ext
   }
 }
 
-class FuncNode(val _funcType: TypeNode, val _ident: IdentNode, val _paramList: Option[ParamListNode],
-               val _stat: StatNode) extends ASTNode {
+class FuncNode(val funcType: TypeNode, val ident: IdentNode, val paramList: Option[ParamListNode],
+               val stat: StatNode) extends ASTNode with Checkable {
 
-  val funcType: TypeNode = _funcType
-  val ident: IdentNode = _ident
-  val paramList: Option[ParamListNode] = _paramList
-  val stat: StatNode = _stat
+  override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
+    val typeIdentifier: TYPE = funcType.getIdentifier(topST, ST).asInstanceOf[TYPE]
+    if (ST.lookup(identNode.identKey).isDefined){
+      throw new TypeException("function " + identNode.identKey + " has already been defined")
+    } else {
+      ST.add(identNode.identKey, new FUNCTION(identNode.getKey, typeIdentifier, paramList.getIdentifierList(ST)))
+    }
+  }
 
   override def toString: String = paramList match {
     case Some(params) => s"${funcType.toString} ${ident.toString} (${params.toString}) is\n${stat.toString}\nend"
@@ -36,153 +41,83 @@ class FuncNode(val _funcType: TypeNode, val _ident: IdentNode, val _paramList: O
   }
 }
 
-class ParamListNode(val _paramList: IndexedSeq[ParamNode]) extends ASTNode {
+class ParamListNode(val paramList: IndexedSeq[ParamNode]) extends ASTNode {
 
-  val paramList: IndexedSeq[ParamNode] = _paramList
+  // TODO: loop through the _paramList and return a list of the TYPE IDENTIFIERS
+  def getIdentifierList(ST: SymbolTable): IndexedSeq[TYPE] = null
 
   override def toString: String = paramList.map(_.toString).mkString(", ")
 }
 
-class ParamNode(val _paramType: TypeNode, val _ident: IdentNode) extends ASTNode {
+class ParamNode(val paramType: TypeNode, val ident: IdentNode) extends ASTNode {
 
-  val paramType: TypeNode = _paramType
-  val ident: IdentNode = _ident
+  override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = paramType.getIdentifier(topST, ST)
+
+  override def initKey: String = paramType.getKey
 
   override def toString: String = s"${paramType.toString} ${ident.toString}"
 }
 
-class StatNode extends ASTNode {
-  override def toString: String = console.color("<STATEMENT>", fg=Console.RED)
-}
-
-class SkipNode extends StatNode {
-  override def toString: String = console.color("skip", fg=Console.BLUE)
-}
-
-class DeclarationNode(val _type: TypeNode, val _ident: IdentNode, val _rhs: AssignRHSNode) extends StatNode {
-
-  val typeNode: TypeNode = _type
-  val ident: IdentNode = _ident
-  val rhs: AssignRHSNode = _rhs
-
-  override def toString: String = s"${typeNode.toString} ${ident.toString} = ${rhs.toString}"
-}
-
-class AssignmentNode(val _lhs: AssignLHSNode, val _rhs: AssignRHSNode) extends StatNode {
-
-  val lhs: AssignLHSNode = _lhs
-  val rhs: AssignRHSNode = _rhs
-
-  override def toString: String = s"${lhs.toString} = ${rhs.toString}"
-}
-
-class ReadNode(val _lhs: AssignLHSNode) extends StatNode {
-
-  val lhs: AssignLHSNode = _lhs
-
-  override def toString: String = console.color("read ", fg=Console.BLUE) + lhs.toString
-}
-
-class FreeNode(val _expr: ExprNode) extends StatNode {
-
-  val expr: ExprNode = _expr
-
-  override def toString: String = console.color("free ", fg=Console.BLUE) + expr.toString
-}
-
-case class ReturnNode(_expr: ExprNode) extends StatNode {
-
-  val expr: ExprNode = _expr
-
-  override def toString: String = console.color("return ", fg=Console.BLUE) + expr.toString
-}
-
-case class ExitNode(_expr: ExprNode) extends StatNode {
-
-  val expr: ExprNode = _expr
-
-  override def toString: String = console.color("exit ", fg=Console.BLUE) + expr.toString
-}
-
-class PrintNode(val _expr: ExprNode) extends StatNode {
-
-  val expr: ExprNode = _expr
-
-  override def toString: String = console.color("print ", fg=Console.BLUE) + expr.toString
-}
-
-class PrintlnNode(val _expr: ExprNode) extends StatNode {
-
-  val expr: ExprNode = _expr
-
-  override def toString: String = console.color("println ", fg=Console.BLUE) + expr.toString
-}
-
-class IfNode(val _conditionExpr: ExprNode, val _thenStat: StatNode, val _elseStat: StatNode)
-  extends StatNode {
-
-  val conditionExpr: ExprNode = _conditionExpr
-  // Two stat nodes, one for then one for else.
-  val thenStat: StatNode = _thenStat
-  val elseStat: StatNode = _elseStat
-
-  override def toString: String = {
-    val if_ : String = console.color("if", fg=Console.BLUE)
-    val then_ : String = console.color("then", fg=Console.BLUE)
-    val else_ : String = console.color("else", fg=Console.BLUE)
-    s"$if_ ${conditionExpr.toString} $then_\n${thenStat.toString}\n$else_\n${elseStat.toString}\nfi"
-  }
-}
-
-class WhileNode(val _expr: ExprNode, val _stat: StatNode) extends StatNode {
-
-  val expr: ExprNode = _expr
-  val stat: StatNode = _stat
-
-  override def toString: String = console.color(s"while ${expr.toString} do\n${stat.toString}\ndone", fg=Console.YELLOW)
-}
-
-class BeginNode(val _stat: StatNode) extends StatNode {
-
-  val stat: StatNode = _stat
-
-  override def toString: String = {
-    val begin: String = console.color("begin", fg=Console.BLUE)
-    val end: String = console.color("end", fg=Console.BLUE)
-    s"$begin\n${stat.toString}\n$end"
-  }
-}
-
-class SequenceNode(val _statOne: StatNode, val _statTwo: StatNode) extends StatNode {
-
-  val statOne: StatNode = _statOne
-  val statTwo: StatNode = _statTwo
-
-  override def toString: String = s"${statOne.toString}\n${statTwo.toString}"
-}
-
 // Both of these need to be traits (abstract classes) in order to be extended later.
-trait AssignLHSNode extends ASTNode {
+trait AssignLHSNode extends ASTNode with Checkable with Identifiable {
   override def toString: String = console.color("<LHS>", fg=Console.RED)
 }
 
-trait AssignRHSNode extends ASTNode {
+trait AssignRHSNode extends ASTNode with Checkable with Identifiable {
   override def toString: String = console.color("<RHS>", fg=Console.RED)
 }
 
-class NewPairNode(val _fstElem: ExprNode, val _sndElem: ExprNode) extends AssignRHSNode {
+class NewPairNode(val fstElem: ExprNode, val sndElem: ExprNode) extends AssignRHSNode {
+  override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
+    val newPairIdentifierLookup: Option[IDENTIFIER] = topST.lookup(getKey)
+    if (newPairIdentifierLookup.isDefined) {
+      newPairIdentifierLookup.get
+    } else {
+      val newIdentifier = new PAIR(getKey, getElemIdentifier(fstElem, topST, ST).asInstanceOf[TYPE],
+        getElemIdentifier(sndElem, topST, ST).asInstanceOf[TYPE])
+      topST.add(getKey, newIdentifier)
+      newIdentifier
+    }
+  }
 
-  val fstElem: ExprNode = _fstElem
-  val sndElem: ExprNode = _sndElem
+  override def initKey: String = s"pair(${getElemKey(fstElem)},${getElemKey(sndElem)})}"
+
+  private def getElemKey(elemNode: ExprNode): String = {
+    val elemKey: String = elemNode.getKey
+    if (elemKey.startsWith("pair")){
+      "pair"
+    } else {
+      elemKey
+    }
+  }
+
+  override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
+    fstElem.check(topST, ST)
+    sndElem.check(topST, ST)
+  }
+
+  private def getElemIdentifier(elemNode: ExprNode, topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
+    val elemIdentifier = elemNode.getIdentifier(topST, ST)
+    if (elemIdentifier.isInstanceOf[PAIR] || elemIdentifier == GENERAL_PAIR) {
+      GENERAL_PAIR
+    } else {
+      elemIdentifier
+    }
+  }
 
   override def toString: String = console.color(s"newpair (${fstElem.toString}, ${sndElem.toString})", fg=Console.BLUE)
 }
 
-class CallNode(val _ident: IdentNode, val _argList: Option[ArgListNode]) extends AssignRHSNode {
+class CallNode(val ident: IdentNode, val argList: Option[ArgListNode]) extends AssignRHSNode {
 
-  val ident: IdentNode = _ident
-  // How do I make this optional?
-  val argList: Option[ArgListNode] = _argList
+  // TODO lookup and check if it's defined, if not exception, if it is return it
+  override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = ident.getIdentifier(topST, ST)
+
+  override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
+    ident.check(topST, ST)
+    // TODO check through each of argList
+  }
+  override def initKey: String = ident.identKey
 
   override def toString: String = argList match {
     case Some(args) => console.color(s"call ${ident.toString} (${args.toString})", fg=Console.BLUE)
@@ -190,131 +125,103 @@ class CallNode(val _ident: IdentNode, val _argList: Option[ArgListNode]) extends
   }
 }
 
-class ArgListNode(val _exprNodes: IndexedSeq[ExprNode]) extends ASTNode {
-
-  val exprNodes: IndexedSeq[ExprNode] = _exprNodes
-
+class ArgListNode(val exprNodes: IndexedSeq[ExprNode]) extends ASTNode {
   override def toString: String = exprNodes.map(_.toString).mkString(", ")
 }
 
-// Shouldn't be able to instantiate this.
-trait PairElemNode extends AssignLHSNode with AssignRHSNode {
+abstract class PairElemNode(val expr: ExprNode) extends AssignLHSNode with AssignRHSNode {
+  override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
+    val pairIdentifier: IDENTIFIER = expr.getIdentifier(topST, ST)
+    if (! pairIdentifier.isInstanceOf[PAIR]) {
+      throw new TypeException("Expected pair type but got " + pairIdentifier)
+    } else {
+      expr.check(topST, ST)
+    }
+  }
+
   override def toString: String = console.color("<PAIR ELEM>", fg=Console.RED)
 }
 
-class FstNode(val _expr: ExprNode) extends PairElemNode {
+class FstNode(expr: ExprNode) extends PairElemNode(expr: ExprNode) {
 
-  val expr: ExprNode = _expr
+  override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
+    val pairIdentifier: IDENTIFIER = expr.getIdentifier(topST, ST)
+    if (! pairIdentifier.isInstanceOf[PAIR]) {
+      throw new TypeException(s"Expected pair type but got a non-pair type: ${expr.getKey}}")
+    } else {
+      pairIdentifier.asInstanceOf[PAIR].type1
+    }
+  }
+
+  override def initKey: String = {
+    val exprKey: String = expr.getKey
+    if (expr == Pair_literNode) {
+      // TODO in backend throw error
+      throw new TypeException(s"Expected a pair type but got a null pair literal instead")
+    } else if (exprKey.slice(0, 1) != "(" || ")" != exprKey.slice(exprKey.length() - 1, exprKey.length)) {
+      throw new TypeException(s"Expected a pair type but got a non-pair type: ${expr.getKey}")
+    } else {
+      exprKey.slice(1, exprKey.indexOf(','))
+    }
+  }
 
   override def toString: String = console.color(s"fst ${expr.toString}", fg=Console.BLUE)
 }
 
-class SndNode(val _expr: ExprNode) extends PairElemNode {
+class SndNode(expr: ExprNode) extends PairElemNode(expr) {
 
-  val expr: ExprNode = _expr
+  override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
+    val pairIdentifier: IDENTIFIER = expr.getIdentifier(topST, ST)
+    if (! pairIdentifier.isInstanceOf[PAIR]) {
+      throw new TypeException("Expected pair type but got a non-pair type")
+    } else {
+      pairIdentifier.asInstanceOf[PAIR].type2
+    }
+  }
+
+
+  override def initKey: String = {
+    val exprKey: String = expr.getKey
+    if (expr == Pair_literNode) {
+      // TODO in backend throw error
+      throw new TypeException(s"Expected a pair type but got a null pair literal instead")
+    } else if (exprKey.slice(0, 1) != "(" || ")" != exprKey.slice(exprKey.length() - 1, exprKey.length)) {
+      throw new TypeException(s"Expected a pair type but got a non-pair type: ${expr.getKey}")
+    } else {
+      exprKey.slice(exprKey.indexOf(',') + 1, exprKey.length)
+    }
+  }
 
   override def toString: String = console.color(s"snd ${expr.toString}", fg=Console.BLUE)
 }
 
-class ExprNode extends AssignRHSNode {
-  override def toString: String = console.color("<EXPR>", fg=Console.RED)
-}
+class IdentNode(val ident: String) extends ExprNode with AssignLHSNode {
+  override def initKey: String = ident
 
-class Int_literNode(val _num: Int) extends ExprNode {
-
-  val num: Int = _num
-
-  override def toString: String = console.color(num.toString, fg=Console.MAGENTA)
-}
-
-class Bool_literNode(val _value: Boolean) extends ExprNode {
-
-  val value: Boolean = _value
-
-  override def toString: String = value match {
-    case true => console.color("true", fg=Console.MAGENTA)
-    case false => console.color("false", fg=Console.MAGENTA)
+  override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
+    if (ST.lookupAll(toString).isEmpty){
+      throw new TypeException(toString + " has not been declared")
+    }
   }
-}
 
-class Char_literNode(val _value: Char) extends ExprNode {
-
-  val value: Char = _value
-
-  override def toString: String = console.color(s"'$value'", fg=Console.YELLOW)
-}
-
-class Str_literNode(val str: String) extends ExprNode {
-
-  override def toString: String = console.color(str, fg=Console.YELLOW)
-}
-
-class Pair_literNode extends ExprNode {
-  override def toString: String = console.color("null", fg=Console.MAGENTA)
-}
-
-class ParenExprNode extends ExprNode {
-  override def toString: String = console.color("<PAREN EXPR>", fg=Console.RED)
-}
-
-class TypeNode extends ASTNode {
-  override def toString: String = console.color("<TYPE>", fg=Console.RED)
-}
-
-class BaseTypeNode extends TypeNode with PairElemTypeNode {
-  override def toString: String = console.color("<BASE TYPE>", fg=Console.RED)
-}
-
-class IntTypeNode extends BaseTypeNode {
-  override def toString: String = console.color("int", fg=Console.MAGENTA)
-}
-
-class BoolTypeNode extends BaseTypeNode {
-  override def toString: String = console.color("bool", fg=Console.MAGENTA)
-}
-
-class CharTypeNode extends BaseTypeNode {
-  override def toString: String = console.color("char", fg=Console.MAGENTA)
-}
-
-class StringTypeNode extends BaseTypeNode {
-  override def toString: String = console.color("string", fg=Console.MAGENTA)
-}
-
-class ArrayTypeNode(val _typeNode: TypeNode) extends TypeNode with PairElemTypeNode {
-
-  val typeNode: TypeNode = _typeNode
-
-  override def toString: String = typeNode.toString + "[]"
-}
-
-class PairTypeNode(val _firstPairElem: PairElemTypeNode, val _secondPairElem: PairElemTypeNode) extends TypeNode {
-
-  val firstPairElem: PairElemTypeNode = _firstPairElem
-  val secondPairElem: PairElemTypeNode = _secondPairElem
-
-  override def toString: String = console.color("pair", fg=Console.BLUE) +
-    s"(${firstPairElem.toString}, ${secondPairElem.toString})"
-}
-
-trait PairElemTypeNode extends ASTNode {
-  override def toString: String = console.color("<PAIR ELEM>", fg=Console.RED)
-}
-
-class PairElemTypePairNode extends PairElemTypeNode {
-  override def toString: String = console.color("pair", fg=Console.MAGENTA)
-}
-
-class IdentNode(val _ident: String) extends ExprNode with AssignLHSNode {
-  val ident: String = _ident
+  override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
+    val T: Option[IDENTIFIER] = ST.lookupAll(toString)
+    if (T.isEmpty) {
+      throw new TypeException(toString + " has not been declared")
+    } else if (! T.get.isInstanceOf[VARIABLE]) {
+      assert(assertion = false, "Something went wrong... " + toString + " should be a variable but isn't")
+      null
+    } else {
+      T.get.asInstanceOf[VARIABLE].type
+    }
+  }
 
   override def toString: String = console.color(ident, fg=Console.GREEN)
 }
 
-class ArrayElemNode(val _ident: IdentNode, val _exprNodes: IndexedSeq[ExprNode]) extends ExprNode with AssignLHSNode {
+class ArrayElemNode(val ident: IdentNode, val exprNodes: IndexedSeq[ExprNode]) extends ExprNode with AssignLHSNode {
 
-  val ident: IdentNode = _ident
-  val exprNodes: IndexedSeq[ExprNode] = _exprNodes
+  override def check(topST: SymbolTable, ST: SymbolTable): Unit = ???
 
   override def toString: String = {
     val exprs : String = exprNodes.map("[" + _.toString + "]").mkString("")
@@ -322,157 +229,26 @@ class ArrayElemNode(val _ident: IdentNode, val _exprNodes: IndexedSeq[ExprNode])
   }
 }
 
-class ArrayLiteralNode(val _exprNodes: IndexedSeq[ExprNode]) extends AssignRHSNode {
+class ArrayLiteralNode(val exprNodes: IndexedSeq[ExprNode]) extends AssignRHSNode {
 
-  val exprNodes: IndexedSeq[ExprNode] = _exprNodes
+  val exprNodes: IndexedSeq[ExprNode] = exprNodes
+
+  // TODO check all exprNode identifiers against the first one
+  override def check(topST: SymbolTable, ST: SymbolTable): Unit = ???
+
+  override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
+    val arrayIdentifierOption: Option[IDENTIFIER] = topST.lookup(getKey)
+    if (arrayIdentifierOption.isEmpty) {
+      val arrayIdentifier = new ARRAY(getKey, _exprNodes.apply(0).getIdentifier(topST, ST).asInstanceOf[TYPE])
+      topST.add(toString, arrayIdentifier)
+      arrayIdentifier
+    } else {
+      assert(arrayIdentifierOption.get.isInstanceOf[ARRAY], s"Something went wrong... $getKey should be a an array type but isn't")
+      arrayIdentifierOption.get
+    }
+  }
 
   override def toString: String = "[" + exprNodes.map(_.toString).mkString(", ") + "]"
-}
 
-trait BinaryOperationNode extends ExprNode {
-
-  def argOne: ExprNode
-  def argTwo: ExprNode
-
-  override def toString: String = argOne.toString + " " + console.color("<BINARY-OP>", fg=Console.RED) + " " + argTwo.toString
-}
-
-class MultiplyNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
-  override def argOne: ExprNode = _argOne
-
-  override def argTwo: ExprNode = _argTwo
-
-  override def toString: String = s"${argOne.toString} * ${argTwo.toString}"
-}
-
-class DivideNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
-  override def argOne: ExprNode = _argOne
-
-  override def argTwo: ExprNode = _argTwo
-
-  override def toString: String = s"${argOne.toString} / ${argTwo.toString}"
-}
-
-class ModNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
-  override def argOne: ExprNode = _argOne
-
-  override def argTwo: ExprNode = _argTwo
-
-  override def toString: String = s"${argOne.toString} % ${argTwo.toString}"
-}
-
-class PlusNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
-  override def argOne: ExprNode = _argOne
-
-  override def argTwo: ExprNode = _argTwo
-
-  override def toString: String = s"${argOne.toString} + ${argTwo.toString}"
-}
-
-class MinusNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
-  override def argOne: ExprNode = _argOne
-
-  override def argTwo: ExprNode = _argTwo
-
-  override def toString: String = s"${argOne.toString} - ${argTwo.toString}"
-}
-
-class GreaterThanNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
-  override def argOne: ExprNode = _argOne
-
-  override def argTwo: ExprNode = _argTwo
-
-  override def toString: String = s"${argOne.toString} > ${argTwo.toString}"
-}
-
-class GreaterEqualNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
-  override def argOne: ExprNode = _argOne
-
-  override def argTwo: ExprNode = _argTwo
-
-  override def toString: String = s"${argOne.toString} >= ${argTwo.toString}"
-}
-
-class LessThanNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
-  override def argOne: ExprNode = _argOne
-
-  override def argTwo: ExprNode = _argTwo
-
-  override def toString: String = s"${argOne.toString} < ${argTwo.toString}"
-}
-
-class LessEqualNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
-  override def argOne: ExprNode = _argOne
-
-  override def argTwo: ExprNode = _argTwo
-
-  override def toString: String = s"${argOne.toString} <= ${argTwo.toString}"
-}
-
-class EqualToNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
-  override def argOne: ExprNode = _argOne
-
-  override def argTwo: ExprNode = _argTwo
-
-  override def toString: String = s"${argOne.toString} = ${argTwo.toString}"
-}
-
-class NotEqualNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
-  override def argOne: ExprNode = _argOne
-
-  override def argTwo: ExprNode = _argTwo
-
-  override def toString: String = s"${argOne.toString} != ${argTwo.toString}"
-}
-
-class LogicalAndNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
-  override def argOne: ExprNode = _argOne
-
-  override def argTwo: ExprNode = _argTwo
-
-  override def toString: String = s"${argOne.toString} && ${argTwo.toString}"
-}
-
-class LogicalOrNode(val _argOne: ExprNode, val _argTwo: ExprNode) extends BinaryOperationNode {
-  override def argOne: ExprNode = _argOne
-
-  override def argTwo: ExprNode = _argTwo
-
-  override def toString: String = s"${argOne.toString} || ${argTwo.toString}"
-}
-
-trait UnaryOperationNode extends ExprNode {
-  def expr: ExprNode
-
-  override def toString: String = console.color(s"<UNARY OPER> ${expr.toString}", fg=Console.RED)
-}
-
-class LogicalNotNode(val _expr: ExprNode) extends UnaryOperationNode {
-  override def expr: ExprNode = _expr
-
-  override def toString: String = s"!${expr.toString}"
-}
-
-class NegateNode(val _expr: ExprNode) extends UnaryOperationNode {
-  override def expr: ExprNode = _expr
-
-  override def toString: String = s"-${expr.toString}"
-}
-
-class LenNode(val _expr: ExprNode) extends UnaryOperationNode {
-  override def expr: ExprNode = _expr
-
-  override def toString: String = s"len ${expr.toString}"
-}
-
-class OrdNode(val _expr: ExprNode) extends UnaryOperationNode {
-  override def expr: ExprNode = _expr
-
-  override def toString: String = s"ord ${expr.toString}"
-}
-
-class ChrNode(val _expr: ExprNode) extends UnaryOperationNode {
-  override def expr: ExprNode = _expr
-
-  override def toString: String = s"chr ${expr.toString}"
+  override def initKey: String = _exprNodes.apply(0).getKey + "[]"
 }

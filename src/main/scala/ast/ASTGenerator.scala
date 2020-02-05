@@ -1,4 +1,4 @@
-package ast;
+package ast
 
 import antlr.{WACCLexer, WACCParser, WACCParserBaseVisitor}
 import org.antlr.v4.runtime._
@@ -272,22 +272,22 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
   override def visitIntBase_type(ctx: WACCParser.IntBase_typeContext): BaseTypeNode = {
     // 'int'
-    new IntTypeNode()
+    IntTypeNode
   }
 
   override def visitBoolBase_type(ctx: WACCParser.BoolBase_typeContext): BaseTypeNode = {
     // 'bool'
-    new BoolTypeNode()
+    BoolTypeNode
   }
 
   override def visitCharBase_type(ctx: WACCParser.CharBase_typeContext): BaseTypeNode = {
     // 'char'
-    new CharTypeNode()
+    CharTypeNode
   }
 
   override def visitStringBase_type(ctx: WACCParser.StringBase_typeContext): BaseTypeNode = {
     // 'string'
-    new StringTypeNode()
+    StringTypeNode
   }
 
   override def visitArray_type(ctx: WACCParser.Array_typeContext): ArrayTypeNode = {
