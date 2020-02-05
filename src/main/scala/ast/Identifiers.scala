@@ -5,14 +5,14 @@ abstract class IDENTIFIER(key: String) {
   def getKey: String = key
 }
 
-class VARIABLE(key:String, _type: TYPE) extends IDENTIFIER(key)
+class VARIABLE(key:String, val _type: TYPE) extends IDENTIFIER(key)
 
 
 // Types
 abstract class TYPE(key: String) extends IDENTIFIER(key)
 
 class SCALAR(key: String, min: Int, max: Int) extends TYPE(key)
-class ARRAY(key: String, _type: TYPE) extends TYPE(key)
+class ARRAY(key: String, val _type: TYPE) extends TYPE(key)
 object GENERAL_PAIR extends TYPE(key = "pair")
 class PAIR(key: String, val _type1: TYPE, val _type2: TYPE) extends TYPE(key)
 
