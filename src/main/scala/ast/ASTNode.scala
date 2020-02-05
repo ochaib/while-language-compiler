@@ -1,4 +1,5 @@
 package ast
+
 // Every node necessary to generate AST. From the WACCLangSpec.
 
 abstract class ASTNode {
@@ -46,11 +47,16 @@ class ParamNode(val _paramType: TypeNode, val identNode: IdentNode) extends ASTN
   override def initKey: String = _paramType.getKey
 }
 
-class StatNode extends ASTNode
-class SkipNode extends StatNode
+abstract class StatNode extends ASTNode with Checkable {
+
+}
+
+class SkipNode extends StatNode {
+  override def check(topST: SymbolTable, ST: SymbolTable): Unit = {}
+}
 
 class DeclarationNode(val _type: TypeNode, val identNode: IdentNode, val _rhs: AssignRHSNode)
-  extends StatNode with Checkable {
+  extends StatNode {
   override def check(topST:SymbolTable, ST: SymbolTable): Unit = {
     val typeIdentifier: IDENTIFIER = _type.getIdentifier(topST, ST)
     _rhs.check(topST, ST)
@@ -67,7 +73,7 @@ class DeclarationNode(val _type: TypeNode, val identNode: IdentNode, val _rhs: A
   }
 }
 
-class AssignmentNode(val _lhs: AssignLHSNode, val _rhs: AssignRHSNode) extends StatNode with Checkable{
+class AssignmentNode(val _lhs: AssignLHSNode, val _rhs: AssignRHSNode) extends StatNode {
 
   val lhs: AssignLHSNode = _lhs
   val rhs: AssignRHSNode = _rhs
@@ -82,16 +88,111 @@ class AssignmentNode(val _lhs: AssignLHSNode, val _rhs: AssignRHSNode) extends S
   }
 }
 
-class ReadNode(val _lhs: AssignLHSNode) extends StatNode
-class FreeNode(val _expr: ExprNode) extends StatNode
-class ReturnNode(val _expr: ExprNode) extends StatNode
-class ExitNode(val _expr: ExprNode) extends StatNode
-class PrintNode(val _expr: ExprNode) extends StatNode
-class PrintlnNode(val _expr: ExprNode) extends StatNode
-class IfNode(val _conditionExpr: ExprNode, val _thenStat: StatNode, val _elseStat: StatNode)
-class WhileNode(val _expr: ExprNode, val _stat: StatNode) extends StatNode
-class BeginNode(val _stat: StatNode) extends StatNode
-class SequenceNode(val _statOne: StatNode, val _statTwo: StatNode) extends StatNode
+class ReadNode(val _lhs: AssignLHSNode) extends StatNode {
+  // Ensure the read statement can only handle character or integer input.
+
+  override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
+
+    _lhs.check(topST, ST)
+
+    if (!(_lhs.getIdentifier(topST, ST) == IntTypeNode.getIdentifier(topST, ST)
+      || _lhs.getIdentifier(topST, ST) == CharTypeNode.getIdentifier(topST, ST))) {
+      throw new TypeException(s"Semantic Error: ${ _lhs.getKey} must be either a character or an integer.")
+    }
+  }
+}
+
+class FreeNode(val _expr: ExprNode) extends StatNode {
+  // Call check on the freeNode which should check that the expression in the freeNode
+  // is either a pair or an array.
+
+  override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
+    _expr.check(topST, ST)
+
+    val exprIdentifier = _expr.getIdentifier(topST, ST)
+
+    if (!(exprIdentifier.isInstanceOf[PAIR] || exprIdentifier == GENERAL_PAIR) ||
+        !exprIdentifier.isInstanceOf[ARRAY]) {
+      throw new TypeException(s"Semantic Error: ${ _expr.getKey} must be a pair or an array.")
+    }
+  }
+}
+
+class ReturnNode(val _expr: ExprNode) extends StatNode {
+  // TODO: Check that return statement is present in body of non-main function.
+  // TODO: Check that the type of expression given to the return statement must
+  // TODO: match the return type of the expression.
+
+  override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
+    _expr.check(topST, ST)
+  }
+}
+
+class ExitNode(val _expr: ExprNode) extends StatNode {
+
+  override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
+    _expr.check(topST, ST)
+
+    val exprIdentifier = _expr.getIdentifier(topST, ST)
+
+    if (!(_expr.getIdentifier(topST, ST) == IntTypeNode.getIdentifier(topST, ST))) {
+      throw new TypeException(s"Semantic Error: ${ _expr.getKey} must be an integer.")
+    }
+  }
+}
+
+class PrintNode(val _expr: ExprNode) extends StatNode {
+
+  override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
+    _expr.check(topST, ST)
+  }
+
+}
+
+class PrintlnNode(val _expr: ExprNode) extends StatNode {
+  override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
+    _expr.check(topST, ST)
+  }
+}
+
+class IfNode(val _conditionExpr: ExprNode, val _thenStat: StatNode, val _elseStat: StatNode) extends StatNode {
+  override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
+    _conditionExpr.check(topST, ST)
+
+    val conditionIdentifier = _conditionExpr.getIdentifier(topST, ST)
+
+    if (!(conditionIdentifier == BoolTypeNode.getIdentifier(topST, ST))) {
+      throw new TypeException(s"Semantic Error: ${ _conditionExpr.getKey} must evaluate to a boolean.")
+    }
+  }
+}
+
+class WhileNode(val _expr: ExprNode, val _stat: StatNode) extends StatNode {
+  override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
+    _expr.check(topST, ST)
+
+    val conditionIdentifier = _expr.getIdentifier(topST, ST)
+
+    if (!(conditionIdentifier == BoolTypeNode.getIdentifier(topST, ST))) {
+      throw new TypeException(s"Semantic Error: ${ _expr.getKey} must evaluate to a boolean.")
+    }
+  }
+}
+
+class BeginNode(val _stat: StatNode) extends StatNode {
+  override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
+    // Check statement, new st needed as new scope is created.
+    _stat.check(topST, ST)
+  }
+}
+
+class SequenceNode(val _statOne: StatNode, val _statTwo: StatNode) extends StatNode {
+
+  override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
+    _statOne.check(topST, ST)
+    _statTwo.check(topST, ST)
+  }
+}
 
 trait AssignLHSNode extends ASTNode with Checkable with Identifiable
 trait AssignRHSNode extends ASTNode with Checkable with Identifiable
@@ -146,6 +247,7 @@ class CallNode(val identNode: IdentNode, val _argList: Option[ArgListNode]) exte
     // TODO check through each of argList
   }
   override def initKey: String = identNode.identKey
+
 }
 
 class ArgListNode(val _exprNodes: IndexedSeq[ExprNode]) extends ASTNode
@@ -239,6 +341,7 @@ case class Char_literNode(_value: Char) extends ExprNode
 case class Str_literNode(_characters: IndexedSeq[Char]) extends ExprNode
 
 object Pair_literNode extends ExprNode {
+
   override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
     val T: Option[IDENTIFIER] = topST.lookup(getKey)
     assert(T.isDefined, "Base or General Type Identifiers MUST be predefined in the top level symbol table")
