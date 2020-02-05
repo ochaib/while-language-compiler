@@ -414,7 +414,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     }
   }
 
-  override def visitBinary_oper(ctx: WACCParser.Binary_operContext): ExprNode = {
+  override def visitExprBinaryOper(ctx: WACCParser.ExprBinaryOperContext): ExprNode = {
     // ⟨expr⟩ ⟨binary-oper⟩ ⟨expr⟩
     val firstExpr: ExprNode = visit(ctx.getChild(0)).asInstanceOf[ExprNode]
     val binaryOperator: String = ctx.getChild(1).getText
