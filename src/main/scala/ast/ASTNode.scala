@@ -107,7 +107,7 @@ abstract class PairElemNode(val _expr: ExprNode) extends AssignLHSNode with Assi
   override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
     val pairIdentifier: IDENTIFIER = _expr.getIdentifier(topST, ST)
     if (!pairIdentifier.isInstanceOf[PAIR]) {
-      throw new TypeException("Expected pair type but got " + pairIdentifier)
+      throw new TypeException(s"Expected pair type but got $pairIdentifier")
     } else {
       _expr.check(topST, ST)
     }
@@ -168,16 +168,16 @@ class IdentNode(val identKey: String) extends ExprNode with AssignLHSNode {
 
   override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
     if (ST.lookupAll(toString).isEmpty){
-      throw new TypeException(toString + " has not been declared")
+      throw new TypeException(s"$toString has not been declared")
     }
   }
 
   override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
     val T: Option[IDENTIFIER] = ST.lookupAll(toString)
     if (T.isEmpty) {
-      throw new TypeException(toString + " has not been declared")
+      throw new TypeException(s"$toString has not been declared")
     } else if (! T.get.isInstanceOf[VARIABLE]) {
-      assert(assertion = false, "Something went wrong... " + toString + " should be a variable but isn't")
+      assert(assertion = false, s"Something went wrong... $toString should be a variable but isn't")
       null
     } else {
       T.get.asInstanceOf[VARIABLE]._type
