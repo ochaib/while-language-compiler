@@ -23,7 +23,7 @@ sealed trait UnaryOperationNode(expr: ExprNode) extends ExprNode {
   private def checkHelper(expr: ExprNode, expectedIdentifier: String, topST: SymbolTable, ST: SymbolTable): Unit = {
     val identifier: IDENTIFIER = expr.getIdentifier(topST, ST)
     if (identifier != topST.lookup(expectedIdentifier).get){
-      throw new TypeException("Expected " + expectedIdentifier + " but got " + identifier)
+      throw new TypeException(s"Expected $expectedIdentifier but got $identifier")
     }
   }
   private def lenHelper(expr: ExprNode, topST: SymbolTable, ST: SymbolTable): Unit = {

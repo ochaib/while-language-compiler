@@ -23,7 +23,7 @@ class DeclarationNode(val type: TypeNode, val identNode: IdentNode, val rhs: Ass
       throw new TypeException(typeIdentifier.getKey + " expected but got " + rhs.getIdentifier(topST, ST).getKey)
     } else if (ST.lookup(identNode.identKey).isDefined) {
       // If variable is already defined throw exception
-      throw new TypeException(identNode.identKey + " has already been declared")
+      throw new TypeException(s"${identNode.identKey} has already been declared")
     } else {
       ST.add(identNode.identKey, new VARIABLE(identNode.getKey, typeIdentifier.asInstanceOf[TYPE]))
     }

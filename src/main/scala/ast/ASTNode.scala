@@ -200,16 +200,16 @@ class IdentNode(val ident: String) extends ExprNode with AssignLHSNode {
 
   override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
     if (ST.lookupAll(toString).isEmpty){
-      throw new TypeException(toString + " has not been declared")
+      throw new TypeException(s"$toString has not been declared")
     }
   }
 
   override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
     val T: Option[IDENTIFIER] = ST.lookupAll(toString)
     if (T.isEmpty) {
-      throw new TypeException(toString + " has not been declared")
+      throw new TypeException(s"$toString has not been declared")
     } else if (! T.get.isInstanceOf[VARIABLE]) {
-      assert(assertion = false, "Something went wrong... " + toString + " should be a variable but isn't")
+      assert(assertion = false, s"Something went wrong... $toString should be a variable but isn't")
       null
     } else {
       T.get.asInstanceOf[VARIABLE].type
@@ -221,7 +221,22 @@ class IdentNode(val ident: String) extends ExprNode with AssignLHSNode {
 
 class ArrayElemNode(val ident: IdentNode, val exprNodes: IndexedSeq[ExprNode]) extends ExprNode with AssignLHSNode {
 
-  override def check(topST: SymbolTable, ST: SymbolTable): Unit = ???
+  override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
+    identNode.check(topST, ST)
+    val identIdentifier: IDENTIFIER = identNode.getIdentifier(topST, ST)
+    for (expr <- _exprNodes) expr.check(topST, ST)
+    if (! identIdentifier.isInstanceOf[ARRAY]) {
+      throw new TypeException(s"Expected array type but got ${identIdentifier.getKey} instead")
+    } else {
+      val identArrayType: IDENTIFIER = identIdentifier.asInstanceOf[ARRAY]._type
+      for (expr <- _exprNodes) {
+        val exprIdentifier: IDENTIFIER = expr.getIdentifier(topST, ST)
+        if (exprIdentifier != identArrayType) {
+          throw new TypeException(s"Expected ${identArrayType.getKey} but got ${exprIdentifier.getKey} instead")
+        }
+      }
+    }
+  }
 
   override def toString: String = {
     val exprs : String = exprNodes.map("[" + _.toString + "]").mkString("")
@@ -233,8 +248,15 @@ class ArrayLiteralNode(val exprNodes: IndexedSeq[ExprNode]) extends AssignRHSNod
 
   val exprNodes: IndexedSeq[ExprNode] = exprNodes
 
-  // TODO check all exprNode identifiers against the first one
-  override def check(topST: SymbolTable, ST: SymbolTable): Unit = ???
+  override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
+    val firstIdentifier: IDENTIFIER = _exprNodes.apply(0).getIdentifier(topST, ST)
+    for (expr <- _exprNodes) {
+      val exprIdentifier = expr.getIdentifier(topST, ST)
+      if (exprIdentifier != firstIdentifier) {
+        throw new TypeException(s"Expected type ${firstIdentifier.getKey} but got ${exprIdentifier.getKey}")
+      }
+    }
+  }
 
   override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
     val arrayIdentifierOption: Option[IDENTIFIER] = topST.lookup(getKey)
