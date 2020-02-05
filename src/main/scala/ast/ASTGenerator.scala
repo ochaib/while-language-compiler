@@ -419,9 +419,6 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     val firstExpr: ExprNode = visit(ctx.getChild(0)).asInstanceOf[ExprNode]
     val binaryOperator: String = ctx.getChild(1).getText
     val secondExpr: ExprNode = visit(ctx.getChild(2)).asInstanceOf[ExprNode]
-    debugCtx(ctx)
-    println(firstExpr)
-    println(secondExpr)
 
     binaryOperator match {
       case "*"  => new MultiplyNode(firstExpr, secondExpr)
