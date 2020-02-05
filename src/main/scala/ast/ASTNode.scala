@@ -12,17 +12,13 @@ class ProgramNode(val _stat: StatNode, val _functions: IndexedSeq[FuncNode]) ext
   // Functions in the program: <func>*.
   val functions: IndexedSeq[FuncNode] = _functions
   // Stat in the program: <stat>.
-  // TODO: use option here as it could be null
   val stat: StatNode = _stat
 
   override def toString: String = {
     val funcs : String = functions.map(_.toString).mkString("\n")
     val begin: String = console.color("begin", fg=Console.BLUE)
     val end: String = console.color("end", fg=Console.BLUE)
-    if (stat != null)
-      s"$begin\n$funcs\n${stat.toString}\n$end"
-    else
-      s"$begin\n$funcs\n$end"
+    s"$begin\n$funcs\n${stat.toString}\n$end"
   }
 }
 
