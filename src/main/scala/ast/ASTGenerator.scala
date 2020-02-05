@@ -28,7 +28,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     // ⟨type⟩ ⟨ident⟩ ‘(’ ⟨param-list⟩? ‘)’ ‘is’ ⟨stat⟩ ‘end’
     val funcType: TypeNode = visit(ctx.getChild(0)).asInstanceOf[TypeNode]
     val ident: IdentNode = visit(ctx.getChild(1)).asInstanceOf[IdentNode]
-    // TODO: Needs to be optional... so either an empty list or populated.
+
     val paramList: Option[ParamListNode] = Option(visit(ctx.getChild(3)).asInstanceOf[ParamListNode])
     val statement: StatNode = paramList match {
       case Some(_) => visit(ctx.getChild(6)).asInstanceOf[StatNode]
