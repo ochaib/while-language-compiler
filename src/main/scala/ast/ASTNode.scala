@@ -16,7 +16,7 @@ class ProgramNode(val _stat: StatNode, val _functions: IndexedSeq[FuncNode]) ext
   val stat: StatNode = _stat
 
   override def toString: String = {
-    val funcs : String = functions.map(_.toString).mkString("\n  ")
+    val funcs : String = functions.map(_.toString).mkString("\n")
     val begin: String = console.color("begin", fg=Console.BLUE)
     val end: String = console.color("end", fg=Console.BLUE)
     if (stat != null)
@@ -134,7 +134,7 @@ class IfNode(val _conditionExpr: ExprNode, val _thenStat: StatNode, val _elseSta
     val if_ : String = console.color("if", fg=Console.BLUE)
     val then_ : String = console.color("then", fg=Console.BLUE)
     val else_ : String = console.color("else", fg=Console.BLUE)
-    s"$if_ (${conditionExpr.toString}) $then_ {\n${thenStat.toString}\n} $else_ {\n${elseStat.toString}\n}"
+    s"$if_ ${conditionExpr.toString} $then_\n${thenStat.toString}\n$else_\n${elseStat.toString}\nfi"
   }
 }
 
@@ -143,7 +143,7 @@ class WhileNode(val _expr: ExprNode, val _stat: StatNode) extends StatNode {
   val expr: ExprNode = _expr
   val stat: StatNode = _stat
 
-  override def toString: String = console.color(s"while (${expr.toString}) {\n${stat.toString}\n}", fg=Console.YELLOW)
+  override def toString: String = console.color(s"while ${expr.toString} do\n${stat.toString}\ndone", fg=Console.YELLOW)
 }
 
 class BeginNode(val _stat: StatNode) extends StatNode {
@@ -270,19 +270,19 @@ class BaseTypeNode extends TypeNode with PairElemTypeNode {
 }
 
 class IntTypeNode extends BaseTypeNode {
-  override def toString: String = console.color("int", fg=Console.BLUE)
+  override def toString: String = console.color("int", fg=Console.MAGENTA)
 }
 
 class BoolTypeNode extends BaseTypeNode {
-  override def toString: String = console.color("bool", fg=Console.BLUE)
+  override def toString: String = console.color("bool", fg=Console.MAGENTA)
 }
 
 class CharTypeNode extends BaseTypeNode {
-  override def toString: String = console.color("char", fg=Console.BLUE)
+  override def toString: String = console.color("char", fg=Console.MAGENTA)
 }
 
 class StringTypeNode extends BaseTypeNode {
-  override def toString: String = console.color("string", fg=Console.BLUE)
+  override def toString: String = console.color("string", fg=Console.MAGENTA)
 }
 
 class ArrayTypeNode(val _typeNode: TypeNode) extends TypeNode with PairElemTypeNode {
@@ -306,7 +306,7 @@ trait PairElemTypeNode extends ASTNode {
 }
 
 class PairElemTypePairNode extends PairElemTypeNode {
-  override def toString: String = console.color("pair", fg=Console.RED)
+  override def toString: String = console.color("pair", fg=Console.MAGENTA)
 }
 
 class IdentNode(val _ident: String) extends ExprNode with AssignLHSNode {
