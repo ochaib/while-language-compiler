@@ -2,7 +2,7 @@ package ast
 import ast._
 import util.{ColoredConsole => console}
 
-class UnaryOperationNode(expr: ExprNode) extends ExprNode {
+sealed abstract class UnaryOperationNode(expr: ExprNode) extends ExprNode {
 
   override def getIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = this match {
     case LogicalNotNode(_) => BoolTypeNode.getIdentifier(topST, ST)
