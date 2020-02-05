@@ -385,7 +385,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     visit(ctx.getChild(0)).asInstanceOf[Pair_literNode]
   }
 
-  // Pair_liternode?
+  override def visitPair_liter(ctx: WACCParser.Pair_literContext): Pair_literNode = new Pair_literNode
 
   override def visitExprIdent(ctx: WACCParser.ExprIdentContext): ExprNode = {
     // ⟨ident⟩
@@ -419,6 +419,9 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     val firstExpr: ExprNode = visit(ctx.getChild(0)).asInstanceOf[ExprNode]
     val binaryOperator: String = ctx.getChild(1).getText
     val secondExpr: ExprNode = visit(ctx.getChild(2)).asInstanceOf[ExprNode]
+    debugCtx(ctx)
+    println(firstExpr)
+    println(secondExpr)
 
     binaryOperator match {
       case "*"  => new MultiplyNode(firstExpr, secondExpr)
