@@ -1,12 +1,6 @@
 package ast
-import ast.{IDENTIFIER, SymbolTable, TypeException}
-import util.{ColoredConsole => console}
 
-trait BinaryOperationNode extends ExprNode {
-
-  def argOne: ExprNode
-  def argTwo: ExprNode
-
+sealed abstract class BinaryOperationNode(argOne: ExprNode, argTwo: ExprNode) extends ExprNode {
   override def getIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = this match {
     case MultiplyNode(_, _) => IntTypeNode.getIdentifier(topST, ST)
     case DivideNode(_, _) => IntTypeNode.getIdentifier(topST, ST)
@@ -45,6 +39,21 @@ trait BinaryOperationNode extends ExprNode {
     }
   }
 
+  override def toString: String = this match {
+    case MultiplyNode(argOne, argTwo) => s"${argOne.toString} * ${argTwo.toString}"
+    case DivideNode(argOne, argTwo) => s"${argOne.toString} / ${argTwo.toString}"
+    case ModNode(argOne, argTwo) => s"${argOne.toString} % ${argTwo.toString}"
+    case PlusNode(argOne, argTwo) => s"${argOne.toString} + ${argTwo.toString}"
+    case MinusNode(argOne, argTwo) => s"${argOne.toString} - ${argTwo.toString}"
+    case GreaterThanNode(argOne, argTwo) => s"${argOne.toString} > ${argTwo.toString}"
+    case GreaterEqualNode(argOne, argTwo) =>  s"${argOne.toString} >= ${argTwo.toString}"
+    case LessThanNode(argOne, argTwo) => s"${argOne.toString} < ${argTwo.toString}"
+    case LessEqualNode(argOne, argTwo) => s"${argOne.toString} <= ${argTwo.toString}"
+    case EqualToNode(argOne, argTwo) => s"${argOne.toString} == ${argTwo.toString}"
+    case NotEqualNode(argOne, argTwo) => s"${argOne.toString} != ${argTwo.toString}"
+    case LogicalAndNode(argOne, argTwo) => s"${argOne.toString} && ${argTwo.toString}"
+    case LogicalOrNode(argOne, argTwo) => s"${argOne.toString} || ${argTwo.toString}"
+  }
   private def comparatorsCheckerHelper(argOne: ExprNode, argTwo: ExprNode,
                                       expectedIdentifier1: IDENTIFIER, expectedIdentifier2: IDENTIFIER, topST: SymbolTable, ST: SymbolTable): Unit = {
     val argOneIdentifier: IDENTIFIER = argOne.getIdentifier(topST, ST)
@@ -66,69 +75,16 @@ trait BinaryOperationNode extends ExprNode {
     }
   }
 
-  override def toString: String = argOne.toString + " " + console.color("<BINARY-OP>", fg=Console.RED) + " " + argTwo.toString
-}
-
-case class MultiplyNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode {
-
-  override def toString: String = s"${argOne.toString} * ${argTwo.toString}"
-}
-
-case class DivideNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode {
-
-  override def toString: String = s"${argOne.toString} / ${argTwo.toString}"
-}
-
-case class ModNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode {
-
-  override def toString: String = s"${argOne.toString} % ${argTwo.toString}"
-}
-
-case class PlusNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode {
-
-  override def toString: String = s"${argOne.toString} + ${argTwo.toString}"
-}
-
-case class MinusNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode {
-
-  override def toString: String = s"${argOne.toString} - ${argTwo.toString}"
-}
-
-case class GreaterThanNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode {
-
-  override def toString: String = s"${argOne.toString} > ${argTwo.toString}"
-}
-
-case class GreaterEqualNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode {
-
-  override def toString: String = s"${argOne.toString} >= ${argTwo.toString}"
-}
-
-case class LessThanNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode {
-
-  override def toString: String = s"${argOne.toString} < ${argTwo.toString}"
-}
-
-case class LessEqualNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode {
-
-  override def toString: String = s"${argOne.toString} <= ${argTwo.toString}"
-}
-
-case class EqualToNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode {
-
-  override def toString: String = s"${argOne.toString} == ${argTwo.toString}"
-}
-
-case class NotEqualNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode {
-
-  override def toString: String = s"${argOne.toString} != ${argTwo.toString}"
-}
-
-case class LogicalAndNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode {
-
-  override def toString: String = s"${argOne.toString} && ${argTwo.toString}"
-}
-
-case class LogicalOrNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode {
-  override def toString: String = s"${argOne.toString} || ${argTwo.toString}"
-}
+case class MultiplyNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(argOne, argTwo)
+case class DivideNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(argOne, argTwo)
+case class ModNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(argOne, argTwo)
+case class PlusNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(argOne, argTwo)
+case class MinusNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(argOne, argTwo)
+case class GreaterThanNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(argOne, argTwo)
+case class GreaterEqualNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(argOne, argTwo)
+case class LessThanNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(argOne, argTwo)
+case class LessEqualNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(argOne, argTwo)
+case class EqualToNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(argOne, argTwo)
+case class NotEqualNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(argOne, argTwo)
+case class LogicalAndNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(argOne, argTwo)
+case class LogicalOrNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(argOne, argTwo)
