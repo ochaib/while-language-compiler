@@ -32,7 +32,7 @@ DONE: 'done';
 NEWPAIR: 'newpair';
 CALL: 'call';
 
-// PAIR ELEM
+// ast.PAIR ELEM
 FST: 'fst';
 SND: 'snd';
 
@@ -42,7 +42,7 @@ BOOL: 'bool';
 CHAR: 'char';
 STRING: 'string';
 
-// PAIR TYPES
+// ast.PAIR TYPES
 PAIR: 'pair';
 
 // SYMBOLS

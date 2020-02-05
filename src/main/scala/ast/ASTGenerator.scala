@@ -1,5 +1,5 @@
-package ast;
-
+package ast
+import ast._
 import antlr.{WACCLexer, WACCParser, WACCParserBaseVisitor}
 import org.antlr.v4.runtime._
 
@@ -7,7 +7,7 @@ import org.antlr.v4.runtime._
 class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
   def debugCtx(ctx: ParserRuleContext) = {
-    for (i<-0 until ctx.getChildCount) println(i + ":: " + ctx.getChild(i).getClass + ": " + ctx.getChild(i).getText)
+    for (i<-0 until ctx.getChildCount) println(s"$i:: " + ctx.getChild(i).getClass + ": " + ctx.getChild(i).getText)
   }
 
   override def visitProgram(ctx: WACCParser.ProgramContext): ProgramNode = {
@@ -28,7 +28,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     // ⟨type⟩ ⟨ident⟩ ‘(’ ⟨param-list⟩? ‘)’ ‘is’ ⟨stat⟩ ‘end’
     val funcType: TypeNode = visit(ctx.getChild(0)).asInstanceOf[TypeNode]
     val ident: IdentNode = visit(ctx.getChild(1)).asInstanceOf[IdentNode]
-    // TODO: Needs to be optional... so either an empty list or populated.
+
     val paramList: Option[ParamListNode] = Option(visit(ctx.getChild(3)).asInstanceOf[ParamListNode])
     val statement: StatNode = paramList match {
       case Some(_) => visit(ctx.getChild(6)).asInstanceOf[StatNode]
@@ -272,22 +272,22 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
   override def visitIntBase_type(ctx: WACCParser.IntBase_typeContext): BaseTypeNode = {
     // 'int'
-    new IntTypeNode()
+    IntTypeNode
   }
 
   override def visitBoolBase_type(ctx: WACCParser.BoolBase_typeContext): BaseTypeNode = {
     // 'bool'
-    new BoolTypeNode()
+    BoolTypeNode
   }
 
   override def visitCharBase_type(ctx: WACCParser.CharBase_typeContext): BaseTypeNode = {
     // 'char'
-    new CharTypeNode()
+    CharTypeNode
   }
 
   override def visitStringBase_type(ctx: WACCParser.StringBase_typeContext): BaseTypeNode = {
     // 'string'
-    new StringTypeNode()
+    StringTypeNode
   }
 
   override def visitArray_type(ctx: WACCParser.Array_typeContext): ArrayTypeNode = {
@@ -341,7 +341,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     // childCount - 1 in case it is signed
     // TODO: maybe we handle overflow here?
     val num: Int = ctx.getChild(childCount - 1).getText.toInt
-    
+
     if (Math.abs(num) > Int.MaxValue) {
         // Log to syntax error.
         println("Syntax Error: Integer overflow when trying to generate IntLiteral.")
@@ -389,10 +389,11 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
   override def visitExprPairLiter(ctx: WACCParser.ExprPairLiterContext): ExprNode = {
     // ⟨pair-liter⟩
-    visit(ctx.getChild(0)).asInstanceOf[Pair_literNode]
+    visit(ctx.getChild(0))
+    Pair_literNode
   }
 
-  override def visitPair_liter(ctx: WACCParser.Pair_literContext): Pair_literNode = new Pair_literNode
+  override def visitPair_liter(ctx: WACCParser.Pair_literContext): Pair_literNode.type = Pair_literNode
 
   override def visitExprIdent(ctx: WACCParser.ExprIdentContext): ExprNode = {
     // ⟨ident⟩
