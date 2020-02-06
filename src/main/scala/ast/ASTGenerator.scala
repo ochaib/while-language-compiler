@@ -64,8 +64,6 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
   // Individual components of stat that must be visited.
   override def visitSkip(ctx: WACCParser.SkipContext): SkipNode = {
-    println("Skip stat.")
-    // Or something.
     new SkipNode()
   }
 
