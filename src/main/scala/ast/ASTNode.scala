@@ -49,9 +49,11 @@ class ParamListNode(val paramList: IndexedSeq[ParamNode]) extends ASTNode {
 
   def getIdentifierList(topST: SymbolTable, ST: SymbolTable): IndexedSeq[TYPE] = {
     assert(paramList.length >= 1, "Parameter lists have to be at least size 1")
-    var identifierList = Vector()
-    for (param <- paramList) identifierList = identifierList :+  param.getIdentifier(topST, ST)
-    identifierList
+    var identifierList: IndexedSeq[IDENTIFIER] = Vector()
+    for (param <- paramList) identifierList = {
+      identifierList :+ param.getIdentifier(topST, ST)
+    }
+    identifierList.asInstanceOf[IndexedSeq[TYPE]]
   }
 
   override def toString: String = paramList.map(_.toString).mkString(", ")
@@ -68,11 +70,11 @@ class ParamNode(val paramType: TypeNode, val identNode: IdentNode) extends ASTNo
 
 // Both of these need to be traits (abstract classes) in order to be extended later.
 trait AssignLHSNode extends ASTNode with Checkable with Identifiable {
-  override def toString: String = console.color("<LHS>", fg=Console.RED)
+  override abstract def toString: String = console.color("<LHS>", fg=Console.RED)
 }
 
 trait AssignRHSNode extends ASTNode with Checkable with Identifiable {
-  override def toString: String = console.color("<RHS>", fg=Console.RED)
+  override abstract def toString: String = console.color("<RHS>", fg=Console.RED)
 }
 
 class NewPairNode(val fstElem: ExprNode, val sndElem: ExprNode) extends AssignRHSNode {
@@ -85,6 +87,15 @@ class NewPairNode(val fstElem: ExprNode, val sndElem: ExprNode) extends AssignRH
         getElemIdentifier(sndElem, topST, ST).asInstanceOf[TYPE])
       topST.add(getKey, newIdentifier)
       newIdentifier
+    }
+  }
+
+  private def getElemIdentifier(elemNode: ExprNode, topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
+    val elemIdentifier = elemNode.getIdentifier(topST, ST)
+    if (elemIdentifier.isInstanceOf[PAIR] || elemIdentifier == GENERAL_PAIR) {
+      GENERAL_PAIR
+    } else {
+      elemIdentifier
     }
   }
 
@@ -104,25 +115,18 @@ class NewPairNode(val fstElem: ExprNode, val sndElem: ExprNode) extends AssignRH
     sndElem.check(topST, ST)
   }
 
-  private def getElemIdentifier(elemNode: ExprNode, topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
-    val elemIdentifier = elemNode.getIdentifier(topST, ST)
-    if (elemIdentifier.isInstanceOf[PAIR] || elemIdentifier == GENERAL_PAIR) {
-      GENERAL_PAIR
-    } else {
-      elemIdentifier
-    }
-  }
-
   override def toString: String = console.color(s"newpair (${fstElem.toString}, ${sndElem.toString})", fg=Console.BLUE)
 }
 
 class CallNode(val identNode: IdentNode, val argList: Option[ArgListNode]) extends AssignRHSNode {
 
-  // TODO lookup and check if it's defined, if not exception, if it is return it
   override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = identNode.getIdentifier(topST, ST)
 
   override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
     identNode.check(topST, ST)
+    if (! getIdentifier(topST, ST).isInstanceOf[FUNCTION]){
+      throw new TypeException("Expected function identifier but got non-function type instead")
+    }
     // TODO check through each of argList
   }
   override def initKey: String = identNode.getKey
