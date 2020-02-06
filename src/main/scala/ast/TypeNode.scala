@@ -2,7 +2,6 @@ package ast
 
 import util.{ColoredConsole => console}
 
-
 abstract class TypeNode extends ASTNode with Identifiable {
 
   override def toTreeString: String = console.color("<TYPE>", fg=Console.RED)
