@@ -37,6 +37,7 @@ object Compiler extends App {
     val program : WACCParser.ProgramContext = parser.program()
     // Build the AST
     val visitor : ASTGenerator = new ASTGenerator()
+    console.info("Building AST")
     val tree : ASTNode = visitor.visit(program)
     println(tree.toString)
   }
