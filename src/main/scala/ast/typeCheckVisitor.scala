@@ -120,13 +120,13 @@ sealed class typeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
       case ArrayElemNode(identNode, exprNodes) => arrayElemCheckerHelper(identNode, exprNodes)
 
-      case pairElemNode: PairElemNode => visit(pairElemNode.asInstanceOf[ASTNode])
+      case pairElemNode: PairElemNode => pairElemCheckerHelper(pairElemNode)
     }
 
     // AssignRHSNodes
 
     case assignRHSNode: AssignRHSNode => assignRHSNode match {
-      // case exprNode: ExprNode =>
+      case exprNode: ExprNode => exprNodeCheckerHelper(exprNode)
       case ArrayLiteralNode(exprNodes) =>
         val firstIdentifier: IDENTIFIER = exprNodes.apply(0).getIdentifier(topSymbolTable, currentSymbolTable)
         for (expr <- exprNodes) {
@@ -139,16 +139,10 @@ sealed class typeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         visit(fstElem)
         visit(sndElem)
       case CallNode(identNode, argList) => // TODO
-      // case pairElemNode: PairElemNode =>
+      case pairElemNode: PairElemNode => pairElemCheckerHelper(pairElemNode)
     }
 
     case ArgListNode(exprNodes) => for (exprNode <- exprNodes) visit(exprNode)
-
-    case pairElemNode: PairElemNode => pairElemNode match {
-      case FstNode(expression) => pairElemNodeVisit(expression)
-      case SndNode(expression) => pairElemNodeVisit(expression)
-      case _ =>
-    }
 
     case typeNode: TypeNode => typeNode match {
       case _: BaseTypeNode => // Always true
@@ -162,51 +156,6 @@ sealed class typeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
       // case ArrayTypeNode(typeNode) =>
       // case node: BaseTypeNode =>
       case _: PairElemTypePairNode => // base pair always true
-    }
-
-    case expr: ExprNode => expr match {
-
-      case ident: IdentNode => visit(ident)
-      case ArrayElemNode(identNode, exprNodes) => arrayElemCheckerHelper(identNode, exprNodes)
-
-      case unary: UnaryOperationNode => unary match {
-
-        case LogicalNotNode(expr: ExprNode) => checkHelper(expr, "bool", topSymbolTable, currentSymbolTable)
-        case NegateNode(expr: ExprNode) => checkHelper(expr, "int", topSymbolTable, currentSymbolTable)
-        case LenNode(expr: ExprNode) => lenHelper(expr, topSymbolTable, currentSymbolTable)
-        case OrdNode(expr: ExprNode) => checkHelper(expr, "char", topSymbolTable, currentSymbolTable)
-        case ChrNode(expr: ExprNode) => checkHelper(expr, "int", topSymbolTable, currentSymbolTable)
-
-      }
-
-      case binary: BinaryOperationNode =>
-
-        val intIdentifier: IDENTIFIER = IntTypeNode.getIdentifier(topSymbolTable, currentSymbolTable)
-        val boolIdentifier: IDENTIFIER = BoolTypeNode.getIdentifier(topSymbolTable, currentSymbolTable)
-        val charIdentifier: IDENTIFIER = CharTypeNode.getIdentifier(topSymbolTable, currentSymbolTable)
-        binary match {
-          case MultiplyNode(argOne, argTwo) => binaryCheckerHelper(argOne, argTwo, intIdentifier, intIdentifier, topSymbolTable, currentSymbolTable)
-          case DivideNode(argOne, argTwo) => binaryCheckerHelper(argOne, argTwo, intIdentifier, intIdentifier, topSymbolTable, currentSymbolTable)
-          case ModNode(argOne, argTwo) => binaryCheckerHelper(argOne, argTwo, intIdentifier, intIdentifier, topSymbolTable, currentSymbolTable)
-          case PlusNode(argOne, argTwo) => binaryCheckerHelper(argOne, argTwo, intIdentifier, intIdentifier, topSymbolTable, currentSymbolTable)
-          case MinusNode(argOne, argTwo) => binaryCheckerHelper(argOne, argTwo, intIdentifier, intIdentifier, topSymbolTable, currentSymbolTable)
-          case GreaterThanNode(argOne, argTwo) => comparatorsCheckerHelper(argOne, argTwo, intIdentifier, charIdentifier, topSymbolTable, currentSymbolTable)
-          case GreaterEqualNode(argOne, argTwo) => comparatorsCheckerHelper(argOne, argTwo, intIdentifier, charIdentifier, topSymbolTable, currentSymbolTable)
-          case LessThanNode(argOne, argTwo) => comparatorsCheckerHelper(argOne, argTwo, intIdentifier, charIdentifier, topSymbolTable, currentSymbolTable)
-          case LessEqualNode(argOne, argTwo) => comparatorsCheckerHelper(argOne, argTwo, intIdentifier, charIdentifier, topSymbolTable, currentSymbolTable)
-          case EqualToNode(argOne, argTwo) => binaryCheckerHelper(argOne, argTwo,
-            argOne.getIdentifier(topSymbolTable, currentSymbolTable), argOne.getIdentifier(topSymbolTable, currentSymbolTable), topSymbolTable, currentSymbolTable)
-          case NotEqualNode(argOne, argTwo) => binaryCheckerHelper(argOne, argTwo,
-            argOne.getIdentifier(topSymbolTable, currentSymbolTable), argOne.getIdentifier(topSymbolTable, currentSymbolTable), topSymbolTable, currentSymbolTable)
-          case LogicalAndNode(argOne, argTwo) => binaryCheckerHelper(argOne, argTwo, boolIdentifier, boolIdentifier, topSymbolTable, currentSymbolTable)
-          case LogicalOrNode(argOne, argTwo) => binaryCheckerHelper(argOne, argTwo, boolIdentifier, boolIdentifier, topSymbolTable, currentSymbolTable)
-        }
-      // Literals
-      case Int_literNode(_) =>
-      case Bool_literNode(_) =>
-      case Char_literNode(_) =>
-      case Str_literNode(_) =>
-      case Pair_literNode =>
     }
   }
 
@@ -280,6 +229,55 @@ sealed class typeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
     if (!(conditionIdentifier == BoolTypeNode.getIdentifier(topSymbolTable, currentSymbolTable))) {
       throw new TypeException(s"Semantic Error: ${conditionExpr.getKey} must evaluate to a boolean.")
     }
+  }
+
+  def pairElemCheckerHelper(pairElemNode: PairElemNode): Unit = pairElemNode match {
+    case FstNode(expression) => pairElemNodeVisit(expression)
+    case SndNode(expression) => pairElemNodeVisit(expression)
+  }
+
+  def exprNodeCheckerHelper(expr: ExprNode): Unit = expr match {
+    case ident: IdentNode => visit(ident)
+    case ArrayElemNode(identNode, exprNodes) => arrayElemCheckerHelper(identNode, exprNodes)
+
+    case unary: UnaryOperationNode => unary match {
+
+      case LogicalNotNode(expr: ExprNode) => checkHelper(expr, "bool", topSymbolTable, currentSymbolTable)
+      case NegateNode(expr: ExprNode) => checkHelper(expr, "int", topSymbolTable, currentSymbolTable)
+      case LenNode(expr: ExprNode) => lenHelper(expr, topSymbolTable, currentSymbolTable)
+      case OrdNode(expr: ExprNode) => checkHelper(expr, "char", topSymbolTable, currentSymbolTable)
+      case ChrNode(expr: ExprNode) => checkHelper(expr, "int", topSymbolTable, currentSymbolTable)
+
+    }
+
+    case binary: BinaryOperationNode =>
+
+      val intIdentifier: IDENTIFIER = IntTypeNode.getIdentifier(topSymbolTable, currentSymbolTable)
+      val boolIdentifier: IDENTIFIER = BoolTypeNode.getIdentifier(topSymbolTable, currentSymbolTable)
+      val charIdentifier: IDENTIFIER = CharTypeNode.getIdentifier(topSymbolTable, currentSymbolTable)
+      binary match {
+        case MultiplyNode(argOne, argTwo) => binaryCheckerHelper(argOne, argTwo, intIdentifier, intIdentifier, topSymbolTable, currentSymbolTable)
+        case DivideNode(argOne, argTwo) => binaryCheckerHelper(argOne, argTwo, intIdentifier, intIdentifier, topSymbolTable, currentSymbolTable)
+        case ModNode(argOne, argTwo) => binaryCheckerHelper(argOne, argTwo, intIdentifier, intIdentifier, topSymbolTable, currentSymbolTable)
+        case PlusNode(argOne, argTwo) => binaryCheckerHelper(argOne, argTwo, intIdentifier, intIdentifier, topSymbolTable, currentSymbolTable)
+        case MinusNode(argOne, argTwo) => binaryCheckerHelper(argOne, argTwo, intIdentifier, intIdentifier, topSymbolTable, currentSymbolTable)
+        case GreaterThanNode(argOne, argTwo) => comparatorsCheckerHelper(argOne, argTwo, intIdentifier, charIdentifier, topSymbolTable, currentSymbolTable)
+        case GreaterEqualNode(argOne, argTwo) => comparatorsCheckerHelper(argOne, argTwo, intIdentifier, charIdentifier, topSymbolTable, currentSymbolTable)
+        case LessThanNode(argOne, argTwo) => comparatorsCheckerHelper(argOne, argTwo, intIdentifier, charIdentifier, topSymbolTable, currentSymbolTable)
+        case LessEqualNode(argOne, argTwo) => comparatorsCheckerHelper(argOne, argTwo, intIdentifier, charIdentifier, topSymbolTable, currentSymbolTable)
+        case EqualToNode(argOne, argTwo) => binaryCheckerHelper(argOne, argTwo,
+          argOne.getIdentifier(topSymbolTable, currentSymbolTable), argOne.getIdentifier(topSymbolTable, currentSymbolTable), topSymbolTable, currentSymbolTable)
+        case NotEqualNode(argOne, argTwo) => binaryCheckerHelper(argOne, argTwo,
+          argOne.getIdentifier(topSymbolTable, currentSymbolTable), argOne.getIdentifier(topSymbolTable, currentSymbolTable), topSymbolTable, currentSymbolTable)
+        case LogicalAndNode(argOne, argTwo) => binaryCheckerHelper(argOne, argTwo, boolIdentifier, boolIdentifier, topSymbolTable, currentSymbolTable)
+        case LogicalOrNode(argOne, argTwo) => binaryCheckerHelper(argOne, argTwo, boolIdentifier, boolIdentifier, topSymbolTable, currentSymbolTable)
+      }
+    // Literals
+    case Int_literNode(_) =>
+    case Bool_literNode(_) =>
+    case Char_literNode(_) =>
+    case Str_literNode(_) =>
+    case Pair_literNode =>
   }
 }
 
