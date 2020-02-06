@@ -2,10 +2,9 @@ package ast
 
 import util.{ColoredConsole => console}
 
-
 abstract class TypeNode extends ASTNode with Identifiable {
 
-  override def toString: String = console.color("<TYPE>", fg=Console.RED)
+  override def toTreeString: String = console.color("<TYPE>", fg=Console.RED)
 }
 
 abstract class BaseTypeNode extends TypeNode with PairElemTypeNode {
@@ -24,30 +23,30 @@ abstract class BaseTypeNode extends TypeNode with PairElemTypeNode {
     case StringTypeNode => "string"
   }
 
-  override def toString: String = console.color("<BASE TYPE>", fg=Console.RED)
+  override def toTreeString: String = console.color("<BASE TYPE>", fg=Console.RED)
 }
 
 case object IntTypeNode extends BaseTypeNode {
 
-  override def toString: String = console.color("int", fg=Console.MAGENTA)
+  override def toTreeString: String = console.color("int", fg=Console.MAGENTA)
 }
 
 case object BoolTypeNode extends BaseTypeNode {
 
-  override def toString: String = console.color("bool", fg=Console.MAGENTA)
+  override def toTreeString: String = console.color("bool", fg=Console.MAGENTA)
 }
 
 case object CharTypeNode extends BaseTypeNode {
 
-  override def toString: String = console.color("char", fg=Console.MAGENTA)
+  override def toTreeString: String = console.color("char", fg=Console.MAGENTA)
 }
 
 case object StringTypeNode extends BaseTypeNode {
 
-  override def toString: String = console.color("string", fg=Console.MAGENTA)
+  override def toTreeString: String = console.color("string", fg=Console.MAGENTA)
 }
 
-case class ArrayTypeNode(val typeNode: TypeNode) extends TypeNode with PairElemTypeNode {
+case class ArrayTypeNode(typeNode: TypeNode) extends TypeNode with PairElemTypeNode {
 
   override def initKey: String = typeNode.getKey + "[]"
 
@@ -63,10 +62,10 @@ case class ArrayTypeNode(val typeNode: TypeNode) extends TypeNode with PairElemT
     }
   }
 
-  override def toString: String = typeNode.toString + "[]"
+  override def toTreeString: String = typeNode.toString + "[]"
 }
 
-case class PairTypeNode(val firstPairElem: PairElemTypeNode, val secondPairElem: PairElemTypeNode) extends TypeNode {
+case class PairTypeNode(firstPairElem: PairElemTypeNode, secondPairElem: PairElemTypeNode) extends TypeNode {
 
   override def initKey: String = "pair (" + firstPairElem.getKey + "," + secondPairElem.getKey + ")"
 
@@ -86,14 +85,14 @@ case class PairTypeNode(val firstPairElem: PairElemTypeNode, val secondPairElem:
     }
   }
 
-  override def toString: String = console.color("pair", fg=Console.BLUE) +
+  override def toTreeString: String = console.color("pair", fg=Console.BLUE) +
     s"(${firstPairElem.toString}, ${secondPairElem.toString})"
 }
 
 // <pair-elem-type> in the WACCLangSpec
 trait PairElemTypeNode extends ASTNode with Identifiable {
 
-  override def toString: String = console.color("<PAIR ELEM>", fg=Console.RED)
+  override def toTreeString: String = console.color("<PAIR ELEM>", fg=Console.RED)
 }
 
 // 'pair' in the WACCLangSpec
@@ -107,5 +106,5 @@ class PairElemTypePairNode extends PairElemTypeNode {
     generalPairIdentifierOption.asInstanceOf[TYPE]
   }
 
-  override def toString: String = console.color("pair", fg=Console.MAGENTA)
+  override def toTreeString: String = console.color("pair", fg=Console.MAGENTA)
 }
