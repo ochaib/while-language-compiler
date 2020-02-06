@@ -12,30 +12,30 @@ sealed abstract class UnaryOperationNode(expr: ExprNode) extends ExprNode {
     case ChrNode(_) => CharTypeNode.getIdentifier(topST, ST)
   }
 
-  override def toString: String = console.color(s"<UNARY OPER> ${expr.toString}", fg=Console.RED)
+  override def toTreeString: String = console.color(s"<UNARY OPER> ${expr.toString}", fg=Console.RED)
 }
 
 case class LogicalNotNode(expr: ExprNode) extends UnaryOperationNode(expr) {
 
-  override def toString: String = s"!${expr.toString}"
+  override def toTreeString: String = s"!${expr.toString}"
 }
 
 case class NegateNode(expr: ExprNode) extends UnaryOperationNode(expr) {
 
-  override def toString: String = s"-${expr.toString}"
+  override def toTreeString: String = s"-${expr.toString}"
 }
 
 case class LenNode(expr: ExprNode) extends UnaryOperationNode(expr) {
 
-  override def toString: String = s"len ${expr.toString}"
+  override def toTreeString: String = s"len ${expr.toString}"
 }
 
 case class OrdNode(expr: ExprNode) extends UnaryOperationNode(expr) {
 
-  override def toString: String = s"ord ${expr.toString}"
+  override def toTreeString: String = s"ord ${expr.toString}"
 }
 
 case class ChrNode(expr: ExprNode) extends UnaryOperationNode(expr) {
 
-    override def toString: String = s"ord ${expr.toString}"
+    override def toTreeString: String = s"ord ${expr.toString}"
 }

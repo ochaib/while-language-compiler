@@ -41,6 +41,7 @@ object Compiler extends App {
     }
 
     val visitor : ASTGenerator = new ASTGenerator()
+    console.info("Building AST")
     val tree : ASTNode = visitor.visit(program)
     println(tree.toString)
 
