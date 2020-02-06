@@ -1,5 +1,6 @@
 package ast
 
-abstract class Visitor {
-
+abstract class Visitor(entryNode: ASTNode) {
+  abstract def visit()
 }
+
