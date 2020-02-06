@@ -6,13 +6,18 @@ FROM openjdk:11.0.6
 # Enable HTTPS sources in apt-get
 RUN apt-get update
 RUN apt-get install -y apt-transport-https ca-certificates
+RUN apt-get install -y software-properties-common
+RUN add-apt-repository ppa:jonathonf/python-3.6
 
 # Install essential build tools incl. make
 RUN apt install build-essential -y --no-install-recommends
 
 # Install Python 3 for test script
+RUN apt-get update
+RUN apt-get install -y python3.6 python3.6-dev python3-pip python3.6-venv
 RUN apt-get install -y python3-pip python3-dev
-RUN pip3 install --upgrade pip
+RUN python3.6 -m pip install pip --upgrade
+RUN python3.6 -m pip install wheel
 
 # Install SBT, from the official SBT installation instructions
 RUN echo "deb https://dl.bintray.com/sbt/debian /" | tee -a /etc/apt/sources.list.d/sbt.list
@@ -31,4 +36,4 @@ COPY . .
 RUN cd /usr/app
 RUN make all
 
-ENTRYPOINT [ "python3", "/usr/app/test.py" ]
+ENTRYPOINT [ "python3.6", "/usr/app/test.py" ]
