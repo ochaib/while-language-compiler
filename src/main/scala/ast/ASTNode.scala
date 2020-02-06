@@ -52,11 +52,11 @@ case class ParamNode(paramType: TypeNode, identNode: IdentNode) extends ASTNode 
 }
 
 // Both of these need to be traits (abstract classes) in order to be extended later.
-trait AssignLHSNode extends ASTNode with Checkable with Identifiable {
+trait AssignLHSNode extends ASTNode with Identifiable {
   override abstract def toString: String = console.color("<LHS>", fg=Console.RED)
 }
 
-trait AssignRHSNode extends ASTNode with Checkable with Identifiable {
+trait AssignRHSNode extends ASTNode with Identifiable {
   override abstract def toString: String = console.color("<RHS>", fg=Console.RED)
 }
 
@@ -193,10 +193,6 @@ case class SndNode(expr: ExprNode) extends PairElemNode(expr) {
 case class IdentNode(ident: String) extends ExprNode with AssignLHSNode {
   override def initKey: String = ident
 
-  override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
-
-  }
-
   override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
     val T: Option[IDENTIFIER] = ST.lookupAll(toString)
     if (T.isEmpty) {
@@ -213,10 +209,6 @@ case class IdentNode(ident: String) extends ExprNode with AssignLHSNode {
 }
 
 case class ArrayElemNode(identNode: IdentNode, exprNodes: IndexedSeq[ExprNode]) extends ExprNode with AssignLHSNode {
-
-  override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
-
-  }
 
   override def toString: String = {
     val exprs : String = exprNodes.map("[" + _.toString + "]").mkString("")

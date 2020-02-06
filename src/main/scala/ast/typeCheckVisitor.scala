@@ -10,7 +10,7 @@ sealed class typeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
   override def visit(ASTNode: ASTNode): Unit = ASTNode match {
 
-      // AST NODES
+    // AST NODES
 
     case ProgramNode(functions, stat) =>
       for (functionNode <- functions) visit(functionNode)
@@ -18,7 +18,7 @@ sealed class typeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
     case FuncNode(funcType, identNode, paramList, stat) =>
       val typeIdentifier: TYPE = funcType.getIdentifier(topSymbolTable, currentSymbolTable).asInstanceOf[TYPE]
-      if (currentSymbolTable.lookup(identNode.getKey).isDefined){
+      if (currentSymbolTable.lookup(identNode.getKey).isDefined) {
         throw new TypeException("function " + identNode.getKey + " has already been defined")
       } else {
         paramList match {
@@ -28,17 +28,17 @@ sealed class typeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         }
       }
 
-    case ParamListNode(paramList) => for (paramNode <- paramList) visit(paramNode)
-      // TODO not sure if this needs to visit the idents
-    case ParamNode(paramType, identNode) => visit(paramType)
+    case ParamListNode(paramLicurrentSymbolTable) => for (paramNode <- paramLicurrentSymbolTable) visit(paramNode)
+    // TODO not sure if this needs to visit the idents
+    case ParamNode(paramType, _) => visit(paramType)
 
     case node: StatNode => node match {
 
-        // STAT NODES
+      // STAT NODES
 
       case DeclarationNode(_type, ident, rhs) =>
         val typeIdentifier: IDENTIFIER = _type.getIdentifier(topSymbolTable, currentSymbolTable)
-        rhs.check(topSymbolTable, currentSymbolTable)
+        visit(rhs)
 
         // If the type and the rhs dont match, throw exception
         if (typeIdentifier != rhs.getIdentifier(topSymbolTable, currentSymbolTable)) {
@@ -54,7 +54,7 @@ sealed class typeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         visit(lhs)
         visit(rhs)
 
-        if (lhs.getIdentifier(topSymbolTable, currentSymbolTable) != rhs.getIdentifier(topSymbolTable, currentSymbolTable)){
+        if (lhs.getIdentifier(topSymbolTable, currentSymbolTable) != rhs.getIdentifier(topSymbolTable, currentSymbolTable)) {
           throw new TypeException(lhs.getKey + " and " + rhs.getKey + " have non-matching types")
         }
       }
@@ -64,7 +64,7 @@ sealed class typeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
         if (!(lhs.getIdentifier(topSymbolTable, currentSymbolTable) == IntTypeNode.getIdentifier(topSymbolTable, currentSymbolTable)
           || lhs.getIdentifier(topSymbolTable, currentSymbolTable) == CharTypeNode.getIdentifier(topSymbolTable, currentSymbolTable))) {
-          throw new TypeException(s"Semantic Error: ${ lhs.getKey} must be either a character or an integer.")
+          throw new TypeException(s"Semantic Error: ${lhs.getKey} must be either a character or an integer.")
         }
 
       case FreeNode(expr) =>
@@ -88,7 +88,7 @@ sealed class typeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         val exprIdentifier = expr.getIdentifier(topSymbolTable, currentSymbolTable)
 
         if (!(expr.getIdentifier(topSymbolTable, currentSymbolTable) == IntTypeNode.getIdentifier(topSymbolTable, currentSymbolTable))) {
-          throw new TypeException(s"Semantic Error: ${ expr.getKey} must be an integer.")
+          throw new TypeException(s"Semantic Error: ${expr.getKey} must be an integer.")
         }
 
       case PrintNode(expr) => visit(expr)
@@ -101,7 +101,7 @@ sealed class typeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         val conditionIdentifier = conditionExpr.getIdentifier(topSymbolTable, currentSymbolTable)
 
         if (!(conditionIdentifier == BoolTypeNode.getIdentifier(topSymbolTable, currentSymbolTable))) {
-          throw new TypeException(s"Semantic Error: ${ conditionExpr.getKey} must evaluate to a boolean.")
+          throw new TypeException(s"Semantic Error: ${conditionExpr.getKey} must evaluate to a boolean.")
         }
 
       case WhileNode(expr, stat) =>
@@ -110,7 +110,7 @@ sealed class typeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         val conditionIdentifier = expr.getIdentifier(topSymbolTable, currentSymbolTable)
 
         if (!(conditionIdentifier == BoolTypeNode.getIdentifier(topSymbolTable, currentSymbolTable))) {
-          throw new TypeException(s"Semantic Error: ${ expr.getKey} must evaluate to a boolean.")
+          throw new TypeException(s"Semantic Error: ${expr.getKey} must evaluate to a boolean.")
         }
 
       case BeginNode(stat) => visit(stat)
@@ -120,12 +120,12 @@ sealed class typeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         visit(statTwo)
     }
 
-      // AssignLHSNodes
+    // AssignLHSNodes
 
     case assignLHSNode: AssignLHSNode => assignLHSNode match {
 
       case IdentNode(ident) =>
-        if (currentSymbolTable.lookupAll(assignLHSNode.getKey).isEmpty){
+        if (currentSymbolTable.lookupAll(assignLHSNode.getKey).isEmpty) {
           throw new TypeException(s"$toString has not been declared")
         }
 
@@ -133,7 +133,7 @@ sealed class typeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         visit(identNode)
         val identIdentifier: IDENTIFIER = identNode.getIdentifier(topSymbolTable, currentSymbolTable)
         for (expr <- exprNodes) visit(expr)
-        if (! identIdentifier.isInstanceOf[ARRAY]) {
+        if (!identIdentifier.isInstanceOf[ARRAY]) {
           throw new TypeException(s"Expected array type but got ${identIdentifier.getKey} instead")
         } else {
           val identArrayType: IDENTIFIER = identIdentifier.asInstanceOf[ARRAY]._type
@@ -151,7 +151,7 @@ sealed class typeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
       }
     }
 
-      // AssignRHSNodes
+    // AssignRHSNodes
 
     case assignRHSNode: AssignRHSNode => assignRHSNode match {
       case exprNode: ExprNode => visit(exprNode)
@@ -159,7 +159,99 @@ sealed class typeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
       case CallNode(identNode, argList) =>
       case pairElemNode: PairElemNode =>
       case ArrayLiteralNode(exprNodes) =>
+
+      case expr: ExprNode => expr match {
+
+        case ident: IdentNode => visit(ident)
+        case ArrayElemNode(identNode, exprNodes) =>
+
+          visit(identNode)
+          val identIdentifier: IDENTIFIER = identNode.getIdentifier(topSymbolTable, currentSymbolTable)
+          for (expr <- exprNodes) visit(expr)
+          if (!identIdentifier.isInstanceOf[ARRAY]) {
+            throw new TypeException(s"Expected array type but got ${identIdentifier.getKey} instead")
+          } else {
+            val identArrayType: IDENTIFIER = identIdentifier.asInstanceOf[ARRAY]._type
+            for (expr <- exprNodes) {
+              val exprIdentifier: IDENTIFIER = expr.getIdentifier(topSymbolTable, currentSymbolTable)
+              if (exprIdentifier != identArrayType) {
+                throw new TypeException(s"Expected ${identArrayType.getKey} but got ${exprIdentifier.getKey} instead")
+              }
+            }
+          }
+
+        case _: UnaryOperationNode =>
+
+        case LogicalNotNode(expr: ExprNode) => checkHelper(expr, "bool", topSymbolTable, currentSymbolTable)
+        case NegateNode(expr: ExprNode) => checkHelper(expr, "int", topSymbolTable, currentSymbolTable)
+        case LenNode(expr: ExprNode) => lenHelper(expr, topSymbolTable, currentSymbolTable)
+        case OrdNode(expr: ExprNode) => checkHelper(expr, "char", topSymbolTable, currentSymbolTable)
+        case ChrNode(expr: ExprNode) => checkHelper(expr, "int", topSymbolTable, currentSymbolTable)
+
+        case binary: BinaryOperationNode =>
+
+          val intIdentifier: IDENTIFIER = IntTypeNode.getIdentifier(topSymbolTable, currentSymbolTable)
+          val boolIdentifier: IDENTIFIER = BoolTypeNode.getIdentifier(topSymbolTable, currentSymbolTable)
+          val charIdentifier: IDENTIFIER = CharTypeNode.getIdentifier(topSymbolTable, currentSymbolTable)
+          binary match {
+            case MultiplyNode(argOne, argTwo) => binaryCheckerHelper(argOne, argTwo, intIdentifier, intIdentifier, topSymbolTable, currentSymbolTable)
+            case DivideNode(argOne, argTwo) => binaryCheckerHelper(argOne, argTwo, intIdentifier, intIdentifier, topSymbolTable, currentSymbolTable)
+            case ModNode(argOne, argTwo) => binaryCheckerHelper(argOne, argTwo, intIdentifier, intIdentifier, topSymbolTable, currentSymbolTable)
+            case PlusNode(argOne, argTwo) => binaryCheckerHelper(argOne, argTwo, intIdentifier, intIdentifier, topSymbolTable, currentSymbolTable)
+            case MinusNode(argOne, argTwo) => binaryCheckerHelper(argOne, argTwo, intIdentifier, intIdentifier, topSymbolTable, currentSymbolTable)
+            case GreaterThanNode(argOne, argTwo) => comparatorsCheckerHelper(argOne, argTwo, intIdentifier, charIdentifier, topSymbolTable, currentSymbolTable)
+            case GreaterEqualNode(argOne, argTwo) => comparatorsCheckerHelper(argOne, argTwo, intIdentifier, charIdentifier, topSymbolTable, currentSymbolTable)
+            case LessThanNode(argOne, argTwo) => comparatorsCheckerHelper(argOne, argTwo, intIdentifier, charIdentifier, topSymbolTable, currentSymbolTable)
+            case LessEqualNode(argOne, argTwo) => comparatorsCheckerHelper(argOne, argTwo, intIdentifier, charIdentifier, topSymbolTable, currentSymbolTable)
+            case EqualToNode(argOne, argTwo) => binaryCheckerHelper(argOne, argTwo,
+              argOne.getIdentifier(topSymbolTable, currentSymbolTable), argOne.getIdentifier(topSymbolTable, currentSymbolTable), topSymbolTable, currentSymbolTable)
+            case NotEqualNode(argOne, argTwo) => binaryCheckerHelper(argOne, argTwo,
+              argOne.getIdentifier(topSymbolTable, currentSymbolTable), argOne.getIdentifier(topSymbolTable, currentSymbolTable), topSymbolTable, currentSymbolTable)
+            case LogicalAndNode(argOne, argTwo) => binaryCheckerHelper(argOne, argTwo, boolIdentifier, boolIdentifier, topSymbolTable, currentSymbolTable)
+            case LogicalOrNode(argOne, argTwo) => binaryCheckerHelper(argOne, argTwo, boolIdentifier, boolIdentifier, topSymbolTable, currentSymbolTable)
+          }
+
+        case _: Any =>
+
+      }
     }
+
+      // Unary Operator Helpers
+      def checkHelper(expr: ExprNode, expectedIdentifier: String, topSymbolTable: SymbolTable, ST: SymbolTable): Unit = {
+        val identifier: IDENTIFIER = expr.getIdentifier(topSymbolTable, currentSymbolTable)
+        if (identifier != topSymbolTable.lookup(expectedIdentifier).get) {
+          throw new TypeException(s"Expected $expectedIdentifier but got $identifier")
+        }
+      }
+
+      def lenHelper(expr: ExprNode, topSymbolTable: SymbolTable, ST: SymbolTable): Unit = {
+        val identifier: IDENTIFIER = expr.getIdentifier(topSymbolTable, currentSymbolTable)
+        if (!identifier.isInstanceOf[ARRAY]) {
+          throw new TypeException("Expected an array but got " + identifier)
+        }
+      }
+
+      // Binary Operator Helpers
+      def comparatorsCheckerHelper(argOne: ExprNode, argTwo: ExprNode,
+                                   expectedIdentifier1: IDENTIFIER, expectedIdentifier2: IDENTIFIER, topSymbolTable: SymbolTable, ST: SymbolTable): Unit = {
+        val argOneIdentifier: IDENTIFIER = argOne.getIdentifier(topSymbolTable, currentSymbolTable)
+        val argTwoIdentifier: IDENTIFIER = argTwo.getIdentifier(topSymbolTable, currentSymbolTable)
+        if (!((argOneIdentifier == expectedIdentifier1 || argOneIdentifier == expectedIdentifier2)
+          && (argTwoIdentifier == expectedIdentifier1 || argTwoIdentifier == expectedIdentifier2))) {
+          throw new TypeException(s"Expected input types ${expectedIdentifier1.getKey} or ${expectedIdentifier2.getKey}" +
+            s" but got ${argOneIdentifier.getKey} and ${argTwoIdentifier.getKey} instead")
+        }
+      }
+
+      def binaryCheckerHelper(argOne: ExprNode, argTwo: ExprNode, expectedIdentifier1: IDENTIFIER,
+                              expectedIdentifier2: IDENTIFIER, topSymbolTable: SymbolTable, ST: SymbolTable): Unit = {
+        val argOneIdentifier: IDENTIFIER = argOne.getIdentifier(topSymbolTable, currentSymbolTable)
+        val argTwoIdentifier: IDENTIFIER = argTwo.getIdentifier(topSymbolTable, currentSymbolTable)
+        if (!(argOneIdentifier == expectedIdentifier1 && argTwoIdentifier == expectedIdentifier2)) {
+          throw new TypeException(s"Expected input types ${expectedIdentifier1.getKey} and ${expectedIdentifier2.getKey}" +
+            s" but got ${argOneIdentifier.getKey} and ${argTwoIdentifier.getKey} instead")
+        }
+      }
   }
 }
 
