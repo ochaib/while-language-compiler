@@ -21,7 +21,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
     val functions: IndexedSeq[FuncNode] = for (i<-1 until childCount - 3) yield visit(ctx.getChild(i)).asInstanceOf[FuncNode]
     // Then create program node from the two
-    new ProgramNode(stat, functions)
+    new ProgramNode(functions, stat)
   }
 
   override def visitFunc(ctx: WACCParser.FuncContext): FuncNode = {
