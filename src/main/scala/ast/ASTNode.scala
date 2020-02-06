@@ -32,7 +32,8 @@ class FuncNode(val funcType: TypeNode, val identNode: IdentNode, val paramList: 
       throw new TypeException("function " + identNode.getKey + " has already been defined")
     } else {
       paramList match {
-        case Some(params) => ST.add(identNode.getKey, new FUNCTION(identNode.getKey, typeIdentifier, params.getIdentifierList(ST)))
+        case Some(params) => ST.add(identNode.getKey,
+          new FUNCTION(identNode.getKey, typeIdentifier, params.getIdentifierList(topST, ST)))
         case None => ST.add(identNode.getKey, new FUNCTION(identNode.getKey, typeIdentifier, IndexedSeq[TYPE]()))
       }
     }
@@ -46,8 +47,12 @@ class FuncNode(val funcType: TypeNode, val identNode: IdentNode, val paramList: 
 
 class ParamListNode(val paramList: IndexedSeq[ParamNode]) extends ASTNode {
 
-  // TODO: loop through the _paramList and return a list of the TYPE IDENTIFIERS
-  def getIdentifierList(ST: SymbolTable): IndexedSeq[TYPE] = null
+  def getIdentifierList(topST: SymbolTable, ST: SymbolTable): IndexedSeq[TYPE] = {
+    assert(paramList.length >= 1, "Parameter lists have to be at least size 1")
+    var identifierList = Vector()
+    for (param <- paramList) identifierList = identifierList :+  param.getIdentifier(topST, ST)
+    identifierList
+  }
 
   override def toString: String = paramList.map(_.toString).mkString(", ")
 }
@@ -243,7 +248,7 @@ class ArrayElemNode(val identNode: IdentNode, val exprNodes: IndexedSeq[ExprNode
 
   override def toString: String = {
     val exprs : String = exprNodes.map("[" + _.toString + "]").mkString("")
-    s"${identNode.toString}${exprs}"
+    s"${identNode.toString}$exprs"
   }
 }
 
