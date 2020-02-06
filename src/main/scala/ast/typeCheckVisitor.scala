@@ -1,7 +1,5 @@
 package ast
 
-import org.stringtemplate.v4.ST
-
 import scala.collection.immutable.HashMap
 
 sealed class typeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
