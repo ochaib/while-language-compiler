@@ -12,12 +12,11 @@ sealed class typeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
       // AST NODES
 
-    case ProgramNode(functions, stat) => {
+    case ProgramNode(functions, stat) =>
       for (functionNode <- functions) visit(functionNode)
       visit(stat)
-    }
 
-    case FuncNode(funcType, identNode, paramList, stat) => {
+    case FuncNode(funcType, identNode, paramList, stat) =>
       val typeIdentifier: TYPE = funcType.getIdentifier(topSymbolTable, currentSymbolTable).asInstanceOf[TYPE]
       if (currentSymbolTable.lookup(identNode.getKey).isDefined){
         throw new TypeException("function " + identNode.getKey + " has already been defined")
@@ -28,7 +27,6 @@ sealed class typeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
           case None => currentSymbolTable.add(identNode.getKey, new FUNCTION(identNode.getKey, typeIdentifier, IndexedSeq[TYPE]()))
         }
       }
-    }
 
     case ParamListNode(paramList) => for (paramNode <- paramList) visit(paramNode)
       // TODO not sure if this needs to visit the idents
@@ -38,7 +36,7 @@ sealed class typeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
         // STAT NODES
 
-      case DeclarationNode(_type, ident, rhs) => {
+      case DeclarationNode(_type, ident, rhs) =>
         val typeIdentifier: IDENTIFIER = _type.getIdentifier(topSymbolTable, currentSymbolTable)
         rhs.check(topSymbolTable, currentSymbolTable)
 
@@ -51,7 +49,6 @@ sealed class typeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         } else {
           currentSymbolTable.add(ident.getKey, new VARIABLE(ident.getKey, typeIdentifier.asInstanceOf[TYPE]))
         }
-      }
 
       case AssignmentNode(lhs, rhs) => {
         visit(lhs)
@@ -62,16 +59,15 @@ sealed class typeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         }
       }
 
-      case ReadNode(lhs) =>  {
+      case ReadNode(lhs) =>
         visit(lhs)
 
         if (!(lhs.getIdentifier(topSymbolTable, currentSymbolTable) == IntTypeNode.getIdentifier(topSymbolTable, currentSymbolTable)
           || lhs.getIdentifier(topSymbolTable, currentSymbolTable) == CharTypeNode.getIdentifier(topSymbolTable, currentSymbolTable))) {
           throw new TypeException(s"Semantic Error: ${ lhs.getKey} must be either a character or an integer.")
         }
-      }
 
-      case FreeNode(expr) => {
+      case FreeNode(expr) =>
         visit(expr)
 
         val exprIdentifier = expr.getIdentifier(topSymbolTable, currentSymbolTable)
@@ -80,7 +76,6 @@ sealed class typeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
           !exprIdentifier.isInstanceOf[ARRAY]) {
           throw new TypeException(s"Semantic Error: ${expr.getKey} must be a pair or an array.")
         }
-      }
 
       // TODO: Check that return statement is present in body of non-main function.
       // TODO: Check that the type of expression given to the return statement must

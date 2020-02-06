@@ -1,5 +1,4 @@
 package ast
-import ast._
 import util.{ColoredConsole => console}
 
 abstract class ExprNode extends AssignRHSNode {
@@ -34,9 +33,10 @@ case class Int_literNode(num: Int) extends ExprNode {
 
 case class Bool_literNode(value: Boolean) extends ExprNode {
 
-  override def toString: String = value match {
-    case true => console.color("true", fg=Console.MAGENTA)
-    case false => console.color("false", fg=Console.MAGENTA)
+  override def toString: String = if (value) {
+    console.color("true", fg = Console.MAGENTA)
+  } else {
+    console.color("false", fg = Console.MAGENTA)
   }
 }
 
