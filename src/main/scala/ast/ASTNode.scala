@@ -186,7 +186,7 @@ case class IdentNode(ident: String) extends ExprNode with AssignLHSNode {
   override def initKey: String = ident
 
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
-    val T: Option[IDENTIFIER] = ST.lookupAll(toString)
+    val T: Option[IDENTIFIER] = ST.lookupAll(getKey)
     if (T.isEmpty) {
       throw new TypeException(s"$toString has not been declared")
     } else if (! T.get.isInstanceOf[VARIABLE]) {
@@ -214,7 +214,7 @@ case class ArrayLiteralNode(exprNodes: IndexedSeq[ExprNode]) extends AssignRHSNo
     val arrayIdentifierOption: Option[IDENTIFIER] = topST.lookup(getKey)
     if (arrayIdentifierOption.isEmpty) {
       val arrayIdentifier = new ARRAY(getKey, exprNodes.apply(0).getType(topST, ST).asInstanceOf[TYPE])
-      topST.add(toString, arrayIdentifier)
+      topST.add(getKey, arrayIdentifier)
       arrayIdentifier
     } else {
       assert(arrayIdentifierOption.get.isInstanceOf[ARRAY], s"Something went wrong... $getKey should be a an array type but isn't")
