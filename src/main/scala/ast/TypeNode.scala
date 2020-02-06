@@ -47,7 +47,7 @@ case object StringTypeNode extends BaseTypeNode {
   override def toString: String = console.color("string", fg=Console.MAGENTA)
 }
 
-case class ArrayTypeNode(val typeNode: TypeNode) extends TypeNode with PairElemTypeNode {
+case class ArrayTypeNode(typeNode: TypeNode) extends TypeNode with PairElemTypeNode {
 
   override def initKey: String = typeNode.getKey + "[]"
 
@@ -66,7 +66,7 @@ case class ArrayTypeNode(val typeNode: TypeNode) extends TypeNode with PairElemT
   override def toString: String = typeNode.toString + "[]"
 }
 
-case class PairTypeNode(val firstPairElem: PairElemTypeNode, val secondPairElem: PairElemTypeNode) extends TypeNode {
+case class PairTypeNode(firstPairElem: PairElemTypeNode, secondPairElem: PairElemTypeNode) extends TypeNode {
 
   override def initKey: String = "pair (" + firstPairElem.getKey + "," + secondPairElem.getKey + ")"
 
