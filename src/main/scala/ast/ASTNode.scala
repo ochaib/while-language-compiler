@@ -43,7 +43,17 @@ case class ParamListNode(paramList: IndexedSeq[ParamNode]) extends ASTNode {
 
 case class ParamNode(paramType: TypeNode, identNode: IdentNode) extends ASTNode with Identifiable {
 
-  override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = paramType.getIdentifier(topST, ST)
+  override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
+    paramType.getIdentifier(topST, ST)
+    if (ST.lookup(identNode.getKey).isDefined) {
+      // If variable is already defined throw exception
+      throw new TypeException(s"${identNode.getKey} has already been declared")
+    } else {
+      val paramIdentifier: IDENTIFIER = new VARIABLE(identNode.getKey, paramType.getIdentifier(topST, ST).asInstanceOf[TYPE])
+      ST.add(identNode.getKey, paramIdentifier)
+      paramIdentifier
+    }
+  }
 
   override def initKey: String = paramType.getKey
 

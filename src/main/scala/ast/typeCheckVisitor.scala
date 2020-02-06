@@ -16,38 +16,26 @@ sealed class typeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
     case FuncNode(funcType, identNode, paramList: Option[ParamListNode], stat: StatNode) =>
       visit(funcType)
-      // TODO check identNode not defined
+      var functionIdentifier: FUNCTION = null
+      // check identNode is already defined
       if (currentSymbolTable.lookup(identNode.getKey).isDefined)
         throw new TypeException(s"Tried to define function: ${identNode.getKey} but it was already declared")
-
-      else {
-        currentSymbolTable.add(identNode.getKey,
-          new FUNCTION(identNode.getKey, funcType.getIdentifier(topSymbolTable, currentSymbolTable).asInstanceOf[TYPE],
-            paramList.get.getIdentifierList(topSymbolTable, currentSymbolTable)))
-      }
+      else
+        functionIdentifier = new FUNCTION(identNode.getKey, funcType.getIdentifier(topSymbolTable,
+          currentSymbolTable).asInstanceOf[TYPE], null)
+        currentSymbolTable.add(identNode.getKey, functionIdentifier)
 
       // Prepare to visit stat by creating new symbol table
       currentSymbolTable = SymbolTable.newSymbolTable(currentSymbolTable)
       // Missing: link symbol table to function?
       if (paramList.isDefined)
+        // implicitly adds identifiers to the symbol table
+        functionIdentifier.paramTypes = paramList.get.getIdentifierList(topSymbolTable, currentSymbolTable)
         visit(paramList.get)
 
       visit(stat)
       // Exit symbol table
       currentSymbolTable = currentSymbolTable.encSymbolTable
-
-      // TODO account for no params
-      // TODO symbol table generation
-      val typeIdentifier: TYPE = funcType.getIdentifier(topSymbolTable, currentSymbolTable).asInstanceOf[TYPE]
-      if (currentSymbolTable.lookup(identNode.getKey).isDefined) {
-        throw new TypeException("function " + identNode.getKey + " has already been defined")
-      } else {
-        paramList match {
-          case Some(params) => currentSymbolTable.add(identNode.getKey,
-            new FUNCTION(identNode.getKey, typeIdentifier, params.getIdentifierList(topSymbolTable, currentSymbolTable)))
-          case None => currentSymbolTable.add(identNode.getKey, new FUNCTION(identNode.getKey, typeIdentifier, IndexedSeq[TYPE]()))
-        }
-      }
 
     case ParamListNode(paramLicurrentSymbolTable) => for (paramNode <- paramLicurrentSymbolTable) visit(paramNode)
     // TODO not sure if this needs to visit the idents
@@ -64,7 +52,8 @@ sealed class typeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         // If the type and the rhs dont match, throw exception
         if (typeIdentifier != rhs.getIdentifier(topSymbolTable, currentSymbolTable)) {
           throw new TypeException(typeIdentifier.getKey + " expected but got " + rhs.getIdentifier(topSymbolTable, currentSymbolTable).getKey)
-        } else if (currentSymbolTable.lookup(ident.getKey).isDefined) {
+        }
+        if (currentSymbolTable.lookup(ident.getKey).isDefined) {
           // If variable is already defined throw exception
           throw new TypeException(s"${ident.getKey} has already been declared")
         } else {
