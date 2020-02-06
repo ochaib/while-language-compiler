@@ -209,13 +209,15 @@ sealed class typeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
           }
         }
 
-      case _: UnaryOperationNode =>
+      case unary: UnaryOperationNode => unary match {
 
         case LogicalNotNode(expr: ExprNode) => checkHelper(expr, "bool", topSymbolTable, currentSymbolTable)
         case NegateNode(expr: ExprNode) => checkHelper(expr, "int", topSymbolTable, currentSymbolTable)
         case LenNode(expr: ExprNode) => lenHelper(expr, topSymbolTable, currentSymbolTable)
         case OrdNode(expr: ExprNode) => checkHelper(expr, "char", topSymbolTable, currentSymbolTable)
         case ChrNode(expr: ExprNode) => checkHelper(expr, "int", topSymbolTable, currentSymbolTable)
+
+      }
 
       case binary: BinaryOperationNode =>
 

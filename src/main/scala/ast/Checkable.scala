@@ -1,7 +1,5 @@
 package ast
 
-import ast.{SymbolTable, TypeException}
-
 trait Checkable {
   // Requires topST because of recursive types
   @throws(classOf[TypeException])
