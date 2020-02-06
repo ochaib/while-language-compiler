@@ -7,17 +7,21 @@ FROM openjdk:11.0.6
 RUN apt-get update
 RUN apt-get install -y apt-transport-https ca-certificates
 RUN apt-get install -y software-properties-common
-RUN add-apt-repository ppa:deadsnakes/ppa
 
 # Install essential build tools incl. make
-RUN apt install build-essential -y --no-install-recommends
-
-# Install Python 3 for test script
+RUN apt install build-essential checkinstall -y --no-install-recommends
+RUN apt install libreadline-gplv2-dev libncursesw5-dev libssl-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev
 RUN apt-get update
-RUN apt-get install -y python3.6 python3.6-dev python3-pip python3.6-venv
-RUN apt-get install -y python3-pip python3-dev
-RUN python3.6 -m pip install pip --upgrade
-RUN python3.6 -m pip install wheel
+RUN apt-get upgrade -y
+RUN apt-get install wget gcc zlib1g-dev -y
+
+# Build Python 3.6
+RUN wget --quiet https://www.python.org/ftp/python/3.6.8/Python-3.6.8.tgz
+RUN tar zxf Python-${PYTHON_VER}.tgz
+RUN cd Python-3.6.8
+RUN ./configure
+RUN make
+RUN make install
 
 # Install SBT, from the official SBT installation instructions
 RUN echo "deb https://dl.bintray.com/sbt/debian /" | tee -a /etc/apt/sources.list.d/sbt.list
