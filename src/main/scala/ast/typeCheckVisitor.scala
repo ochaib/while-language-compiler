@@ -8,7 +8,7 @@ sealed class typeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
   var topSymbolTable: SymbolTable = SymbolTable.topLevelSymbolTable(entryNode)
   var currentSymbolTable: SymbolTable = new SymbolTable(new HashMap(), topSymbolTable)
 
-  override def visit(ASTNode: ASTNode): Unit = entryNode match {
+  override def visit(ASTNode: ASTNode): Unit = ASTNode match {
 
       // AST NODES
 
@@ -100,7 +100,7 @@ sealed class typeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
       case PrintlnNode(expr) => visit(expr)
 
-      case IfNode(conditionExpr, thenStat, elseStat) => {
+      case IfNode(conditionExpr, thenStat, elseStat) =>
         visit(conditionExpr)
 
         val conditionIdentifier = conditionExpr.getIdentifier(topSymbolTable, currentSymbolTable)
@@ -108,9 +108,8 @@ sealed class typeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         if (!(conditionIdentifier == BoolTypeNode.getIdentifier(topSymbolTable, currentSymbolTable))) {
           throw new TypeException(s"Semantic Error: ${ conditionExpr.getKey} must evaluate to a boolean.")
         }
-      }
 
-      case WhileNode(expr, stat) => {
+      case WhileNode(expr, stat) =>
         visit(expr)
 
         val conditionIdentifier = expr.getIdentifier(topSymbolTable, currentSymbolTable)
@@ -118,14 +117,53 @@ sealed class typeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         if (!(conditionIdentifier == BoolTypeNode.getIdentifier(topSymbolTable, currentSymbolTable))) {
           throw new TypeException(s"Semantic Error: ${ expr.getKey} must evaluate to a boolean.")
         }
-      }
 
       case BeginNode(stat) => visit(stat)
 
-      case SequenceNode(statOne, statTwo) => {
+      case SequenceNode(statOne, statTwo) =>
         visit(statOne)
         visit(statTwo)
+    }
+
+      // AssignLHSNodes
+
+    case assignLHSNode: AssignLHSNode => assignLHSNode match {
+
+      case IdentNode(ident) =>
+        if (currentSymbolTable.lookupAll(assignLHSNode.getKey).isEmpty){
+          throw new TypeException(s"$toString has not been declared")
+        }
+
+      case ArrayElemNode(identNode, exprNodes) =>
+        visit(identNode)
+        val identIdentifier: IDENTIFIER = identNode.getIdentifier(topSymbolTable, currentSymbolTable)
+        for (expr <- exprNodes) visit(expr)
+        if (! identIdentifier.isInstanceOf[ARRAY]) {
+          throw new TypeException(s"Expected array type but got ${identIdentifier.getKey} instead")
+        } else {
+          val identArrayType: IDENTIFIER = identIdentifier.asInstanceOf[ARRAY]._type
+          for (expr <- exprNodes) {
+            val exprIdentifier: IDENTIFIER = expr.getIdentifier(topSymbolTable, currentSymbolTable)
+            if (exprIdentifier != identArrayType) {
+              throw new TypeException(s"Expected ${identArrayType.getKey} but got ${exprIdentifier.getKey} instead")
+            }
+          }
+        }
+
+      case pairElemNode: PairElemNode => pairElemNode match {
+        case FstNode(expr) => // TODO
+        case SndNode(expr) => // TODO
       }
+    }
+
+      // AssignRHSNodes
+
+    case assignRHSNode: AssignRHSNode => assignRHSNode match {
+      case exprNode: ExprNode => visit(exprNode)
+      case NewPairNode(fstElem, sndElem) =>
+      case CallNode(identNode, argList) =>
+      case pairElemNode: PairElemNode =>
+      case ArrayLiteralNode(exprNodes) =>
     }
   }
 }
