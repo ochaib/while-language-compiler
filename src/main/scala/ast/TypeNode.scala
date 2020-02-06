@@ -1,5 +1,5 @@
 package ast
-import ast.{ARRAY, GENERAL_PAIR, IDENTIFIER, PAIR, SymbolTable, TYPE}
+
 import util.{ColoredConsole => console}
 
 

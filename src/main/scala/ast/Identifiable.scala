@@ -1,7 +1,5 @@
 package ast
 
-import ast.{IDENTIFIER, SymbolTable}
-
 // looks up the type identifier from all parent symbol tables and returns the appropriate identifier object
 trait Identifiable {
   protected var key: String = _
