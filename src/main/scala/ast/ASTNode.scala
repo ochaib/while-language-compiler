@@ -49,9 +49,9 @@ case class ParamNode(paramType: TypeNode, identNode: IdentNode) extends ASTNode 
       // If variable is already defined throw exception
       throw new TypeException(s"${identNode.getKey} has already been declared")
     } else {
-      val paramIdentifier: IDENTIFIER = new VARIABLE(identNode.getKey, paramType.getIdentifier(topST, ST).asInstanceOf[TYPE])
+      val paramIdentifier: PARAM = new PARAM(identNode.getKey, paramType.getIdentifier(topST, ST).asInstanceOf[TYPE])
       ST.add(identNode.getKey, paramIdentifier)
-      paramIdentifier
+      paramIdentifier._type
     }
   }
 
