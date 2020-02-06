@@ -103,8 +103,8 @@ def every_semantic_error_should_fail(results):
     }
 
 ### TEST RUN HELPER ###
-def run_test(test_func, results=results):
-    test_def = test_func(results)
+def run_test(make_test_def, results):
+    test_def = make_test_def(results)
 
     name = test_def['name']
     description = test_def['description']
@@ -126,7 +126,7 @@ def run_test(test_func, results=results):
     print(f'Passed {passed}/{total}')
 
     # print out any failures
-    if True:
+    if passed < total:
         error(f'{"-"*6} TEST FAILURES {"-"*6}')
         for failure in failures:
             print(colored('> ' + failure['file'], color='blue'))
@@ -146,7 +146,24 @@ def run_test(test_func, results=results):
                 print(colored('Syntax Error', color="red"))
             print(failure['output'])
 
+    return passed, total
+
+
+# run in bulk
+def run_tests(*test_defs, results=results):
+    passed, total = 0, 0
+    for test_def in test_defs:
+        p, t = run_test(test_def, results)
+        passed += p
+        total += t
+    return passed, total
+
 # every valid program should compile and invalid program should not compile
-run_test(every_valid_program_should_compile)
-run_test(every_syntax_error_should_fail)
-run_test(every_semantic_error_should_fail)
+passed, total = run_tests(
+    every_valid_program_should_compile,
+    every_syntax_error_should_fail,
+    every_semantic_error_should_fail
+)
+
+coverage = passed/total
+print(f'coverage: {coverage}% ({passed}/{total})')
