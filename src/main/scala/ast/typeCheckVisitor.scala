@@ -1,5 +1,7 @@
 package ast
 
+import util.SemanticErrorLog
+
 import scala.collection.immutable.HashMap
 
 sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
@@ -19,7 +21,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
       // TODO symbol table generation
       val typeIdentifier: TYPE = funcType.getIdentifier(topSymbolTable, currentSymbolTable).asInstanceOf[TYPE]
       if (currentSymbolTable.lookup(identNode.getKey).isDefined) {
-        throw new TypeException("function " + identNode.getKey + " has already been defined")
+        SemanticErrorLog.add("function " + identNode.getKey + " has already been defined")
       } else {
         paramList match {
           case Some(params) => currentSymbolTable.add(identNode.getKey,
@@ -28,7 +30,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         }
       }
 
-    case ParamListNode(paramLicurrentSymbolTable) => for (paramNode <- paramLicurrentSymbolTable) visit(paramNode)
+    case ParamListNode(paramList) => for (paramNode <- paramList) visit(paramNode)
     // TODO not sure if this needs to visit the idents
     case ParamNode(paramType, _) => visit(paramType)
 
@@ -40,12 +42,12 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         val typeIdentifier: IDENTIFIER = _type.getIdentifier(topSymbolTable, currentSymbolTable)
         visit(rhs)
 
-        // If the type and the rhs dont match, throw exception
+        // If the type and the rhs don't match, throw exception
         if (typeIdentifier != rhs.getIdentifier(topSymbolTable, currentSymbolTable)) {
-          throw new TypeException(typeIdentifier.getKey + " expected but got " + rhs.getIdentifier(topSymbolTable, currentSymbolTable).getKey)
+          SemanticErrorLog.add(typeIdentifier.getKey + " expected but got " + rhs.getIdentifier(topSymbolTable, currentSymbolTable).getKey)
         } else if (currentSymbolTable.lookup(ident.getKey).isDefined) {
           // If variable is already defined throw exception
-          throw new TypeException(s"${ident.getKey} has already been declared")
+          SemanticErrorLog.add(s"${ident.getKey} has already been declared")
         } else {
           currentSymbolTable.add(ident.getKey, new VARIABLE(ident.getKey, typeIdentifier.asInstanceOf[TYPE]))
         }
@@ -55,7 +57,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         visit(rhs)
 
         if (lhs.getIdentifier(topSymbolTable, currentSymbolTable) != rhs.getIdentifier(topSymbolTable, currentSymbolTable)) {
-          throw new TypeException(lhs.getKey + " and " + rhs.getKey + " have non-matching types")
+          SemanticErrorLog.add(lhs.getKey + " and " + rhs.getKey + " have non-matching types")
         }
 
       case ReadNode(lhs) =>
@@ -63,7 +65,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
         if (!(lhs.getIdentifier(topSymbolTable, currentSymbolTable) == IntTypeNode.getIdentifier(topSymbolTable, currentSymbolTable)
           || lhs.getIdentifier(topSymbolTable, currentSymbolTable) == CharTypeNode.getIdentifier(topSymbolTable, currentSymbolTable))) {
-          throw new TypeException(s"Semantic Error: ${lhs.getKey} must be either a character or an integer.")
+          SemanticErrorLog.add(s"${lhs.getKey} must be either a character or an integer.")
         }
 
       case FreeNode(expr) =>
@@ -73,7 +75,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
         if (!(exprIdentifier.isInstanceOf[PAIR] || exprIdentifier == GENERAL_PAIR) ||
           !exprIdentifier.isInstanceOf[ARRAY]) {
-          throw new TypeException(s"Semantic Error: ${expr.getKey} must be a pair or an array.")
+          SemanticErrorLog.add(s"${expr.getKey} must be a pair or an array.")
         }
 
       // TODO: Check that return statement is present in body of non-main function.
@@ -86,8 +88,8 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
         val exprIdentifier = expr.getIdentifier(topSymbolTable, currentSymbolTable)
 
-        if (!(exprIdentifier == IntTypeNode.getIdentifier(topSymbolTable, currentSymbolTable))) {
-          throw new TypeException(s"Semantic Error: ${expr.getKey} must be an integer.")
+        if (!(expr.getIdentifier(topSymbolTable, currentSymbolTable) == IntTypeNode.getIdentifier(topSymbolTable, currentSymbolTable))) {
+          SemanticErrorLog.add(s"${expr.getKey} must be an integer.")
         }
 
       case PrintNode(expr) => visit(expr)
@@ -115,7 +117,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
       case IdentNode(_) =>
         if (currentSymbolTable.lookupAll(assignLHSNode.getKey).isEmpty) {
-          throw new TypeException(s"$toString has not been declared")
+          SemanticErrorLog.add(s"$toString has not been declared")
         }
 
       case ArrayElemNode(identNode, exprNodes) => arrayElemCheckerHelper(identNode, exprNodes)
@@ -132,7 +134,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         for (expr <- exprNodes) {
           val exprIdentifier = expr.getIdentifier(topSymbolTable, currentSymbolTable)
           if (exprIdentifier != firstIdentifier) {
-            throw new TypeException(s"Expected type ${firstIdentifier.getKey} but got ${exprIdentifier.getKey}")
+            SemanticErrorLog.add(s"Expected type ${firstIdentifier.getKey} but got ${exprIdentifier.getKey}")
           }
         }
       case NewPairNode(fstElem, sndElem) =>
