@@ -12,14 +12,14 @@ class SyntaxErrorVisitor {
 
     if (functionReturnsOrExits(statNode)) {
       // Instead of printing, add to syntax error log.
-      SyntaxErrorLog.add("Syntax Error: Program statement does not return or exit.")
+      SyntaxErrorLog.add("Program statement does not return or exit.")
     }
 
     for (f <- functions) {
 //      accBool &&= functionReturnsOrExits(f.stat)
       if (functionReturnsOrExits(f.stat)) {
         // Add to syntax error log.
-        SyntaxErrorLog.add(s"Syntax Error: Function ${f.identNode.toString} does not return or exit")
+        SyntaxErrorLog.add(s"Function ${f.identNode.toString} does not return or exit")
       }
     }
 
