@@ -1,5 +1,0 @@
-package ast
-
-class Visitor {
-
-}
