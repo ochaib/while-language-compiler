@@ -134,13 +134,13 @@ sealed class typeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         val identIdentifier: IDENTIFIER = identNode.getIdentifier(topSymbolTable, currentSymbolTable)
         for (expr <- exprNodes) visit(expr)
         if (!identIdentifier.isInstanceOf[ARRAY]) {
-          throw new TypeException(s"Expected array type but got ${identIdentifier.getKey} instead")
+          throw new TypeException(s"Expected array type but got ${identIdentifier.getKey} instead.")
         } else {
           val identArrayType: IDENTIFIER = identIdentifier.asInstanceOf[ARRAY]._type
           for (expr <- exprNodes) {
             val exprIdentifier: IDENTIFIER = expr.getIdentifier(topSymbolTable, currentSymbolTable)
             if (exprIdentifier != identArrayType) {
-              throw new TypeException(s"Expected ${identArrayType.getKey} but got ${exprIdentifier.getKey} instead")
+              throw new TypeException(s"Expected ${identArrayType.getKey} but got ${exprIdentifier.getKey} instead.")
             }
           }
         }
