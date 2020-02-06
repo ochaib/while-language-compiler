@@ -10,7 +10,7 @@ abstract class TypeNode extends ASTNode with Identifiable {
 abstract class BaseTypeNode extends TypeNode with PairElemTypeNode {
 
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
-    val T: Option[IDENTIFIER] = topST.lookup(toString)
+    val T: Option[IDENTIFIER] = topST.lookup(getKey)
     assert(T.isDefined, "Base Type Nodes MUST be predefined in the top level symbol table")
     assert(T.get.isInstanceOf[TYPE], "Base type identifiers must be an instance of TYPE")
     T.get.asInstanceOf[TYPE]

@@ -7,7 +7,7 @@ trait Identifiable {
 
   def getKey: String = {
     if (key == null) {
-      initKey
+      key = initKey
     }
     key
   }
@@ -15,7 +15,7 @@ trait Identifiable {
   def getType(topST: SymbolTable, ST: SymbolTable): TYPE = {
     // if null initialise
     if (_type == null) {
-      initType(topST, ST)
+      _type = initType(topST, ST)
     }
     _type
   }
