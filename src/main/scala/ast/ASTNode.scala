@@ -141,7 +141,7 @@ case class FstNode(expression: ExprNode) extends PairElemNode(expression) {
     }
   }
 
-  override def toTreeString: String = console.color(s"fst ${expr.toString}", fg=Console.BLUE)
+  override def toTreeString: String = console.color(s"fst ${expression.toString}", fg=Console.BLUE)
 }
 
 case class SndNode(expression: ExprNode) extends PairElemNode(expression) {
@@ -168,7 +168,7 @@ case class SndNode(expression: ExprNode) extends PairElemNode(expression) {
     }
   }
 
-  override def toTreeString: String = console.color(s"snd ${expr.toString}", fg=Console.BLUE)
+  override def toTreeString: String = console.color(s"snd ${expression.toString}", fg=Console.BLUE)
 }
 
 case class IdentNode(ident: String) extends ExprNode with AssignLHSNode {
