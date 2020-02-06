@@ -5,7 +5,8 @@ import util.{ColoredConsole => console}
 // Every node necessary to generate AST. From the WACCLangSpec.
 
 class ASTNode {
-  override def toString: String = console.color("<NODE>", fg=Console.RED)
+  def toTreeString: String = console.color("<NODE>", fg=Console.RED)
+  override def toString: String = this.toTreeString
 }
 
 class ProgramNode(val _stat: StatNode, val _functions: IndexedSeq[FuncNode]) extends ASTNode {
@@ -15,7 +16,7 @@ class ProgramNode(val _stat: StatNode, val _functions: IndexedSeq[FuncNode]) ext
   // Stat in the program: <stat>.
   val stat: StatNode = _stat
 
-  override def toString: String = {
+  override def toTreeString: String = {
     val funcs : String = functions.map(_.toString).mkString("\n")
     val begin: String = console.color("begin", fg=Console.BLUE)
     val end: String = console.color("end", fg=Console.BLUE)
@@ -38,7 +39,7 @@ class FuncNode(val funcType: TypeNode, val identNode: IdentNode, val paramList: 
     }
   }
 
-  override def toString: String = paramList match {
+  override def toTreeString: String = paramList match {
     case Some(params) => s"${funcType.toString} ${identNode.toString} (${params.toString}) is\n${stat.toString}\nend"
     case None => s"${funcType.toString} ${identNode.toString} () is\n${stat.toString}\nend"
   }
@@ -49,7 +50,7 @@ class ParamListNode(val paramList: IndexedSeq[ParamNode]) extends ASTNode {
   // TODO: loop through the _paramList and return a list of the TYPE IDENTIFIERS
   def getIdentifierList(ST: SymbolTable): IndexedSeq[TYPE] = null
 
-  override def toString: String = paramList.map(_.toString).mkString(", ")
+  override def toTreeString: String = paramList.map(_.toString).mkString(", ")
 }
 
 class ParamNode(val paramType: TypeNode, val identNode: IdentNode) extends ASTNode with Identifiable {
@@ -58,16 +59,16 @@ class ParamNode(val paramType: TypeNode, val identNode: IdentNode) extends ASTNo
 
   override def initKey: String = paramType.getKey
 
-  override def toString: String = s"${paramType.toString} ${identNode.toString}"
+  override def toTreeString: String = s"${paramType.toString} ${identNode.toString}"
 }
 
 // Both of these need to be traits (abstract classes) in order to be extended later.
 trait AssignLHSNode extends ASTNode with Checkable with Identifiable {
-  override def toString: String = console.color("<LHS>", fg=Console.RED)
+  override def toTreeString: String = console.color("<LHS>", fg=Console.RED)
 }
 
 trait AssignRHSNode extends ASTNode with Checkable with Identifiable {
-  override def toString: String = console.color("<RHS>", fg=Console.RED)
+  override def toTreeString: String = console.color("<RHS>", fg=Console.RED)
 }
 
 class NewPairNode(val fstElem: ExprNode, val sndElem: ExprNode) extends AssignRHSNode {
@@ -108,7 +109,7 @@ class NewPairNode(val fstElem: ExprNode, val sndElem: ExprNode) extends AssignRH
     }
   }
 
-  override def toString: String = console.color(s"newpair (${fstElem.toString}, ${sndElem.toString})", fg=Console.BLUE)
+  override def toTreeString: String = console.color(s"newpair (${fstElem.toString}, ${sndElem.toString})", fg=Console.BLUE)
 }
 
 class CallNode(val identNode: IdentNode, val argList: Option[ArgListNode]) extends AssignRHSNode {
@@ -122,14 +123,14 @@ class CallNode(val identNode: IdentNode, val argList: Option[ArgListNode]) exten
   }
   override def initKey: String = identNode.getKey
 
-  override def toString: String = argList match {
+  override def toTreeString: String = argList match {
     case Some(args) => console.color(s"call ${identNode.toString} (${args.toString})", fg=Console.BLUE)
     case None => console.color(s"call ${identNode.toString} ()", fg=Console.BLUE)
   }
 }
 
 class ArgListNode(val exprNodes: IndexedSeq[ExprNode]) extends ASTNode {
-  override def toString: String = exprNodes.map(_.toString).mkString(", ")
+  override def toTreeString: String = exprNodes.map(_.toString).mkString(", ")
 }
 
 abstract class PairElemNode(val expr: ExprNode) extends AssignLHSNode with AssignRHSNode {
@@ -142,7 +143,7 @@ abstract class PairElemNode(val expr: ExprNode) extends AssignLHSNode with Assig
     }
   }
 
-  override def toString: String = console.color("<PAIR ELEM>", fg=Console.RED)
+  override def toTreeString: String = console.color("<PAIR ELEM>", fg=Console.RED)
 }
 
 class FstNode(expr: ExprNode) extends PairElemNode(expr: ExprNode) {
@@ -168,7 +169,7 @@ class FstNode(expr: ExprNode) extends PairElemNode(expr: ExprNode) {
     }
   }
 
-  override def toString: String = console.color(s"fst ${expr.toString}", fg=Console.BLUE)
+  override def toTreeString: String = console.color(s"fst ${expr.toString}", fg=Console.BLUE)
 }
 
 class SndNode(expr: ExprNode) extends PairElemNode(expr) {
@@ -195,7 +196,7 @@ class SndNode(expr: ExprNode) extends PairElemNode(expr) {
     }
   }
 
-  override def toString: String = console.color(s"snd ${expr.toString}", fg=Console.BLUE)
+  override def toTreeString: String = console.color(s"snd ${expr.toString}", fg=Console.BLUE)
 }
 
 class IdentNode(val ident: String) extends ExprNode with AssignLHSNode {
@@ -219,7 +220,7 @@ class IdentNode(val ident: String) extends ExprNode with AssignLHSNode {
     }
   }
 
-  override def toString: String = console.color(ident, fg=Console.GREEN)
+  override def toTreeString: String = console.color(ident, fg=Console.GREEN)
 }
 
 class ArrayElemNode(val identNode: IdentNode, val exprNodes: IndexedSeq[ExprNode]) extends ExprNode with AssignLHSNode {
@@ -241,7 +242,7 @@ class ArrayElemNode(val identNode: IdentNode, val exprNodes: IndexedSeq[ExprNode
     }
   }
 
-  override def toString: String = {
+  override def toTreeString: String = {
     val exprs : String = exprNodes.map("[" + _.toString + "]").mkString("")
     s"${identNode.toString}${exprs}"
   }
@@ -271,7 +272,7 @@ class ArrayLiteralNode(val exprNodes: IndexedSeq[ExprNode]) extends AssignRHSNod
     }
   }
 
-  override def toString: String = "[" + exprNodes.map(_.toString).mkString(", ") + "]"
+  override def toTreeString: String = "[" + exprNodes.map(_.toString).mkString(", ") + "]"
 
   override def initKey: String = exprNodes.apply(0).getKey + "[]"
 }
