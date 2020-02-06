@@ -21,7 +21,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
       var functionIdentifier: FUNCTION = null
       // check identNode is already defined
       if (currentSymbolTable.lookupFun(identNode.getKey).isDefined)
-        throw new TypeException(s"Tried to define function: ${identNode.getKey} but it was already declared")
+        SemanticErrorLog.add(s"Tried to define function: ${identNode.getKey} but it was already declared")
       else
         functionIdentifier = new FUNCTION(identNode.getKey, funcType.getType(topSymbolTable, currentSymbolTable).asInstanceOf[TYPE], paramTypes = null)
         currentSymbolTable.add(identNode.getKey, functionIdentifier)
@@ -44,7 +44,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
       visit(paramType)
       val paramIdentifier: Option[IDENTIFIER] = currentSymbolTable.lookup(identNode.getKey)
       if (! (paramIdentifier.isDefined && paramIdentifier.get.isInstanceOf[PARAM]) ) {
-        throw new TypeException(s"Expected ${identNode.getKey} to refer to a parameter but it does not")
+        SemanticErrorLog.add(s"Expected ${identNode.getKey} to refer to a parameter but it does not")
       }
 
     case statNode: StatNode => statNode match {
@@ -104,7 +104,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
         if (!(exprIdentifier == IntTypeNode.getType(topSymbolTable, currentSymbolTable))) {
           SemanticErrorLog.add(s"${expr.getKey} must be an integer.")
-          throw new TypeException(s"Semantic Error: ${expr.getKey} must be an integer.")
+          SemanticErrorLog.add(s"Semantic Error: ${expr.getKey} must be an integer.")
         }
 
       case PrintNode(expr) => visit(expr)
@@ -173,9 +173,9 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
       case CallNode(identNode, argList) => // TODO
         val funcIdentifier: Option[FUNCTION] = currentSymbolTable.lookupFunAll(identNode.getKey)
         if (funcIdentifier.isEmpty)
-          throw new TypeException(s"Function ${identNode.getKey} not declared")
+          SemanticErrorLog.add(s"Function ${identNode.getKey} not declared")
         else if (argList.isDefined && funcIdentifier.get.paramTypes.length != argList.get.exprNodes.length){
-          throw new TypeException(s"Function expected ${funcIdentifier.get.paramTypes.length} arguments but got" +
+          SemanticErrorLog.add(s"Function expected ${funcIdentifier.get.paramTypes.length} arguments but got" +
             s" ${argList.get.exprNodes.length} arguments instead")
         } else if (argList.isDefined){
           visit(argList.get)
@@ -183,7 +183,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
             val argType: TYPE = argList.get.exprNodes.apply(argIndex).getType(topSymbolTable, currentSymbolTable)
             val paramType: TYPE = funcIdentifier.get.paramTypes.apply(argIndex)
             if (argType != paramType) {
-              throw new TypeException(s"Expected type ${paramType.getKey} but got ${argType.getKey}")
+              SemanticErrorLog.add(s"Expected type ${paramType.getKey} but got ${argType.getKey}")
             }
           }
           // funcObj = F in slides???
