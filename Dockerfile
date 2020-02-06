@@ -18,10 +18,7 @@ RUN apt-get install wget gcc zlib1g-dev -y
 # Build Python 3.6
 RUN wget --quiet https://www.python.org/ftp/python/3.6.8/Python-3.6.8.tgz
 RUN tar zxf Python-3.6.8.tgz
-RUN cd Python-3.6.8
-RUN ./configure
-RUN make
-RUN make install
+RUN cd Python-3.6.8 && ./configure && make && make install
 
 # Install SBT, from the official SBT installation instructions
 RUN echo "deb https://dl.bintray.com/sbt/debian /" | tee -a /etc/apt/sources.list.d/sbt.list
