@@ -186,7 +186,7 @@ case class IdentNode(ident: String) extends ExprNode with AssignLHSNode {
   override def initKey: String = ident
 
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
-    val T: Option[IDENTIFIER] = ST.lookupAll(toString)
+    val T: Option[IDENTIFIER] = ST.lookupAll(getKey)
     if (T.isEmpty) {
       throw new TypeException(s"$toString has not been declared")
     } else if (! T.get.isInstanceOf[VARIABLE]) {
