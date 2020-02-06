@@ -148,7 +148,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
     case typeNode: TypeNode => typeNode match {
       case _: BaseTypeNode => // Always true
-      case ArrayTypeNode(typeNode) => visit(typeNode)
+      case ArrayTypeNode(arrayTypeNode) => visit(arrayTypeNode)
       case PairTypeNode(firstPairElem, secondPairElem) =>
         visit(firstPairElem)
         visit(secondPairElem)
@@ -164,7 +164,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
   def pairElemNodeVisit(expr: ExprNode): Unit = {
     val pairIdentifier: IDENTIFIER = expr.getIdentifier(topSymbolTable, currentSymbolTable)
     if (! pairIdentifier.isInstanceOf[PAIR]) {
-      throw new TypeException("Expected pair type but got " + pairIdentifier)
+      SemanticErrorLog.add("Expected pair type but got " + pairIdentifier)
     } else {
       visit(expr)
     }
@@ -174,14 +174,14 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
   def checkHelper(expr: ExprNode, expectedIdentifier: String, topSymbolTable: SymbolTable, ST: SymbolTable): Unit = {
     val identifier: IDENTIFIER = expr.getIdentifier(topSymbolTable, currentSymbolTable)
     if (identifier != topSymbolTable.lookup(expectedIdentifier).get) {
-      throw new TypeException(s"Expected $expectedIdentifier but got $identifier")
+      SemanticErrorLog.add(s"Expected $expectedIdentifier but got $identifier")
     }
   }
 
   def lenHelper(expr: ExprNode, topSymbolTable: SymbolTable, ST: SymbolTable): Unit = {
     val identifier: IDENTIFIER = expr.getIdentifier(topSymbolTable, currentSymbolTable)
     if (!identifier.isInstanceOf[ARRAY]) {
-      throw new TypeException("Expected an array but got " + identifier)
+      SemanticErrorLog.add("Expected an array but got " + identifier)
     }
   }
 
@@ -192,7 +192,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
     val argTwoIdentifier: IDENTIFIER = argTwo.getIdentifier(topSymbolTable, currentSymbolTable)
     if (!((argOneIdentifier == expectedIdentifier1 || argOneIdentifier == expectedIdentifier2)
       && (argTwoIdentifier == expectedIdentifier1 || argTwoIdentifier == expectedIdentifier2))) {
-      throw new TypeException(s"Expected input types ${expectedIdentifier1.getKey} or ${expectedIdentifier2.getKey}" +
+      SemanticErrorLog.add(s"Expected input types ${expectedIdentifier1.getKey} or ${expectedIdentifier2.getKey}" +
         s" but got ${argOneIdentifier.getKey} and ${argTwoIdentifier.getKey} instead")
     }
   }
@@ -202,7 +202,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
     val argOneIdentifier: IDENTIFIER = argOne.getIdentifier(topSymbolTable, currentSymbolTable)
     val argTwoIdentifier: IDENTIFIER = argTwo.getIdentifier(topSymbolTable, currentSymbolTable)
     if (!(argOneIdentifier == expectedIdentifier1 && argTwoIdentifier == expectedIdentifier2)) {
-      throw new TypeException(s"Expected input types ${expectedIdentifier1.getKey} and ${expectedIdentifier2.getKey}" +
+      SemanticErrorLog.add(s"Expected input types ${expectedIdentifier1.getKey} and ${expectedIdentifier2.getKey}" +
         s" but got ${argOneIdentifier.getKey} and ${argTwoIdentifier.getKey} instead")
     }
   }
@@ -212,13 +212,13 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
     val identIdentifier: IDENTIFIER = identNode.getIdentifier(topSymbolTable, currentSymbolTable)
     for (expr <- exprNodes) visit(expr)
     if (!identIdentifier.isInstanceOf[ARRAY]) {
-      throw new TypeException(s"Expected array type but got ${identIdentifier.getKey} instead.")
+      SemanticErrorLog.add(s"Expected array type but got ${identIdentifier.getKey} instead.")
     } else {
       val identArrayType: IDENTIFIER = identIdentifier.asInstanceOf[ARRAY]._type
       for (expr <- exprNodes) {
         val exprIdentifier: IDENTIFIER = expr.getIdentifier(topSymbolTable, currentSymbolTable)
         if (exprIdentifier != identArrayType) {
-          throw new TypeException(s"Expected ${identArrayType.getKey} but got ${exprIdentifier.getKey} instead.")
+          SemanticErrorLog.add(s"Expected ${identArrayType.getKey} but got ${exprIdentifier.getKey} instead.")
         }
       }
     }
@@ -229,7 +229,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
     val conditionIdentifier = conditionExpr.getIdentifier(topSymbolTable, currentSymbolTable)
 
     if (!(conditionIdentifier == BoolTypeNode.getIdentifier(topSymbolTable, currentSymbolTable))) {
-      throw new TypeException(s"Semantic Error: ${conditionExpr.getKey} must evaluate to a boolean.")
+      SemanticErrorLog.add(s"Semantic Error: ${conditionExpr.getKey} must evaluate to a boolean.")
     }
   }
 
