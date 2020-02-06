@@ -109,12 +109,27 @@ sealed class typeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
       case PrintlnNode(expr) => visit(expr)
 
       case IfNode(conditionExpr, thenStat, elseStat) =>
-        // TODO symbol table generation
         conditionCheckerHelper(conditionExpr)
 
+        // Prepare to visit stat by creating new symbol table
+        currentSymbolTable = SymbolTable.newSymbolTable(currentSymbolTable)
+        visit(thenStat)
+        // Exit symbol table
+        currentSymbolTable = currentSymbolTable.encSymbolTable
+        // Prepare to visit stat by creating new symbol table
+        currentSymbolTable = SymbolTable.newSymbolTable(currentSymbolTable)
+        visit(elseStat)
+        // Exit symbol table
+        currentSymbolTable = currentSymbolTable.encSymbolTable
+
+
       case WhileNode(expr, stat) =>
-        // TODO symbol table generation
         conditionCheckerHelper(expr)
+        // Prepare to visit stat by creating new symbol table
+        currentSymbolTable = SymbolTable.newSymbolTable(currentSymbolTable)
+        visit(stat)
+        // Exit symbol table
+        currentSymbolTable = currentSymbolTable.encSymbolTable
 
       case BeginNode(stat) => visit(stat)
 
