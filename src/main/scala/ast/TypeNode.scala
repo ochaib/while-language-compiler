@@ -77,7 +77,9 @@ case class PairTypeNode(firstPairElem: PairElemTypeNode, secondPairElem: PairEle
       assert(firstPairIdentifier.isInstanceOf[TYPE],
         "Something went wrong, the first pair identifier was not an instance of TYPE")
       assert(secondPairIdentifier.isInstanceOf[TYPE], "Something went wrong, the second pair identifier was not an instance of TYPE")
-      new PAIR(getKey, firstPairIdentifier.asInstanceOf[TYPE], secondPairIdentifier.asInstanceOf[TYPE])
+      val pairIdentifier: PAIR = new PAIR(getKey, firstPairIdentifier.asInstanceOf[TYPE], secondPairIdentifier.asInstanceOf[TYPE])
+      topST.add(getKey, pairIdentifier)
+      pairIdentifier
     } else {
       val pairIdentifier = identifierLookupOption.get
       assert(pairIdentifier.isInstanceOf[PAIR], s"Expected pair type but got $getKey instead")
