@@ -104,7 +104,6 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
         if (!(exprIdentifier == IntTypeNode.getType(topSymbolTable, currentSymbolTable))) {
           SemanticErrorLog.add(s"${expr.getKey} must be an integer.")
-          SemanticErrorLog.add(s"Semantic Error: ${expr.getKey} must be an integer.")
         }
 
       case PrintNode(expr) => visit(expr)

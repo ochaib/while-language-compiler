@@ -21,9 +21,9 @@ abstract class ErrorLog {
 }
 
 object SyntaxErrorLog extends ErrorLog {
-  override val errorType = "Syntax Error:"
+  override val errorType = "Syntax Error: "
 }
 
 object SemanticErrorLog extends ErrorLog {
-  override val errorType = "Semantic Error:"
+  override val errorType = "Semantic Error: "
 }
