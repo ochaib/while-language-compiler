@@ -93,11 +93,6 @@ case class NewPairNode(fstElem: ExprNode, val sndElem: ExprNode) extends AssignR
     }
   }
 
-  override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
-    fstElem.check(topST, ST)
-    sndElem.check(topST, ST)
-  }
-
   override def toString: String = console.color(s"newpair (${fstElem.toString}, ${sndElem.toString})", fg=Console.BLUE)
 }
 
@@ -105,13 +100,6 @@ case class CallNode(identNode: IdentNode, argList: Option[ArgListNode]) extends 
 
   override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = identNode.getIdentifier(topST, ST)
 
-  override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
-    identNode.check(topST, ST)
-    if (! getIdentifier(topST, ST).isInstanceOf[FUNCTION]){
-      throw new TypeException("Expected function identifier but got non-function type instead")
-    }
-    // TODO check through each of argList
-  }
   override def initKey: String = identNode.getKey
 
   override def toString: String = argList match {
@@ -124,49 +112,41 @@ case class ArgListNode(exprNodes: IndexedSeq[ExprNode]) extends ASTNode {
   override def toString: String = exprNodes.map(_.toString).mkString(", ")
 }
 
-abstract class PairElemNode(expr: ExprNode) extends AssignLHSNode with AssignRHSNode {
-  override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
-    val pairIdentifier: IDENTIFIER = expr.getIdentifier(topST, ST)
-    if (! pairIdentifier.isInstanceOf[PAIR]) {
-      throw new TypeException("Expected pair type but got " + pairIdentifier)
-    } else {
-      expr.check(topST, ST)
-    }
-  }
+abstract class PairElemNode(expr: ExprNode) extends ASTNode with AssignLHSNode with AssignRHSNode {
 
   override def toString: String = console.color("<PAIR ELEM>", fg=Console.RED)
 }
 
-case class FstNode(expr: ExprNode) extends PairElemNode(expr) {
+case class FstNode(expression: ExprNode) extends PairElemNode(expression) {
 
   override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
-    val pairIdentifier: IDENTIFIER = expr.getIdentifier(topST, ST)
+    val pairIdentifier: IDENTIFIER = expression.getIdentifier(topST, ST)
     if (! pairIdentifier.isInstanceOf[PAIR]) {
-      throw new TypeException(s"Expected pair type but got a non-pair type: ${expr.getKey}}")
+      throw new TypeException(s"Expected pair type but got a non-pair type: ${expression.getKey}}")
     } else {
       pairIdentifier.asInstanceOf[PAIR]._type1
     }
   }
 
   override def initKey: String = {
-    val exprKey: String = expr.getKey
-    if (expr == Pair_literNode) {
+    val exprKey: String = expression.getKey
+    if (expression == Pair_literNode) {
       // TODO in backend throw error
       throw new TypeException(s"Expected a pair type but got a null pair literal instead")
     } else if (exprKey.slice(0, 1) != "(" || ")" != exprKey.slice(exprKey.length() - 1, exprKey.length)) {
-      throw new TypeException(s"Expected a pair type but got a non-pair type: ${expr.getKey}")
+      throw new TypeException(s"Expected a pair type but got a non-pair type: ${expression.getKey}")
     } else {
       exprKey.slice(1, exprKey.indexOf(','))
     }
   }
 
-  override def toString: String = console.color(s"fst ${expr.toString}", fg=Console.BLUE)
+  override def toString: String = console.color(s"fst ${expression.toString}", fg=Console.BLUE)
 }
 
-case class SndNode(expr: ExprNode) extends PairElemNode(expr) {
+case class SndNode(expression: ExprNode) extends PairElemNode(expression) {
 
   override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
-    val pairIdentifier: IDENTIFIER = expr.getIdentifier(topST, ST)
+    val pairIdentifier: IDENTIFIER = expression.getIdentifier(topST, ST)
     if (! pairIdentifier.isInstanceOf[PAIR]) {
       throw new TypeException("Expected pair type but got a non-pair type")
     } else {
@@ -176,18 +156,18 @@ case class SndNode(expr: ExprNode) extends PairElemNode(expr) {
 
 
   override def initKey: String = {
-    val exprKey: String = expr.getKey
-    if (expr == Pair_literNode) {
+    val exprKey: String = expression.getKey
+    if (expression == Pair_literNode) {
       // TODO in backend throw error
       throw new TypeException(s"Expected a pair type but got a null pair literal instead")
     } else if (exprKey.slice(0, 1) != "(" || ")" != exprKey.slice(exprKey.length() - 1, exprKey.length)) {
-      throw new TypeException(s"Expected a pair type but got a non-pair type: ${expr.getKey}")
+      throw new TypeException(s"Expected a pair type but got a non-pair type: ${expression.getKey}")
     } else {
       exprKey.slice(exprKey.indexOf(',') + 1, exprKey.length)
     }
   }
 
-  override def toString: String = console.color(s"snd ${expr.toString}", fg=Console.BLUE)
+  override def toString: String = console.color(s"snd ${expression.toString}", fg=Console.BLUE)
 }
 
 case class IdentNode(ident: String) extends ExprNode with AssignLHSNode {
@@ -217,16 +197,6 @@ case class ArrayElemNode(identNode: IdentNode, exprNodes: IndexedSeq[ExprNode]) 
 }
 
 case class ArrayLiteralNode(exprNodes: IndexedSeq[ExprNode]) extends AssignRHSNode {
-
-  override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
-    val firstIdentifier: IDENTIFIER = exprNodes.apply(0).getIdentifier(topST, ST)
-    for (expr <- exprNodes) {
-      val exprIdentifier = expr.getIdentifier(topST, ST)
-      if (exprIdentifier != firstIdentifier) {
-        throw new TypeException(s"Expected type ${firstIdentifier.getKey} but got ${exprIdentifier.getKey}")
-      }
-    }
-  }
 
   override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
     val arrayIdentifierOption: Option[IDENTIFIER] = topST.lookup(getKey)
