@@ -1,4 +1,5 @@
 package ast
+
 import util.{ColoredConsole => console}
 
 abstract class ExprNode extends AssignRHSNode {

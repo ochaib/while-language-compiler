@@ -1,5 +1,5 @@
 package ast
-import ast._
+
 import util.{ColoredConsole => console}
 
 abstract class StatNode extends ASTNode {
