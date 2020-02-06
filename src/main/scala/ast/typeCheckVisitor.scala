@@ -4,7 +4,7 @@ import scala.collection.immutable.HashMap
 
 sealed class typeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
   var topSymbolTable: SymbolTable = SymbolTable.topLevelSymbolTable(entryNode)
-  var currentSymbolTable: SymbolTable = new SymbolTable(new HashMap(), topSymbolTable)
+  var currentSymbolTable: SymbolTable = SymbolTable.newSymbolTable(topSymbolTable)
 
   override def visit(ASTNode: ASTNode): Unit = ASTNode match {
 
@@ -14,7 +14,28 @@ sealed class typeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
       for (functionNode <- functions) visit(functionNode)
       visit(stat)
 
-    case FuncNode(funcType, identNode, paramList: Option[ParamListNode], _) =>
+    case FuncNode(funcType, identNode, paramList: Option[ParamListNode], stat: StatNode) =>
+      visit(funcType)
+      // TODO check identNode not defined
+      if (currentSymbolTable.lookup(identNode.getKey).isDefined)
+        throw new TypeException(s"Tried to define function: ${identNode.getKey} but it was already declared")
+
+      else {
+        currentSymbolTable.add(identNode.getKey,
+          new FUNCTION(identNode.getKey, funcType.getIdentifier(topSymbolTable, currentSymbolTable).asInstanceOf[TYPE],
+            paramList.get.getIdentifierList(topSymbolTable, currentSymbolTable)))
+      }
+
+      // Prepare to visit stat by creating new symbol table
+      currentSymbolTable = SymbolTable.newSymbolTable(currentSymbolTable)
+      // Missing: link symbol table to function?
+      if (paramList.isDefined)
+        visit(paramList.get)
+
+      visit(stat)
+      // Exit symbol table
+      currentSymbolTable = currentSymbolTable.encSymbolTable
+
       // TODO account for no params
       // TODO symbol table generation
       val typeIdentifier: TYPE = funcType.getIdentifier(topSymbolTable, currentSymbolTable).asInstanceOf[TYPE]
