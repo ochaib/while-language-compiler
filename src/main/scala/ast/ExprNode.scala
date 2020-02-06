@@ -1,20 +1,14 @@
 package ast
-import ast._
+
 import util.{ColoredConsole => console}
 
 abstract class ExprNode extends AssignRHSNode {
-  override def check(topST: SymbolTable, ST: SymbolTable): Unit = this match {
-    case Int_literNode(_) =>
-    case Bool_literNode(_) =>
-    case Char_literNode(_) =>
-    case Str_literNode(_) =>
-  }
 
-  override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = this match {
-    case Int_literNode(_) => IntTypeNode.getIdentifier(topST, ST)
-    case Bool_literNode(_) => BoolTypeNode.getIdentifier(topST, ST)
-    case Char_literNode(_) => CharTypeNode.getIdentifier(topST, ST)
-    case Str_literNode(_) => StringTypeNode.getIdentifier(topST, ST)
+  override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = this match {
+    case Int_literNode(_) => IntTypeNode.getType(topST, ST)
+    case Bool_literNode(_) => BoolTypeNode.getType(topST, ST)
+    case Char_literNode(_) => CharTypeNode.getType(topST, ST)
+    case Str_literNode(_) => StringTypeNode.getType(topST, ST)
   }
 
   override def initKey: String = this match {
@@ -34,10 +28,10 @@ case class Int_literNode(num: Int) extends ExprNode {
 
 case class Bool_literNode(value: Boolean) extends ExprNode {
 
-  override def toTreeString: String = value match {
-    case true => console.color("true", fg=Console.MAGENTA)
-    case false => console.color("false", fg=Console.MAGENTA)
-  }
+  override def toTreeString: String = if (value)
+    console.color("true", fg=Console.MAGENTA)
+    else console.color("false", fg=Console.MAGENTA)
+
 }
 
 case class Char_literNode(value: Char) extends ExprNode {
@@ -52,7 +46,7 @@ case class Str_literNode(str: String) extends ExprNode {
 
 object Pair_literNode extends ExprNode {
 
-  override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
+  override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
     val T: Option[IDENTIFIER] = topST.lookup(getKey)
     assert(T.isDefined, "Base or General Type Identifiers MUST be predefined in the top level symbol table")
     assert(T.get.isInstanceOf[TYPE], "Base type identifiers must be an instance of TYPE")
@@ -64,9 +58,8 @@ object Pair_literNode extends ExprNode {
 }
 
 class ParenExprNode(expr: ExprNode) extends ExprNode {
-  override def check(topST: SymbolTable, ST: SymbolTable): Unit = expr.check(topST, ST)
 
-  override def getIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = expr.getIdentifier(topST, ST)
+  override def getType(topST: SymbolTable, ST: SymbolTable): TYPE = expr.getType(topST, ST)
 
   override def toTreeString: String = console.color("<PAREN EXPR>", fg=Console.RED)
 }

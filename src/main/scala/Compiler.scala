@@ -1,12 +1,9 @@
-import antlr.{WACCLexer, WACCParser}
-import ast.{ASTGenerator, ASTNode}
-import java.io.{IOException}
-import org.antlr.v4.runtime.{
-    CharStream => ANTLRCharStream,
-    CharStreams => ANTLRCharStreams,
-    CommonTokenStream => ANTLRTokenStream
-}
-import util.{ColoredConsole => console, ErrorListener}
+import antlr._
+import ast.{ASTGenerator, ASTNode, TypeCheckVisitor, Visitor}
+import java.io.IOException
+
+import org.antlr.v4.runtime.{CharStream => ANTLRCharStream, CharStreams => ANTLRCharStreams, CommonTokenStream => ANTLRTokenStream}
+import util.{ErrorListener, SemanticErrorLog, SyntaxErrorLog, ColoredConsole => console}
 
 
 object Compiler extends App {
@@ -34,11 +31,33 @@ object Compiler extends App {
     parser.removeErrorListeners()
     parser.addErrorListener(errorListener)
 
-    val program : WACCParser.ProgramContext = parser.program()
+
     // Build the AST
+    val program : WACCParser.ProgramContext = parser.program()
+    // Check for syntax errors, exit with 100 if there are.
+    if (SyntaxErrorLog.errorCheck) {
+      SyntaxErrorLog.printAllErrors()
+      System.exit(100)
+    }
+
     val visitor : ASTGenerator = new ASTGenerator()
+    console.info("Building AST")
     val tree : ASTNode = visitor.visit(program)
     println(tree.toString)
+
+    // Check the AST for semantic errors
+    val semanticVisitor : Visitor = new TypeCheckVisitor(tree)
+    semanticVisitor.visit(tree)
+    // Check for syntax errors, exit with 100 if there are, new ones could've appeared here.
+    if (SyntaxErrorLog.errorCheck) {
+      SyntaxErrorLog.printAllErrors()
+      System.exit(100)
+    }
+    // Check for semantic errors, exit with 200 if there are.
+    if (SemanticErrorLog.errorCheck) {
+      SemanticErrorLog.printAllErrors()
+      System.exit(200)
+    }
   }
   catch {
     case ioerror : IOException => error("File does not exist")

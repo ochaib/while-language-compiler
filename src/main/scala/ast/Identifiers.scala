@@ -16,7 +16,7 @@ class ARRAY(key: String, val _type: TYPE) extends TYPE(key)
 object GENERAL_PAIR extends TYPE(key = "pair")
 class PAIR(key: String, val _type1: TYPE, val _type2: TYPE) extends TYPE(key)
 
-class FUNCTION(key: String, returnType: TYPE, paramTypes: IndexedSeq[TYPE]) extends IDENTIFIER(key)
+class FUNCTION(key: String, returnType: TYPE, var paramTypes: IndexedSeq[TYPE]) extends IDENTIFIER(key)
 // class BASE_FUNCTION extends ast.IDENTIFIER {}
 
-class PARAM(key: String, _type:TYPE) extends IDENTIFIER(key)
+class PARAM(key: String, val _type:TYPE) extends IDENTIFIER(key)
