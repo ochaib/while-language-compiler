@@ -24,17 +24,17 @@ abstract class ExprNode extends AssignRHSNode {
     case Str_literNode(_) => StringTypeNode.getKey
   }
 
-  override def toString: String = console.color("<EXPR>", fg=Console.RED)
+  override def toTreeString: String = console.color("<EXPR>", fg=Console.RED)
 }
 
 case class Int_literNode(num: Int) extends ExprNode {
 
-  override def toString: String = console.color(num.toString, fg=Console.MAGENTA)
+  override def toTreeString: String = console.color(num.toString, fg=Console.MAGENTA)
 }
 
 case class Bool_literNode(value: Boolean) extends ExprNode {
 
-  override def toString: String = value match {
+  override def toTreeString: String = value match {
     case true => console.color("true", fg=Console.MAGENTA)
     case false => console.color("false", fg=Console.MAGENTA)
   }
@@ -42,12 +42,12 @@ case class Bool_literNode(value: Boolean) extends ExprNode {
 
 case class Char_literNode(value: Char) extends ExprNode {
 
-  override def toString: String = console.color(s"'$value'", fg=Console.YELLOW)
+  override def toTreeString: String = console.color(s"'$value'", fg=Console.YELLOW)
 }
 
 case class Str_literNode(str: String) extends ExprNode {
 
-  override def toString: String = console.color(str, fg=Console.YELLOW)
+  override def toTreeString: String = console.color(str, fg=Console.YELLOW)
 }
 
 object Pair_literNode extends ExprNode {
@@ -60,7 +60,7 @@ object Pair_literNode extends ExprNode {
   }
   override def initKey: String = GENERAL_PAIR.getKey
 
-  override def toString: String = console.color("null", fg=Console.MAGENTA)
+  override def toTreeString: String = console.color("null", fg=Console.MAGENTA)
 }
 
 class ParenExprNode(expr: ExprNode) extends ExprNode {
@@ -68,5 +68,5 @@ class ParenExprNode(expr: ExprNode) extends ExprNode {
 
   override def getIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = expr.getIdentifier(topST, ST)
 
-  override def toString: String = console.color("<PAREN EXPR>", fg=Console.RED)
+  override def toTreeString: String = console.color("<PAREN EXPR>", fg=Console.RED)
 }

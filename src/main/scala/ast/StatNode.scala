@@ -3,13 +3,13 @@ import ast._
 import util.{ColoredConsole => console}
 
 abstract class StatNode extends ASTNode with Checkable {
-  override def toString: String = console.color("<STATEMENT>", fg=Console.RED)
+  override def toTreeString: String = console.color("<STATEMENT>", fg=Console.RED)
 }
 
 class SkipNode extends StatNode {
   override def check(topST: SymbolTable, ST: SymbolTable): Unit = {}
 
-  override def toString: String = console.color("skip", fg=Console.BLUE)
+  override def toTreeString: String = console.color("skip", fg=Console.BLUE)
 }
 
 class DeclarationNode(val _type: TypeNode, val ident: IdentNode, val rhs: AssignRHSNode)
@@ -29,7 +29,7 @@ class DeclarationNode(val _type: TypeNode, val ident: IdentNode, val rhs: Assign
     }
   }
 
-  override def toString: String = s"${_type.toString} ${ident.toString} = ${rhs.toString}"
+  override def toTreeString: String = s"${_type.toString} ${ident.toString} = ${rhs.toString}"
 }
 
 class AssignmentNode(val lhs: AssignLHSNode, val rhs: AssignRHSNode) extends StatNode {
@@ -43,7 +43,7 @@ class AssignmentNode(val lhs: AssignLHSNode, val rhs: AssignRHSNode) extends Sta
     }
   }
 
-  override def toString: String = s"${lhs.toString} = ${rhs.toString}"
+  override def toTreeString: String = s"${lhs.toString} = ${rhs.toString}"
 }
 
 class ReadNode(val lhs: AssignLHSNode) extends StatNode {
@@ -59,7 +59,7 @@ class ReadNode(val lhs: AssignLHSNode) extends StatNode {
     }
   }
 
-  override def toString: String = console.color("read ", fg=Console.BLUE) + lhs.toString
+  override def toTreeString: String = console.color("read ", fg=Console.BLUE) + lhs.toString
 }
 
 class FreeNode(val expr: ExprNode) extends StatNode {
@@ -77,7 +77,7 @@ class FreeNode(val expr: ExprNode) extends StatNode {
     }
   }
 
-  override def toString: String = console.color("free ", fg=Console.BLUE) + expr.toString
+  override def toTreeString: String = console.color("free ", fg=Console.BLUE) + expr.toString
 }
 
 class ReturnNode(val expr: ExprNode) extends StatNode {
@@ -89,7 +89,7 @@ class ReturnNode(val expr: ExprNode) extends StatNode {
     expr.check(topST, ST)
   }
 
-  override def toString: String = console.color("return ", fg=Console.BLUE) + expr.toString
+  override def toTreeString: String = console.color("return ", fg=Console.BLUE) + expr.toString
 }
 
 class ExitNode(val expr: ExprNode) extends StatNode {
@@ -104,7 +104,7 @@ class ExitNode(val expr: ExprNode) extends StatNode {
     }
   }
 
-  override def toString: String = console.color("exit ", fg=Console.BLUE) + expr.toString
+  override def toTreeString: String = console.color("exit ", fg=Console.BLUE) + expr.toString
 }
 
 class PrintNode(val expr: ExprNode) extends StatNode {
@@ -113,7 +113,7 @@ class PrintNode(val expr: ExprNode) extends StatNode {
     expr.check(topST, ST)
   }
 
-  override def toString: String = console.color("print ", fg=Console.BLUE) + expr.toString
+  override def toTreeString: String = console.color("print ", fg=Console.BLUE) + expr.toString
 }
 
 class PrintlnNode(val expr: ExprNode) extends StatNode {
@@ -121,7 +121,7 @@ class PrintlnNode(val expr: ExprNode) extends StatNode {
     expr.check(topST, ST)
   }
 
-  override def toString: String = console.color("println ", fg=Console.BLUE) + expr.toString
+  override def toTreeString: String = console.color("println ", fg=Console.BLUE) + expr.toString
 }
 
 class IfNode(val conditionExpr: ExprNode, val thenStat: StatNode, val elseStat: StatNode) extends StatNode {
@@ -135,7 +135,7 @@ class IfNode(val conditionExpr: ExprNode, val thenStat: StatNode, val elseStat: 
     }
   }
 
-  override def toString: String = {
+  override def toTreeString: String = {
     val if_ : String = console.color("if", fg=Console.BLUE)
     val then_ : String = console.color("then", fg=Console.BLUE)
     val else_ : String = console.color("else", fg=Console.BLUE)
@@ -154,7 +154,12 @@ class WhileNode(val expr: ExprNode, val stat: StatNode) extends StatNode {
     }
   }
 
-  override def toString: String = console.color(s"while ${expr.toString} do\n${stat.toString}\ndone", fg=Console.YELLOW)
+  override def toTreeString: String = {
+    val whileStr: String = console.color("while", fg=Console.BLUE)
+    val doStr: String = console.color("do", fg=Console.BLUE)
+    val doneStr: String = console.color("done", fg=Console.BLUE)
+    s"$whileStr ${expr.toString} $doStr\n${stat.toString}\n${doneStr}"
+  }
 }
 
 class BeginNode(val stat: StatNode) extends StatNode {
@@ -163,7 +168,7 @@ class BeginNode(val stat: StatNode) extends StatNode {
     stat.check(topST, ST)
   }
 
-  override def toString: String = {
+  override def toTreeString: String = {
     val begin: String = console.color("begin", fg=Console.BLUE)
     val end: String = console.color("end", fg=Console.BLUE)
     s"$begin\n${stat.toString}\n$end"
@@ -177,5 +182,5 @@ class SequenceNode(val statOne: StatNode, val statTwo: StatNode) extends StatNod
     statTwo.check(topST, ST)
   }
 
-  override def toString: String = s"${statOne.toString}\n${statTwo.toString}"
+  override def toTreeString: String = s"${statOne.toString}\n${statTwo.toString}"
 }

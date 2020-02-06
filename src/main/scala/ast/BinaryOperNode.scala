@@ -40,7 +40,7 @@ sealed abstract class BinaryOperationNode(argOne: ExprNode, argTwo: ExprNode) ex
     }
   }
 
-  override def toString: String = this match {
+  override def toTreeString: String = this match {
     case MultiplyNode(argOne, argTwo) => s"${argOne.toString} * ${argTwo.toString}"
     case DivideNode(argOne, argTwo) => s"${argOne.toString} / ${argTwo.toString}"
     case ModNode(argOne, argTwo) => s"${argOne.toString} % ${argTwo.toString}"
