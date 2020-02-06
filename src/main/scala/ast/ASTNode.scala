@@ -192,12 +192,6 @@ case class SndNode(expr: ExprNode) extends PairElemNode(expr) {
 case class IdentNode(val ident: String) extends ExprNode with AssignLHSNode {
   override def initKey: String = ident
 
-  override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
-    if (ST.lookupAll(toString).isEmpty){
-      throw new TypeException(s"$toString has not been declared")
-    }
-  }
-
   override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
     val T: Option[IDENTIFIER] = ST.lookupAll(toString)
     if (T.isEmpty) {
@@ -214,23 +208,6 @@ case class IdentNode(val ident: String) extends ExprNode with AssignLHSNode {
 }
 
 case class ArrayElemNode(val identNode: IdentNode, val exprNodes: IndexedSeq[ExprNode]) extends ExprNode with AssignLHSNode {
-
-  override def check(topST: SymbolTable, ST: SymbolTable): Unit = {
-    identNode.check(topST, ST)
-    val identIdentifier: IDENTIFIER = identNode.getIdentifier(topST, ST)
-    for (expr <- exprNodes) expr.check(topST, ST)
-    if (! identIdentifier.isInstanceOf[ARRAY]) {
-      throw new TypeException(s"Expected array type but got ${identIdentifier.getKey} instead")
-    } else {
-      val identArrayType: IDENTIFIER = identIdentifier.asInstanceOf[ARRAY]._type
-      for (expr <- exprNodes) {
-        val exprIdentifier: IDENTIFIER = expr.getIdentifier(topST, ST)
-        if (exprIdentifier != identArrayType) {
-          throw new TypeException(s"Expected ${identArrayType.getKey} but got ${exprIdentifier.getKey} instead")
-        }
-      }
-    }
-  }
 
   override def toString: String = {
     val exprs : String = exprNodes.map("[" + _.toString + "]").mkString("")

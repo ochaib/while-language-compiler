@@ -64,7 +64,6 @@ object Pair_literNode extends ExprNode {
 }
 
 class ParenExprNode(expr: ExprNode) extends ExprNode {
-  override def check(topST: SymbolTable, ST: SymbolTable): Unit = expr.check(topST, ST)
 
   override def getIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = expr.getIdentifier(topST, ST)
 
