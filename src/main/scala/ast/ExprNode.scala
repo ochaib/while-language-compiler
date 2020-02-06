@@ -2,12 +2,6 @@ package ast
 import util.{ColoredConsole => console}
 
 abstract class ExprNode extends AssignRHSNode {
-  override def check(topST: SymbolTable, ST: SymbolTable): Unit = this match {
-    case Int_literNode(_) =>
-    case Bool_literNode(_) =>
-    case Char_literNode(_) =>
-    case Str_literNode(_) =>
-  }
 
   override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = this match {
     case Int_literNode(_) => IntTypeNode.getIdentifier(topST, ST)
