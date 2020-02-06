@@ -3,7 +3,7 @@ package ast
 // looks up the type identifier from all parent symbol tables and returns the appropriate identifier object
 trait Identifiable {
   protected var key: String = _
-  protected var identifier: IDENTIFIER = _
+  protected var _type: TYPE = _
 
   def getKey: String = {
     if (key == null) {
@@ -12,14 +12,14 @@ trait Identifiable {
     key
   }
 
-  def getIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
+  def getType(topST: SymbolTable, ST: SymbolTable): TYPE = {
     // if null initialise
-    if (identifier == null) {
-      initIdentifier(topST, ST)
+    if (_type == null) {
+      initType(topST, ST)
     }
-    identifier
+    _type
   }
 
   def initKey: String
-  def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER
+  def initType(topST: SymbolTable, ST: SymbolTable): TYPE
 }

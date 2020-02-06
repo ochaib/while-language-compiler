@@ -33,7 +33,7 @@ case class ParamListNode(paramList: IndexedSeq[ParamNode]) extends ASTNode {
     assert(paramList.nonEmpty, "Parameter lists have to be at least size 1")
     var identifierList: IndexedSeq[IDENTIFIER] = Vector()
     for (param <- paramList) identifierList = {
-      identifierList :+ param.getIdentifier(topST, ST)
+      identifierList :+ param.getType(topST, ST)
     }
     identifierList.asInstanceOf[IndexedSeq[TYPE]]
   }
@@ -43,13 +43,13 @@ case class ParamListNode(paramList: IndexedSeq[ParamNode]) extends ASTNode {
 
 case class ParamNode(paramType: TypeNode, identNode: IdentNode) extends ASTNode with Identifiable {
 
-  override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
-    paramType.getIdentifier(topST, ST)
+  override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
+    paramType.getType(topST, ST)
     if (ST.lookup(identNode.getKey).isDefined) {
       // If variable is already defined throw exception
       throw new TypeException(s"${identNode.getKey} has already been declared")
     } else {
-      val paramIdentifier: PARAM = new PARAM(identNode.getKey, paramType.getIdentifier(topST, ST).asInstanceOf[TYPE])
+      val paramIdentifier: PARAM = new PARAM(identNode.getKey, paramType.getType(topST, ST).asInstanceOf[TYPE])
       ST.add(identNode.getKey, paramIdentifier)
       paramIdentifier._type
     }
@@ -70,10 +70,12 @@ trait AssignRHSNode extends ASTNode with Identifiable {
 }
 
 case class NewPairNode(fstElem: ExprNode, sndElem: ExprNode) extends AssignRHSNode {
-  override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
+  override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
     val newPairIdentifierLookup: Option[IDENTIFIER] = topST.lookup(getKey)
     if (newPairIdentifierLookup.isDefined) {
-      newPairIdentifierLookup.get
+      assert(newPairIdentifierLookup.get.isInstanceOf[PAIR],
+        s"Expected instance of pair for ${newPairIdentifierLookup.get.getKey}")
+      newPairIdentifierLookup.get.asInstanceOf[PAIR]
     } else {
       val newIdentifier = new PAIR(getKey, getElemIdentifier(fstElem, topST, ST).asInstanceOf[TYPE],
         getElemIdentifier(sndElem, topST, ST).asInstanceOf[TYPE])
@@ -83,7 +85,7 @@ case class NewPairNode(fstElem: ExprNode, sndElem: ExprNode) extends AssignRHSNo
   }
 
   private def getElemIdentifier(elemNode: ExprNode, topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
-    val elemIdentifier = elemNode.getIdentifier(topST, ST)
+    val elemIdentifier = elemNode.getType(topST, ST)
     if (elemIdentifier.isInstanceOf[PAIR] || elemIdentifier == GENERAL_PAIR) {
       GENERAL_PAIR
     } else {
@@ -107,7 +109,7 @@ case class NewPairNode(fstElem: ExprNode, sndElem: ExprNode) extends AssignRHSNo
 
 case class CallNode(identNode: IdentNode, argList: Option[ArgListNode]) extends AssignRHSNode {
 
-  override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = identNode.getIdentifier(topST, ST)
+  override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = identNode.getType(topST, ST)
 
   override def initKey: String = identNode.getKey
 
@@ -128,8 +130,8 @@ abstract class PairElemNode(expr: ExprNode) extends ASTNode with AssignLHSNode w
 
 case class FstNode(expression: ExprNode) extends PairElemNode(expression) {
 
-  override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
-    val pairIdentifier: IDENTIFIER = expression.getIdentifier(topST, ST)
+  override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
+    val pairIdentifier: IDENTIFIER = expression.getType(topST, ST)
     if (! pairIdentifier.isInstanceOf[PAIR]) {
       throw new TypeException(s"Expected pair type but got a non-pair type: ${expression.getKey}}")
     } else {
@@ -154,8 +156,8 @@ case class FstNode(expression: ExprNode) extends PairElemNode(expression) {
 
 case class SndNode(expression: ExprNode) extends PairElemNode(expression) {
 
-  override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
-    val pairIdentifier: IDENTIFIER = expression.getIdentifier(topST, ST)
+  override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
+    val pairIdentifier: IDENTIFIER = expression.getType(topST, ST)
     if (! pairIdentifier.isInstanceOf[PAIR]) {
       throw new TypeException("Expected pair type but got a non-pair type")
     } else {
@@ -182,7 +184,7 @@ case class SndNode(expression: ExprNode) extends PairElemNode(expression) {
 case class IdentNode(ident: String) extends ExprNode with AssignLHSNode {
   override def initKey: String = ident
 
-  override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
+  override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
     val T: Option[IDENTIFIER] = ST.lookupAll(toString)
     if (T.isEmpty) {
       throw new TypeException(s"$toString has not been declared")
@@ -207,15 +209,15 @@ case class ArrayElemNode(identNode: IdentNode, exprNodes: IndexedSeq[ExprNode]) 
 
 case class ArrayLiteralNode(exprNodes: IndexedSeq[ExprNode]) extends AssignRHSNode {
 
-  override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
+  override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
     val arrayIdentifierOption: Option[IDENTIFIER] = topST.lookup(getKey)
     if (arrayIdentifierOption.isEmpty) {
-      val arrayIdentifier = new ARRAY(getKey, exprNodes.apply(0).getIdentifier(topST, ST).asInstanceOf[TYPE])
+      val arrayIdentifier = new ARRAY(getKey, exprNodes.apply(0).getType(topST, ST).asInstanceOf[TYPE])
       topST.add(toString, arrayIdentifier)
       arrayIdentifier
     } else {
       assert(arrayIdentifierOption.get.isInstanceOf[ARRAY], s"Something went wrong... $getKey should be a an array type but isn't")
-      arrayIdentifierOption.get
+      arrayIdentifierOption.get.asInstanceOf[ARRAY]
     }
   }
 

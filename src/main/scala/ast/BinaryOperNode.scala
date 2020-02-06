@@ -1,20 +1,20 @@
 package ast
 
 sealed abstract class BinaryOperationNode(argOne: ExprNode, argTwo: ExprNode) extends ExprNode {
-  override def getIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = this match {
-    case MultiplyNode(_, _) => IntTypeNode.getIdentifier(topST, ST)
-    case DivideNode(_, _) => IntTypeNode.getIdentifier(topST, ST)
-    case ModNode(_, _) => IntTypeNode.getIdentifier(topST, ST)
-    case PlusNode(_, _) => IntTypeNode.getIdentifier(topST, ST)
-    case MinusNode(_, _) => IntTypeNode.getIdentifier(topST, ST)
-    case GreaterThanNode(_, _) => BoolTypeNode.getIdentifier(topST, ST)
-    case GreaterEqualNode(_, _) => BoolTypeNode.getIdentifier(topST, ST)
-    case LessThanNode(_, _) => BoolTypeNode.getIdentifier(topST, ST)
-    case LessEqualNode(_, _) => BoolTypeNode.getIdentifier(topST, ST)
-    case EqualToNode(_, _) => BoolTypeNode.getIdentifier(topST, ST)
-    case NotEqualNode(_, _) => BoolTypeNode.getIdentifier(topST, ST)
-    case LogicalAndNode(_, _) => BoolTypeNode.getIdentifier(topST, ST)
-    case LogicalOrNode(_, _) => BoolTypeNode.getIdentifier(topST, ST)
+  override def getType(topST: SymbolTable, ST: SymbolTable): TYPE = this match {
+    case MultiplyNode(_, _) => IntTypeNode.getType(topST, ST)
+    case DivideNode(_, _) => IntTypeNode.getType(topST, ST)
+    case ModNode(_, _) => IntTypeNode.getType(topST, ST)
+    case PlusNode(_, _) => IntTypeNode.getType(topST, ST)
+    case MinusNode(_, _) => IntTypeNode.getType(topST, ST)
+    case GreaterThanNode(_, _) => BoolTypeNode.getType(topST, ST)
+    case GreaterEqualNode(_, _) => BoolTypeNode.getType(topST, ST)
+    case LessThanNode(_, _) => BoolTypeNode.getType(topST, ST)
+    case LessEqualNode(_, _) => BoolTypeNode.getType(topST, ST)
+    case EqualToNode(_, _) => BoolTypeNode.getType(topST, ST)
+    case NotEqualNode(_, _) => BoolTypeNode.getType(topST, ST)
+    case LogicalAndNode(_, _) => BoolTypeNode.getType(topST, ST)
+    case LogicalOrNode(_, _) => BoolTypeNode.getType(topST, ST)
   }
 
   override def toString: String = this match {

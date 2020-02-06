@@ -3,18 +3,35 @@ package ast
 import scala.collection.immutable.HashMap
 
 
-class SymbolTable(var map: Map[String, IDENTIFIER], var encSymbolTable: SymbolTable) {
+class SymbolTable(var map: Map[String, IDENTIFIER], var funcMap: Map[String, FUNCTION], var encSymbolTable: SymbolTable) {
 
   def this(map: Map[String, IDENTIFIER]){
-    this(map, null)
+    this(map, null, null)
   }
   def this(encSymbolTable: SymbolTable) {
-    this(null, encSymbolTable)
+    this(null, null, encSymbolTable)
   }
 
-  def add(name: String, identifier: IDENTIFIER): Map[String, IDENTIFIER] = {
+  def add(name: String, function: FUNCTION): Unit = {
+    funcMap = funcMap + (name -> function)
+  }
+
+  def add(name: String, identifier: IDENTIFIER): Unit = {
     this.map = this.map + (name -> identifier)
-    this.map
+  }
+
+  def lookupFun(name: String): Option[FUNCTION] = funcMap.get(name)
+
+  def lookupFunAll(name: String): Option[FUNCTION] = {
+    var s: Option[SymbolTable] = Some(this)
+    while (s.isDefined) {
+      val obj = s.get.lookupFun(name)
+      if (obj.isDefined){
+        return obj
+      }
+      s = Some(s.get.encSymbolTable)
+    }
+    None
   }
 
   def lookup(name: String): Option[IDENTIFIER] = {
@@ -50,5 +67,6 @@ object SymbolTable {
 
   }
 
-  def newSymbolTable(encSymbolTable: SymbolTable): SymbolTable = new SymbolTable(new HashMap(), encSymbolTable)
+  def newSymbolTable(encSymbolTable: SymbolTable): SymbolTable = new SymbolTable(new HashMap(),
+    new HashMap(), encSymbolTable)
 }

@@ -4,12 +4,12 @@ import util.{ColoredConsole => console}
 
 sealed abstract class UnaryOperationNode(expr: ExprNode) extends ExprNode {
 
-  override def getIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = this match {
-    case LogicalNotNode(_) => BoolTypeNode.getIdentifier(topST, ST)
-    case NegateNode(_) => BoolTypeNode.getIdentifier(topST, ST)
-    case LenNode(_) => IntTypeNode.getIdentifier(topST, ST)
-    case OrdNode(_) => IntTypeNode.getIdentifier(topST, ST)
-    case ChrNode(_) => CharTypeNode.getIdentifier(topST, ST)
+  override def getType(topST: SymbolTable, ST: SymbolTable): TYPE = this match {
+    case LogicalNotNode(_) => BoolTypeNode.getType(topST, ST)
+    case NegateNode(_) => BoolTypeNode.getType(topST, ST)
+    case LenNode(_) => IntTypeNode.getType(topST, ST)
+    case OrdNode(_) => IntTypeNode.getType(topST, ST)
+    case ChrNode(_) => CharTypeNode.getType(topST, ST)
   }
 
   override def toString: String = console.color(s"<UNARY OPER> ${expr.toString}", fg=Console.RED)
