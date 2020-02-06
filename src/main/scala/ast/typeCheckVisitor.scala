@@ -168,6 +168,25 @@ sealed class typeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         visit(fstElem)
         visit(sndElem)
       case CallNode(identNode, argList) => // TODO
+        val funcIdentifier: Option[FUNCTION] = currentSymbolTable.lookupFunAll(identNode.getKey)
+        if (funcIdentifier.isEmpty)
+          throw new TypeException(s"Function ${identNode.getKey} not declared")
+        else if (argList.isDefined && funcIdentifier.get.paramTypes.length != argList.get.exprNodes.length){
+          throw new TypeException(s"Function expected ${funcIdentifier.get.paramTypes.length} arguments but got" +
+            s" ${argList.get.exprNodes.length} arguments instead")
+        } else {
+          if (argList.isDefined) {
+            visit(argList.get)
+            for (argIndex <- argList.get.exprNodes.indices) {
+              val argType: TYPE = argList.get.exprNodes.apply(argIndex).getType(topSymbolTable, currentSymbolTable)
+              val paramType: TYPE = funcIdentifier.get.paramTypes.apply(argIndex)
+              if (argType != paramType) {
+                throw new TypeException(s"Expected type ${paramType.getKey} but got ${argType.getKey}")
+              }
+            }
+            // funcObj = F in slides???
+          }
+        }
       case pairElemNode: PairElemNode => pairElemCheckerHelper(pairElemNode)
     }
 

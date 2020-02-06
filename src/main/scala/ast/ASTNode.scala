@@ -27,7 +27,7 @@ case class FuncNode(funcType: TypeNode, identNode: IdentNode, paramList: Option[
   }
 }
 
-case class ParamListNode(paramList: IndexedSeq[ParamNode]) extends ASTNode {
+case class ParamListNode(val paramList: IndexedSeq[ParamNode]) extends ASTNode {
 
   def getIdentifierList(topST: SymbolTable, ST: SymbolTable): IndexedSeq[TYPE] = {
     assert(paramList.nonEmpty, "Parameter lists have to be at least size 1")
@@ -119,7 +119,7 @@ case class CallNode(identNode: IdentNode, argList: Option[ArgListNode]) extends 
   }
 }
 
-case class ArgListNode(exprNodes: IndexedSeq[ExprNode]) extends ASTNode {
+case class ArgListNode(val exprNodes: IndexedSeq[ExprNode]) extends ASTNode {
   override def toString: String = exprNodes.map(_.toString).mkString(", ")
 }
 
