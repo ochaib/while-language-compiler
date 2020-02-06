@@ -2,7 +2,7 @@ package ast
 import ast._
 import util.{ColoredConsole => console}
 
-class ExprNode extends AssignRHSNode {
+abstract class ExprNode extends AssignRHSNode {
   override def check(topST: SymbolTable, ST: SymbolTable): Unit = this match {
     case Int_literNode(_) =>
     case Bool_literNode(_) =>

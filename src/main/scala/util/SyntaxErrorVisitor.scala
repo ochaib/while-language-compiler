@@ -19,7 +19,7 @@ class SyntaxErrorVisitor {
 //      accBool &&= functionReturnsOrExits(f.stat)
       if (functionReturnsOrExits(f.stat)) {
         // Add to syntax error log.
-        println(s"Syntax Error: Function ${f.ident} does not return or exit")
+        println(s"Syntax Error: Function ${f.identNode.toString} does not return or exit")
       }
     }
 
