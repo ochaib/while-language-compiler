@@ -28,7 +28,7 @@ case class FuncNode(funcType: TypeNode, identNode: IdentNode, paramList: Option[
   }
 }
 
-case class ParamListNode(val paramList: IndexedSeq[ParamNode]) extends ASTNode {
+case class ParamListNode(paramList: IndexedSeq[ParamNode]) extends ASTNode {
 
   def getIdentifierList(topST: SymbolTable, ST: SymbolTable): IndexedSeq[TYPE] = {
     assert(paramList.nonEmpty, "Parameter lists have to be at least size 1")
@@ -94,7 +94,7 @@ case class NewPairNode(fstElem: ExprNode, sndElem: ExprNode) extends AssignRHSNo
     }
   }
 
-  override def initKey: String = s"pair(${getElemKey(fstElem)},${getElemKey(sndElem)})}"
+  override def initKey: String = s"pair(${getElemKey(fstElem)},${getElemKey(sndElem)})"
 
   private def getElemKey(elemNode: ExprNode): String = {
     val elemKey: String = elemNode.getKey

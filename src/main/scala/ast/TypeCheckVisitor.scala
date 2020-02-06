@@ -239,7 +239,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
     if (!((argOneIdentifier == expectedIdentifier1 || argOneIdentifier == expectedIdentifier2)
       && (argTwoIdentifier == expectedIdentifier1 || argTwoIdentifier == expectedIdentifier2))) {
       SemanticErrorLog.add(s"Expected input types ${expectedIdentifier1.getKey} or ${expectedIdentifier2.getKey}" +
-        s" but got ${argOneIdentifier.getKey} and ${argTwoIdentifier.getKey} instead")
+        s" but got ${argOneIdentifier.getKey} and ${argTwoIdentifier.getKey} instead.")
     }
   }
 
@@ -249,7 +249,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
     val argTwoIdentifier: IDENTIFIER = argTwo.getType(topSymbolTable, currentSymbolTable)
     if (!(argOneIdentifier == expectedIdentifier1 && argTwoIdentifier == expectedIdentifier2)) {
       SemanticErrorLog.add(s"Expected input types ${expectedIdentifier1.getKey} and ${expectedIdentifier2.getKey}" +
-        s" but got ${argOneIdentifier.getKey} and ${argTwoIdentifier.getKey} instead")
+        s" but got ${argOneIdentifier.getKey} and ${argTwoIdentifier.getKey} instead.")
     }
   }
 

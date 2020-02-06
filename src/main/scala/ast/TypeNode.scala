@@ -67,7 +67,7 @@ case class ArrayTypeNode(typeNode: TypeNode) extends TypeNode with PairElemTypeN
 
 case class PairTypeNode(firstPairElem: PairElemTypeNode, secondPairElem: PairElemTypeNode) extends TypeNode {
 
-  override def initKey: String = "pair (" + firstPairElem.getKey + "," + secondPairElem.getKey + ")"
+  override def initKey: String = "pair(" + firstPairElem.getKey + "," + secondPairElem.getKey + ")"
 
   override def initType(topST: SymbolTable, ST: SymbolTable): _root_.ast.TYPE = {
     val identifierLookupOption: Option[IDENTIFIER] = topST.lookup(getKey)
