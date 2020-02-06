@@ -1,6 +1,5 @@
 package ast
 
-import ast._
 import util.{ColoredConsole => console}
 
 // Every node necessary to generate AST. From the WACCLangSpec.
@@ -9,7 +8,7 @@ abstract class ASTNode {
   override def toString: String = super.toString
 }
 
-case class ProgramNode(functions: IndexedSeq[FuncNode], val stat: StatNode) extends ASTNode {
+case class ProgramNode(functions: IndexedSeq[FuncNode], stat: StatNode) extends ASTNode {
 
   override def toString: String = {
     val funcs : String = functions.map(_.toString).mkString("\n")
@@ -60,7 +59,7 @@ trait AssignRHSNode extends ASTNode with Identifiable {
   override abstract def toString: String = console.color("<RHS>", fg=Console.RED)
 }
 
-case class NewPairNode(fstElem: ExprNode, val sndElem: ExprNode) extends AssignRHSNode {
+case class NewPairNode(fstElem: ExprNode, sndElem: ExprNode) extends AssignRHSNode {
   override def initIdentifier(topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
     val newPairIdentifierLookup: Option[IDENTIFIER] = topST.lookup(getKey)
     if (newPairIdentifierLookup.isDefined) {

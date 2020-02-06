@@ -1,5 +1,5 @@
 import antlr.{WACCLexer, WACCParser}
-import ast.{ASTGenerator, ASTNode}
+import ast.{ASTGenerator, ASTNode, TypeCheckVisitor, Visitor}
 import java.io.{IOException}
 import org.antlr.v4.runtime.{
     CharStream => ANTLRCharStream,
@@ -34,11 +34,16 @@ object Compiler extends App {
     parser.removeErrorListeners()
     parser.addErrorListener(errorListener)
 
-    val program : WACCParser.ProgramContext = parser.program()
+
     // Build the AST
+    val program : WACCParser.ProgramContext = parser.program()
     val visitor : ASTGenerator = new ASTGenerator()
     val tree : ASTNode = visitor.visit(program)
     println(tree.toString)
+
+    // Check the AST for semantic errors
+    val semanticVisitor : Visitor = new TypeCheckVisitor(tree)
+    semanticVisitor.visit(tree)
   }
   catch {
     case ioerror : IOException => error("File does not exist")
