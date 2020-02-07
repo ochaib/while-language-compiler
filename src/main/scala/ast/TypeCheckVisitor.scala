@@ -107,7 +107,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         val exprIdentifier = expr.getType(topSymbolTable, currentSymbolTable)
 
         if (!(exprIdentifier == IntTypeNode.getType(topSymbolTable, currentSymbolTable))) {
-          SemanticErrorLog.add(s"Cannot exit with ${expr.getKey}, it must be an integer.")
+          SemanticErrorLog.add(s"Cannot exit with ${exprIdentifier.getKey}, it must be an integer.")
         }
 
       case PrintNode(expr) => visit(expr)

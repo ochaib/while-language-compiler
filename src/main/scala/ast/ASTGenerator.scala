@@ -338,7 +338,6 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     val childCount = ctx.getChildCount
     // negative numbers are handled by the unary oper
     // childCount - 1 in case it is signed
-
     val num: Option[Int] = ctx.getChild(childCount - 1).getText.toIntOption
 
     num match {
