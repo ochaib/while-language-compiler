@@ -222,19 +222,10 @@ case class IdentNode(ident: String) extends ExprNode with AssignLHSNode {
 }
 
 case class ArrayElemNode(identNode: IdentNode, exprNodes: IndexedSeq[ExprNode]) extends ExprNode with AssignLHSNode {
-  var innerMostKey = null
+  var innerMostKey: String = null
   override def initKey: String = {
-    assert(identNode._type != null, "IdentNode needs _type to be defined to be referred to")
-    assert(identNode._type.isInstanceOf[ARRAY], "IdentNode's type needs to be ARRAY")
-    var currentDepthType: ARRAY = identNode._type.asInstanceOf[ARRAY]
-    var key: String = currentDepthType.getKey
-    for(_ <- exprNodes.indices) {
-      assert(currentDepthType._type != null, "IdentNode needs _type to be defined to be referred to")
-      assert(currentDepthType._type.isInstanceOf[ARRAY], s"${currentDepthType.getKey} needs to be an array")
-      currentDepthType = currentDepthType._type.asInstanceOf[ARRAY]
-      key = currentDepthType.getKey
-    }
-    key
+    assert(innerMostKey != null, "Type of array elem node has to be initialised before a key can be found")
+    innerMostKey
   }
 
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
