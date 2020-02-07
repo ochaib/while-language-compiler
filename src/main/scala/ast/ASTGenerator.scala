@@ -360,6 +360,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
       }
       case Some(n) => new Int_literNode(num)
     }
+
   }
 
   override def visitExprBoolLiter(ctx: WACCParser.ExprBoolLiterContext): ExprNode = {
