@@ -230,14 +230,14 @@ case class IdentNode(ident: String) extends ExprNode with AssignLHSNode {
 case class ArrayElemNode(identNode: IdentNode, exprNodes: IndexedSeq[ExprNode]) extends ExprNode with AssignLHSNode {
   var innerMostKey: String = null
   override def initKey: String = {
-    assert(innerMostKey != null, "Type of array elem node has to be initialised before a key can be found")
+    assert(innerMostKey != null, "Type of array elem node has to be initialised before a key can be found.")
     innerMostKey
   }
 
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
     var innermostType: TYPE = identNode.getType(topST, ST)
     for (_ <- exprNodes.indices) {
-      if (! innermostType.isInstanceOf[ARRAY]) SemanticErrorLog.add(s"Array elem $toString refers to an undefined depth")
+      if (! innermostType.isInstanceOf[ARRAY]) SemanticErrorLog.add(s"Array elem $toString refers to an undefined depth.")
       innermostType = innermostType.asInstanceOf[ARRAY]._type
     }
     innerMostKey = innermostType.getKey
@@ -255,7 +255,7 @@ case class ArrayLiteralNode(exprNodes: IndexedSeq[ExprNode]) extends AssignRHSNo
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
     val arrayIdentifierOption: Option[IDENTIFIER] = topST.lookup(getKey)
     if (arrayIdentifierOption.isEmpty) {
-      assert(! exprNodes.isEmpty, "General Array needs to be defined in the top level symbol table")
+      assert(exprNodes.nonEmpty, "General Array needs to be defined in the top level symbol table.")
       val arrayIdentifier = new ARRAY(getKey, exprNodes.apply(0).getType(topST, ST))
       topST.add(getKey, arrayIdentifier)
       arrayIdentifier
@@ -268,5 +268,5 @@ case class ArrayLiteralNode(exprNodes: IndexedSeq[ExprNode]) extends AssignRHSNo
 
   override def toTreeString: String = "[" + exprNodes.map(_.toString).mkString(", ") + "]"
 
-  override def initKey: String = if (!exprNodes.isEmpty) exprNodes.apply(0).getKey + "[]" else "[]"
+  override def initKey: String = if (exprNodes.nonEmpty) exprNodes.apply(0).getKey + "[]" else "[]"
 }
