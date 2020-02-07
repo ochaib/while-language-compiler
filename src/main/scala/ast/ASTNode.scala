@@ -158,8 +158,13 @@ case class FstNode(expression: ExprNode) extends PairElemNode(expression) {
     }
   }
 
+
   override def initKey: String = {
-    val exprKey: String = expression.getKey
+    var exprKey: String = expression.getKey
+    if (expression.isInstanceOf[IdentNode]) {
+      exprKey = expression.asInstanceOf[IdentNode].getTypeKey
+      exprKey = exprKey.slice(4, exprKey.length)
+    }
     if (expression == Pair_literNode) {
       // TODO in backend throw error
       SemanticErrorLog.add(s"Expected a pair type but got a null pair literal instead.")
@@ -168,10 +173,9 @@ case class FstNode(expression: ExprNode) extends PairElemNode(expression) {
       SemanticErrorLog.add(s"Expected a pair type but got a non-pair type: ${expression.getKey}.")
       "Semantic Error: Should not reach this."
     } else {
-      exprKey.slice(1, exprKey.indexOf(','))
+      exprKey.slice(exprKey.indexOf(',') + 1, exprKey.length - 1)
     }
   }
-
   override def toTreeString: String = console.color(s"fst ${expression.toString}", fg=Console.BLUE)
 }
 
@@ -189,7 +193,11 @@ case class SndNode(expression: ExprNode) extends PairElemNode(expression) {
 
 
   override def initKey: String = {
-    val exprKey: String = expression.getKey
+    var exprKey: String = expression.getKey
+    if (expression.isInstanceOf[IdentNode]) {
+      exprKey = expression.asInstanceOf[IdentNode].getTypeKey
+      exprKey = exprKey.slice(4, exprKey.length)
+    }
     if (expression == Pair_literNode) {
       // TODO in backend throw error
       SemanticErrorLog.add(s"Expected a pair type but got a null pair literal instead.")
@@ -198,7 +206,7 @@ case class SndNode(expression: ExprNode) extends PairElemNode(expression) {
       SemanticErrorLog.add(s"Expected a pair type but got a non-pair type: ${expression.getKey}.")
       "Semantic Error: Should not reach this."
     } else {
-      exprKey.slice(exprKey.indexOf(',') + 1, exprKey.length)
+      exprKey.slice(exprKey.indexOf(',') + 1, exprKey.length - 1)
     }
   }
 

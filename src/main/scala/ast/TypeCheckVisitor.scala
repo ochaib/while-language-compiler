@@ -97,9 +97,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         val lhsType = lhs.getType(topSymbolTable, currentSymbolTable)
         val rhsType = rhs.getType(topSymbolTable, currentSymbolTable)
 
-        if (lhsType != rhsType) {
-          SemanticErrorLog.add(s"Assignment failed, ${lhs.getKey} and ${rhs.getKey} have non-matching types.")
-        } else if (! (lhsType == rhsType ||
+        if (! (lhsType == rhsType ||
           lhsType.isInstanceOf[PAIR] && rhsType == GENERAL_PAIR ||
           lhsType.isInstanceOf[ARRAY] && rhsType == GENERAL_ARRAY)) {
 
@@ -286,6 +284,12 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
     val argTwoIdentifier: IDENTIFIER = argTwo.getType(topSymbolTable, currentSymbolTable)
     if (argOneIdentifier == null || argTwoIdentifier == null){
       // If either identifier is null, dont check if they're equal to expected
+    } else if (expectedIdentifier1.isInstanceOf[PAIR] && expectedIdentifier2.isInstanceOf[PAIR]
+    && argOneIdentifier.isInstanceOf[PAIR] && argTwoIdentifier.isInstanceOf[PAIR]) {
+      // If all required areguments are of type pair then it's ok
+    } else if (expectedIdentifier1.isInstanceOf[ARRAY] && expectedIdentifier2.isInstanceOf[ARRAY]
+      && argOneIdentifier.isInstanceOf[ARRAY] && argTwoIdentifier.isInstanceOf[ARRAY]) {
+      // If all required arguments are of type array then it's ok
     } else if (!(argOneIdentifier == expectedIdentifier1 && argTwoIdentifier == expectedIdentifier2)) {
       SemanticErrorLog.add(s"Expected input types ${expectedIdentifier1.getKey} and ${expectedIdentifier2.getKey}" +
         s" but got ${argOneIdentifier.getKey} and ${argTwoIdentifier.getKey} instead.")
