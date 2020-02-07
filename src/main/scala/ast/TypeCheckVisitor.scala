@@ -92,8 +92,8 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
         val exprIdentifier = expr.getType(topSymbolTable, currentSymbolTable)
 
-        if (!(exprIdentifier.isInstanceOf[PAIR] || exprIdentifier == GENERAL_PAIR) ||
-          !exprIdentifier.isInstanceOf[ARRAY]) {
+        if (!(exprIdentifier.isInstanceOf[PAIR] || exprIdentifier == GENERAL_PAIR ||
+          exprIdentifier.isInstanceOf[ARRAY])) {
           SemanticErrorLog.add(s"Cannot free ${expr.getKey}, it must be a pair or an array.")
         }
 
