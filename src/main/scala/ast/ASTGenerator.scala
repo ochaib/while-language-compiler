@@ -336,17 +336,29 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
   override def visitInt_liter(ctx: WACCParser.Int_literContext): Int_literNode = {
     val childCount = ctx.getChildCount
-    // negative numbers are handled by the unary oper
-    // childCount - 1 in case it is signed
-    // TODO: maybe we handle overflow here?
-    val num: Option[Int] = ctx.getChild(childCount - 1).getText.toIntOption
 
-    num match {
+    // childCount - 1 in case it is signed +
+    val num: String = ctx.getChild(childCount - 1).getText
+
+    // check if it's negated
+    // can't rely on child 0 as antlr prefers longest token sequence
+    // and will prefer unary ops over signs (we need this behaviour as well)
+    // and so we simply check if the parent is a unary operator of '-'
+    val negated: Boolean = ctx.getParent().getParent() match {
+      case parent: WACCParser.ExprUnaryOperContext =>
+        parent.getChild(0).getText == "-"
+      case _ => false
+    }
+
+    // parse the number -- if there's an overflow it'll be set to None
+    val numVal: Option[Int] = (if (negated) "-" + num else num).toIntOption
+
+    numVal match {
       case None => {
         SyntaxErrorLog.add("Invalid integer value.")
-        new Int_literNode(0)
+        new Int_literNode("")
       }
-      case Some(n) => new Int_literNode(n)
+      case Some(n) => new Int_literNode(num)
     }
   }
 
