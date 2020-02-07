@@ -1,4 +1,6 @@
-package ast
+package ast.nodes
+
+import ast.symboltable._
 import org.antlr.v4.runtime.Token
 
 import util.{ColoredConsole => console}

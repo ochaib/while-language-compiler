@@ -1,4 +1,6 @@
-package ast
+package ast.nodes
+
+import ast.symboltable._
 import org.antlr.v4.runtime.Token
 
 import util.{ColoredConsole => console}
@@ -51,7 +53,7 @@ case class ArrayTypeNode(token: Token, typeNode: TypeNode) extends TypeNode(toke
 
   override def initKey: String = typeNode.getKey + "[]"
 
-  override def initType(topST: SymbolTable, ST: SymbolTable): _root_.ast.TYPE = {
+  override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
     val T: Option[IDENTIFIER] = topST.lookup(getKey)
     if (T.isEmpty) {
       val arrayIdentifier: TYPE = new ARRAY(getKey, typeNode.getType(topST, ST))
@@ -70,7 +72,7 @@ case class PairTypeNode(token: Token, firstPairElem: PairElemTypeNode, secondPai
 
   override def initKey: String = "pair(" + firstPairElem.getKey + "," + secondPairElem.getKey + ")"
 
-  override def initType(topST: SymbolTable, ST: SymbolTable): _root_.ast.TYPE = {
+  override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
     val identifierLookupOption: Option[IDENTIFIER] = topST.lookup(getKey)
     if (identifierLookupOption.isEmpty) {
       val firstPairIdentifier: IDENTIFIER = firstPairElem.getType(topST, ST)

@@ -1,9 +1,21 @@
 import antlr._
-import ast.{ASTGenerator, ASTNode, TypeCheckVisitor, Visitor}
+import ast.nodes.ASTNode
+import ast.visitors.{
+  ASTGenerator,
+  TypeCheckVisitor,
+  Visitor
+}
 import java.io.IOException
 
-import org.antlr.v4.runtime.{CharStream => ANTLRCharStream, CharStreams => ANTLRCharStreams, CommonTokenStream => ANTLRTokenStream}
-import util.{ErrorListener, SemanticErrorLog, SyntaxErrorLog, ColoredConsole => console}
+import org.antlr.v4.runtime.{
+  CharStream => ANTLRCharStream,
+  CharStreams => ANTLRCharStreams,
+  CommonTokenStream => ANTLRTokenStream
+}
+import util.{
+  ErrorListener, SemanticErrorLog, SyntaxErrorLog,
+  ColoredConsole => console
+}
 
 
 object Compiler extends App {

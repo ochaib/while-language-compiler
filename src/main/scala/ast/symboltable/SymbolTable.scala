@@ -1,5 +1,12 @@
-package ast
+package ast.symboltable
 
+import ast.nodes.{
+  ASTNode,
+  BoolTypeNode,
+  CharTypeNode,
+  StringTypeNode,
+  IntTypeNode
+}
 import scala.collection.immutable.HashMap
 
 

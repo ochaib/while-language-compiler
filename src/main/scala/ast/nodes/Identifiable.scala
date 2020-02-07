@@ -1,4 +1,6 @@
-package ast
+package ast.nodes
+
+import ast.symboltable._
 
 // looks up the type identifier from all parent symbol tables and returns the appropriate identifier object
 trait Identifiable {
