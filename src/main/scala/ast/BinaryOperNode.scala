@@ -2,7 +2,7 @@ package ast
 import util.{ColoredConsole => console}
 
 sealed abstract class BinaryOperationNode(argOne: ExprNode, argTwo: ExprNode) extends ExprNode {
-  override def getType(topST: SymbolTable, ST: SymbolTable): TYPE = this match {
+  override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = this match {
     case MultiplyNode(_,_)
           | DivideNode(_, _)
           | ModNode(_, _)
@@ -16,6 +16,22 @@ sealed abstract class BinaryOperationNode(argOne: ExprNode, argTwo: ExprNode) ex
           | NotEqualNode(_, _)
           | LogicalAndNode(_, _)
           | LogicalOrNode(_, _) => BoolTypeNode.getType(topST, ST)
+  }
+
+  override def initKey: String = this match {
+    case MultiplyNode(_,_)
+         | DivideNode(_, _)
+         | ModNode(_, _)
+         | PlusNode(_, _)
+         | MinusNode(_, _) => IntTypeNode.getKey
+    case GreaterThanNode(_, _)
+         | GreaterEqualNode(_, _)
+         | LessThanNode(_, _)
+         | LessEqualNode(_, _)
+         | EqualToNode(_, _)
+         | NotEqualNode(_, _)
+         | LogicalAndNode(_, _)
+         | LogicalOrNode(_, _) => BoolTypeNode.getKey
   }
 
   def getOperator: String = this match {

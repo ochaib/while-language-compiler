@@ -18,6 +18,5 @@ class PAIR(key: String, val _type1: TYPE, val _type2: TYPE) extends TYPE(key)
 object GENERAL_PAIR extends PAIR(key = "pair", null, null)
 
 class FUNCTION(key: String, val returnType: TYPE, var paramTypes: IndexedSeq[TYPE]) extends IDENTIFIER(key)
-// class BASE_FUNCTION extends ast.IDENTIFIER {}
 
 class PARAM(key: String, val _type:TYPE) extends IDENTIFIER(key)

@@ -207,14 +207,20 @@ case class IdentNode(ident: String) extends ExprNode with AssignLHSNode {
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
     val T: Option[IDENTIFIER] = ST.lookupAll(getKey)
     if (T.isEmpty) {
-      SemanticErrorLog.add(s"$getKey has not been declared, the current symbol table is empty.")
-//      "Semantic Error: Should not reach this."
+      SemanticErrorLog.add(s"$getKey has not been declared.")
       null
-    } else if (! T.get.isInstanceOf[VARIABLE]) {
-      assert(assertion = false, s"Something went wrong... $getKey should be a variable but isn't")
+    } else if (! (T.get.isInstanceOf[VARIABLE] || T.get.isInstanceOf[PARAM])) {
+      assert(assertion = false, s"Something went wrong... $getKey should be a variable or parameter but isn't")
       null
     } else {
-      T.get.asInstanceOf[VARIABLE]._type
+      if (T.get.isInstanceOf[VARIABLE]){
+        T.get.asInstanceOf[VARIABLE]._type
+      } else if (T.get.isInstanceOf[PARAM]) {
+        T.get.asInstanceOf[PARAM]._type
+      } else {
+        assert(assertion = false, "Above if statement should prevent getting here")
+        null
+      }
     }
   }
 
@@ -222,6 +228,21 @@ case class IdentNode(ident: String) extends ExprNode with AssignLHSNode {
 }
 
 case class ArrayElemNode(identNode: IdentNode, exprNodes: IndexedSeq[ExprNode]) extends ExprNode with AssignLHSNode {
+  var innerMostKey: String = null
+  override def initKey: String = {
+    assert(innerMostKey != null, "Type of array elem node has to be initialised before a key can be found.")
+    innerMostKey
+  }
+
+  override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
+    var innermostType: TYPE = identNode.getType(topST, ST)
+    for (_ <- exprNodes.indices) {
+      if (! innermostType.isInstanceOf[ARRAY]) SemanticErrorLog.add(s"Array elem $toString refers to an undefined depth.")
+      innermostType = innermostType.asInstanceOf[ARRAY]._type
+    }
+    innerMostKey = innermostType.getKey
+    innermostType
+  }
 
   override def toTreeString: String = {
     val exprs : String = exprNodes.map("[" + _.toString + "]").mkString("")
@@ -234,7 +255,7 @@ case class ArrayLiteralNode(exprNodes: IndexedSeq[ExprNode]) extends AssignRHSNo
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
     val arrayIdentifierOption: Option[IDENTIFIER] = topST.lookup(getKey)
     if (arrayIdentifierOption.isEmpty) {
-      assert(! exprNodes.isEmpty, "General Array needs to be defined in the top level symbol table")
+      assert(exprNodes.nonEmpty, "General Array needs to be defined in the top level symbol table.")
       val arrayIdentifier = new ARRAY(getKey, exprNodes.apply(0).getType(topST, ST))
       topST.add(getKey, arrayIdentifier)
       arrayIdentifier
@@ -247,5 +268,5 @@ case class ArrayLiteralNode(exprNodes: IndexedSeq[ExprNode]) extends AssignRHSNo
 
   override def toTreeString: String = "[" + exprNodes.map(_.toString).mkString(", ") + "]"
 
-  override def initKey: String = if (!exprNodes.isEmpty) exprNodes.apply(0).getKey + "[]" else "[]"
+  override def initKey: String = if (exprNodes.nonEmpty) exprNodes.apply(0).getKey + "[]" else "[]"
 }

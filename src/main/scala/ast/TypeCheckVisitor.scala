@@ -31,18 +31,20 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
       // check identNode is already defined
       if (currentSymbolTable.lookupFun(identNode.getKey).isDefined)
         SemanticErrorLog.add(s"Tried to define function: ${identNode.getKey} but it was already declared.")
-      else
+      else {
         functionIdentifier = new FUNCTION(identNode.getKey, funcType.getType(topSymbolTable, currentSymbolTable).asInstanceOf[TYPE], paramTypes = null)
         currentSymbolTable.add(identNode.getKey, functionIdentifier)
 
-      symbolTableCreatorWrapper(_ => {
-        // Missing: link symbol table to function?
-        if (paramList.isDefined) {
-          // implicitly adds identifiers to the symbol table
-          functionIdentifier.paramTypes = paramList.get.getIdentifierList(topSymbolTable, currentSymbolTable)
-          visit(paramList.get)
-        }
-        visit(stat)})
+        symbolTableCreatorWrapper(_ => {
+          // Missing: link symbol table to function?
+          if (paramList.isDefined) {
+            // implicitly adds identifiers to the symbol table
+            functionIdentifier.paramTypes = paramList.get.getIdentifierList(topSymbolTable, currentSymbolTable)
+            visit(paramList.get)
+          }
+          visit(stat)
+        })
+      }
 
     case ParamListNode(paramNodeList) => for (paramNode <- paramNodeList) visit(paramNode)
 
@@ -57,7 +59,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
       // STAT NODES
 
-      case _:SkipNode =>
+      case _: SkipNode =>
 
       case DeclarationNode(_type, ident, rhs) =>
         val typeIdentifier: IDENTIFIER = _type.getType(topSymbolTable, currentSymbolTable)
@@ -65,8 +67,10 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
         // If the type and the rhs don't match, throw exception
         val rhsType = rhs.getType(topSymbolTable, currentSymbolTable)
+        // If the rhs could not have its type evaluated, do not attempt to compare them
+        if (rhsType == null) {
         // If types are not the same, or the rhs is not a general identifier for pair and array respectively
-        if (! (typeIdentifier == rhsType ||
+        } else if (! (typeIdentifier == rhsType ||
           typeIdentifier.isInstanceOf[PAIR] && rhsType == GENERAL_PAIR ||
           typeIdentifier.isInstanceOf[ARRAY] && rhsType == GENERAL_ARRAY)) {
 
@@ -141,6 +145,9 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         // TODO optimise to halve visits
         visit(statOne)
         visit(statTwo)
+        if (statOne.isInstanceOf[ReturnNode]) {
+          SemanticErrorLog.add(s"Return and exit statements may only be the last statement in a block")
+        }
     }
 
     // AssignLHSNodes
@@ -216,6 +223,8 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
     val pairIdentifier: IDENTIFIER = expr.getType(topSymbolTable, currentSymbolTable)
     if (! pairIdentifier.isInstanceOf[PAIR]) {
       SemanticErrorLog.add(s"Expected pair type but got $pairIdentifier.")
+    } else if (pairIdentifier == GENERAL_PAIR) {
+      SemanticErrorLog.add(s"Expected pair type but got null.")
     } else {
       visit(expr)
     }
@@ -251,28 +260,42 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
   def binaryCheckerHelper(argOne: ExprNode, argTwo: ExprNode, expectedIdentifier1: IDENTIFIER,
                           expectedIdentifier2: IDENTIFIER, topSymbolTable: SymbolTable, ST: SymbolTable): Unit = {
-    val argOneIdentifier: IDENTIFIER = argOne.getType(topSymbolTable, currentSymbolTable)
-    val argTwoIdentifier: IDENTIFIER = argTwo.getType(topSymbolTable, currentSymbolTable)
     visit(argOne)
     visit(argTwo)
-    if (!(argOneIdentifier == expectedIdentifier1 && argTwoIdentifier == expectedIdentifier2)) {
+    val argOneIdentifier: IDENTIFIER = argOne.getType(topSymbolTable, currentSymbolTable)
+    val argTwoIdentifier: IDENTIFIER = argTwo.getType(topSymbolTable, currentSymbolTable)
+    if (argOneIdentifier == null || argTwoIdentifier == null){
+      // If either identifier is null, dont check if they're equal to expected
+    } else if (!(argOneIdentifier == expectedIdentifier1 && argTwoIdentifier == expectedIdentifier2)) {
       SemanticErrorLog.add(s"Expected input types ${expectedIdentifier1.getKey} and ${expectedIdentifier2.getKey}" +
         s" but got ${argOneIdentifier.getKey} and ${argTwoIdentifier.getKey} instead.")
     }
   }
 
   def arrayElemCheckerHelper(identNode: IdentNode, exprNodes: IndexedSeq[ExprNode]): Unit = {
+    // Check identifier has been defined
     visit(identNode)
-    val identIdentifier: IDENTIFIER = identNode.getType(topSymbolTable, currentSymbolTable)
+    val identIdentifier: TYPE = identNode.getType(topSymbolTable, currentSymbolTable)
+    // Check all indices evaluate to any type
     for (expr <- exprNodes) visit(expr)
+    // Check ident type is an array
     if (!identIdentifier.isInstanceOf[ARRAY]) {
-      SemanticErrorLog.add(s"Expected array type but got ${identIdentifier.getKey} instead.")
+      SemanticErrorLog.add(s"Expected array type for ${identNode.toString} but got ${identIdentifier.getKey} instead.")
     } else {
-      val identArrayType: IDENTIFIER = identIdentifier.asInstanceOf[ARRAY]._type
+      // Check that number of depths is valid
+      var currentDepthType: TYPE = identIdentifier
+      for (_ <- exprNodes.indices) {
+        if (! currentDepthType.isInstanceOf[ARRAY]){
+          SemanticErrorLog.add(s"Trying to access lower dimensions but ${identNode.toString}" +
+            s" has less than ${exprNodes.length} dimensions")
+        }
+        currentDepthType = currentDepthType.asInstanceOf[ARRAY]._type
+      }
+      // Check if all expressions evaluate to an int
       for (expr <- exprNodes) {
-        val exprIdentifier: IDENTIFIER = expr.getType(topSymbolTable, currentSymbolTable)
-        if (exprIdentifier != identArrayType) {
-          SemanticErrorLog.add(s"Expected ${identArrayType.getKey} but got ${exprIdentifier.getKey} instead.")
+        val exprIdentifier: TYPE = expr.getType(topSymbolTable, currentSymbolTable)
+        if (exprIdentifier != IntTypeNode.getType(topSymbolTable, currentSymbolTable)) {
+          SemanticErrorLog.add(s"Expected index value but got ${exprIdentifier.getKey} instead.")
         }
       }
     }

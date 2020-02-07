@@ -5,8 +5,8 @@ import scala.collection.immutable.HashMap
 
 class SymbolTable(var map: Map[String, IDENTIFIER], var funcMap: Map[String, FUNCTION], var encSymbolTable: SymbolTable) {
 
-  def this(map: Map[String, IDENTIFIER]){
-    this(map, null, null)
+  def this(map: Map[String, IDENTIFIER], funcMap: Map[String, FUNCTION]){
+    this(map, funcMap, null)
   }
   def this(encSymbolTable: SymbolTable) {
     this(null, null, encSymbolTable)
@@ -60,7 +60,7 @@ object SymbolTable {
       BoolTypeNode.getKey -> new SCALAR(BoolTypeNode.getKey, min=0, max=1),
       StringTypeNode.getKey -> new ARRAY(StringTypeNode.getKey, charScalar),
       GENERAL_PAIR.getKey -> GENERAL_PAIR,
-      GENERAL_ARRAY.getKey -> GENERAL_ARRAY))
+      GENERAL_ARRAY.getKey -> GENERAL_ARRAY), new HashMap())
 
   }
 
