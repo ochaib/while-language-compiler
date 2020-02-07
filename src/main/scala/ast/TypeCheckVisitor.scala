@@ -98,7 +98,10 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         val lhsType = lhs.getType(topSymbolTable, currentSymbolTable)
         val rhsType = rhs.getType(topSymbolTable, currentSymbolTable)
 
-        if (! (lhsType == rhsType ||
+        // If either side evaluated to an incorrect expression, stop checking
+        if (lhsType == null || rhsType == null) {
+
+        } else if (! (lhsType == rhsType ||
           lhsType.isInstanceOf[PAIR] && rhsType == GENERAL_PAIR ||
           lhsType.isInstanceOf[ARRAY] && rhsType == GENERAL_ARRAY)) {
 

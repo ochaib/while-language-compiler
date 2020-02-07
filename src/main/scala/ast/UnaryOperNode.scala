@@ -4,10 +4,16 @@ import util.{ColoredConsole => console}
 
 sealed abstract class UnaryOperationNode(expr: ExprNode) extends ExprNode {
 
-  override def getType(topST: SymbolTable, ST: SymbolTable): TYPE = this match {
+  override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = this match {
     case LogicalNotNode(_) => BoolTypeNode.getType(topST, ST)
     case LenNode(_) | OrdNode(_) | NegateNode(_) => IntTypeNode.getType(topST, ST)
     case ChrNode(_) => CharTypeNode.getType(topST, ST)
+  }
+
+  override def initKey: String = this match {
+    case LogicalNotNode(_) => BoolTypeNode.getKey
+    case LenNode(_) | OrdNode(_) | NegateNode(_) => IntTypeNode.getKey
+    case ChrNode(_) => CharTypeNode.getKey
   }
 
   def getOperator: String = this match {
