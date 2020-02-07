@@ -52,6 +52,8 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
       // STAT NODES
 
+      case _:SkipNode =>
+
       case DeclarationNode(_type, ident, rhs) =>
         val typeIdentifier: IDENTIFIER = _type.getType(topSymbolTable, currentSymbolTable)
         visit(rhs)
@@ -138,8 +140,12 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
       case BeginNode(stat) => visit(stat)
 
       case SequenceNode(statOne, statTwo) =>
+        // Prepare to visit stat by creating new symbol table
+//        currentSymbolTable = SymbolTable.newSymbolTable(currentSymbolTable)
         visit(statOne)
         visit(statTwo)
+        // Exit symbol table
+//        currentSymbolTable = currentSymbolTable.encSymbolTable
     }
 
     // AssignLHSNodes
@@ -148,7 +154,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
       case IdentNode(ident) =>
         if (currentSymbolTable.lookupAll(assignLHSNode.getKey).isEmpty) {
-          SemanticErrorLog.add(s"The identifier: $ident has not been declared.")
+          SemanticErrorLog.add(s"$ident has not been declared as an identifier.")
         }
 
       case ArrayElemNode(identNode, exprNodes) => arrayElemCheckerHelper(identNode, exprNodes)

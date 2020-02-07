@@ -115,7 +115,7 @@ case class CallNode(identNode: IdentNode, argList: Option[ArgListNode]) extends 
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
     val F: Option[FUNCTION] = ST.lookupFunAll(getKey)
     if (F.isEmpty) {
-      SemanticErrorLog.add(s"$getKey has not been declared")
+      SemanticErrorLog.add(s"$getKey has not been declared as a function.")
       null
     } else if (! F.get.isInstanceOf[FUNCTION]) {
       assert(assertion = false, s"Something went wrong... $getKey should be a function but isn't.")
@@ -207,7 +207,7 @@ case class IdentNode(ident: String) extends ExprNode with AssignLHSNode {
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
     val T: Option[IDENTIFIER] = ST.lookupAll(getKey)
     if (T.isEmpty) {
-      SemanticErrorLog.add(s"$getKey has not been declared.")
+      SemanticErrorLog.add(s"$getKey has not been declared, the current symbol table is empty.")
 //      "Semantic Error: Should not reach this."
       null
     } else if (! T.get.isInstanceOf[VARIABLE]) {
@@ -238,7 +238,8 @@ case class ArrayLiteralNode(exprNodes: IndexedSeq[ExprNode]) extends AssignRHSNo
       topST.add(getKey, arrayIdentifier)
       arrayIdentifier
     } else {
-      assert(arrayIdentifierOption.get.isInstanceOf[ARRAY], s"Something went wrong... $getKey should be a an array type but isn't.")
+      assert(arrayIdentifierOption.get.isInstanceOf[ARRAY],
+        s"Something went wrong... $getKey should be a an array type but isn't.")
       arrayIdentifierOption.get.asInstanceOf[ARRAY]
     }
   }

@@ -338,7 +338,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     val childCount = ctx.getChildCount
     // negative numbers are handled by the unary oper
     // childCount - 1 in case it is signed
-    // TODO: maybe we handle overflow here?
+
     val num: Option[Int] = ctx.getChild(childCount - 1).getText.toIntOption
 
     num match {
@@ -348,6 +348,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
       }
       case Some(n) => new Int_literNode(n)
     }
+
   }
 
   override def visitExprBoolLiter(ctx: WACCParser.ExprBoolLiterContext): ExprNode = {
