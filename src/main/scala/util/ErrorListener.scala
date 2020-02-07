@@ -7,7 +7,7 @@ class ErrorListener extends BaseErrorListener {
   override def syntaxError(recognizer: Recognizer[_, _], offendingSymbol: AnyRef, line: Int,
                            charPositionInLine: Int, msg: String, e: RecognitionException): Unit = {
 
-    SyntaxErrorLog.add(s"on Line $line:$charPositionInLine $msg.")
+    SyntaxErrorLog.add(s"at $line:$charPositionInLine $msg.")
   }
 
 }
