@@ -21,7 +21,7 @@ abstract class ExprNode extends AssignRHSNode {
   override def toTreeString: String = console.color("<EXPR>", fg=Console.RED)
 }
 
-case class Int_literNode(num: Int) extends ExprNode {
+case class Int_literNode(num: String) extends ExprNode {
 
   override def toTreeString: String = console.color(num.toString, fg=Console.MAGENTA)
 }
