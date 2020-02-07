@@ -209,11 +209,18 @@ case class IdentNode(ident: String) extends ExprNode with AssignLHSNode {
     if (T.isEmpty) {
       SemanticErrorLog.add(s"$getKey has not been declared.")
       null
-    } else if (! T.get.isInstanceOf[VARIABLE]) {
-      assert(assertion = false, s"Something went wrong... $getKey should be a variable but isn't")
+    } else if (! (T.get.isInstanceOf[VARIABLE] || T.get.isInstanceOf[PARAM])) {
+      assert(assertion = false, s"Something went wrong... $getKey should be a variable or parameter but isn't")
       null
     } else {
-      T.get.asInstanceOf[VARIABLE]._type
+      if (T.get.isInstanceOf[VARIABLE]){
+        T.get.asInstanceOf[VARIABLE]._type
+      } else if (T.get.isInstanceOf[PARAM]) {
+        T.get.asInstanceOf[PARAM]._type
+      } else {
+        assert(assertion = false, "Above if statement should prevent getting here")
+        null
+      }
     }
   }
 
