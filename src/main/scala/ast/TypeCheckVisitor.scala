@@ -22,18 +22,20 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
       // check identNode is already defined
       if (currentSymbolTable.lookupFun(identNode.getKey).isDefined)
         SemanticErrorLog.add(s"Tried to define function: ${identNode.getKey} but it was already declared.")
-      else
+      else {
         functionIdentifier = new FUNCTION(identNode.getKey, funcType.getType(topSymbolTable, currentSymbolTable).asInstanceOf[TYPE], paramTypes = null)
         currentSymbolTable.add(identNode.getKey, functionIdentifier)
 
-      symbolTableCreatorWrapper(_ => {
-        // Missing: link symbol table to function?
-        if (paramList.isDefined) {
-          // implicitly adds identifiers to the symbol table
-          functionIdentifier.paramTypes = paramList.get.getIdentifierList(topSymbolTable, currentSymbolTable)
-          visit(paramList.get)
-        }
-        visit(stat)})
+        symbolTableCreatorWrapper(_ => {
+          // Missing: link symbol table to function?
+          if (paramList.isDefined) {
+            // implicitly adds identifiers to the symbol table
+            functionIdentifier.paramTypes = paramList.get.getIdentifierList(topSymbolTable, currentSymbolTable)
+            visit(paramList.get)
+          }
+          visit(stat)
+        })
+      }
 
     case ParamListNode(paramNodeList) => for (paramNode <- paramNodeList) visit(paramNode)
 
