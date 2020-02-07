@@ -1,13 +1,14 @@
 package ast
+import org.antlr.v4.runtime.Token
 
 import util.{ColoredConsole => console}
 
-abstract class TypeNode extends ASTNode with Identifiable {
+abstract class TypeNode(token: Token) extends ASTNode(token) with Identifiable {
 
   override def toTreeString: String = console.color("<TYPE>", fg=Console.RED)
 }
 
-abstract class BaseTypeNode extends TypeNode with PairElemTypeNode {
+abstract class BaseTypeNode(token: Token) extends TypeNode(token) with PairElemTypeNode {
 
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
     val T: Option[IDENTIFIER] = topST.lookup(getKey)
@@ -17,36 +18,36 @@ abstract class BaseTypeNode extends TypeNode with PairElemTypeNode {
   }
 
   override def initKey: String = this match {
-    case IntTypeNode => "int"
-    case BoolTypeNode => "bool"
-    case CharTypeNode => "char"
-    case StringTypeNode => "string"
+    case _: IntTypeNode => "int"
+    case _: BoolTypeNode => "bool"
+    case _: CharTypeNode => "char"
+    case _: StringTypeNode => "string"
   }
 
   override def toTreeString: String = console.color("<BASE TYPE>", fg=Console.RED)
 }
 
-case object IntTypeNode extends BaseTypeNode {
+case class IntTypeNode(token: Token) extends BaseTypeNode(token) {
 
   override def toTreeString: String = console.color("int", fg=Console.MAGENTA)
 }
 
-case object BoolTypeNode extends BaseTypeNode {
+case class BoolTypeNode(token: Token) extends BaseTypeNode(token) {
 
   override def toTreeString: String = console.color("bool", fg=Console.MAGENTA)
 }
 
-case object CharTypeNode extends BaseTypeNode {
+case class CharTypeNode(token: Token) extends BaseTypeNode(token) {
 
   override def toTreeString: String = console.color("char", fg=Console.MAGENTA)
 }
 
-case object StringTypeNode extends BaseTypeNode {
+case class StringTypeNode(token: Token) extends BaseTypeNode(token) {
 
   override def toTreeString: String = console.color("string", fg=Console.MAGENTA)
 }
 
-case class ArrayTypeNode(typeNode: TypeNode) extends TypeNode with PairElemTypeNode {
+case class ArrayTypeNode(token: Token, typeNode: TypeNode) extends TypeNode(token) with PairElemTypeNode {
 
   override def initKey: String = typeNode.getKey + "[]"
 
@@ -65,7 +66,7 @@ case class ArrayTypeNode(typeNode: TypeNode) extends TypeNode with PairElemTypeN
   override def toTreeString: String = typeNode.toString + "[]"
 }
 
-case class PairTypeNode(firstPairElem: PairElemTypeNode, secondPairElem: PairElemTypeNode) extends TypeNode {
+case class PairTypeNode(token: Token, firstPairElem: PairElemTypeNode, secondPairElem: PairElemTypeNode) extends TypeNode(token) {
 
   override def initKey: String = "pair(" + firstPairElem.getKey + "," + secondPairElem.getKey + ")"
 
@@ -98,7 +99,7 @@ trait PairElemTypeNode extends ASTNode with Identifiable {
 }
 
 // 'pair' in the WACCLangSpec
-class PairElemTypePairNode extends PairElemTypeNode {
+class PairElemTypePairNode(token: Token) extends ASTNode(token) with PairElemTypeNode {
   override def initKey: String = GENERAL_PAIR.getKey
 
   override def initType(topST: SymbolTable, ST: SymbolTable): _root_.ast.TYPE = {

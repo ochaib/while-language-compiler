@@ -1,28 +1,29 @@
 package ast
+import org.antlr.v4.runtime.Token
 
 import util.{ColoredConsole => console}
 
-sealed abstract class UnaryOperationNode(expr: ExprNode) extends ExprNode {
+sealed abstract class UnaryOperationNode(token: Token, expr: ExprNode) extends ExprNode(token) {
 
   override def getType(topST: SymbolTable, ST: SymbolTable): TYPE = this match {
-    case LogicalNotNode(_) => BoolTypeNode.getType(topST, ST)
-    case LenNode(_) | OrdNode(_) | NegateNode(_) => IntTypeNode.getType(topST, ST)
-    case ChrNode(_) => CharTypeNode.getType(topST, ST)
+    case LogicalNotNode(_, _) => new BoolTypeNode(null).getType(topST, ST)
+    case LenNode(_, _) | OrdNode(_, _) | NegateNode(_) => new IntTypeNode(null).getType(topST, ST)
+    case ChrNode(_, _) => new CharTypeNode(null).getType(topST, ST)
   }
 
   def getOperator: String = this match {
-    case LogicalNotNode(_) => "!"
-    case NegateNode(_) => "-"
-    case LenNode(_) => "len "
-    case OrdNode(_) => "ord "
-    case ChrNode(_) => "chr "
+    case _: LogicalNotNode => "!"
+    case _: NegateNode => "-"
+    case _: LenNode => "len "
+    case _: OrdNode => "ord "
+    case _: ChrNode => "chr "
   }
 
   override def toTreeString: String = console.color(s"$getOperator ${expr.toString}", fg=Console.RED)
 }
 
-case class LogicalNotNode(expr: ExprNode) extends UnaryOperationNode(expr)
-case class NegateNode(expr: ExprNode) extends UnaryOperationNode(expr)
-case class LenNode(expr: ExprNode) extends UnaryOperationNode(expr)
-case class OrdNode(expr: ExprNode) extends UnaryOperationNode(expr)
-case class ChrNode(expr: ExprNode) extends UnaryOperationNode(expr)
+case class LogicalNotNode(token: Token, expr: ExprNode) extends UnaryOperationNode(token, expr)
+case class NegateNode(token: Token, expr: ExprNode) extends UnaryOperationNode(token, expr)
+case class LenNode(token: Token, expr: ExprNode) extends UnaryOperationNode(token, expr)
+case class OrdNode(token: Token, expr: ExprNode) extends UnaryOperationNode(token, expr)
+case class ChrNode(token: Token, expr: ExprNode) extends UnaryOperationNode(token, expr)
