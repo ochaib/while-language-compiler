@@ -2,14 +2,13 @@ package ast
 
 import org.antlr.v4.runtime.Token
 import util.{SemanticErrorLog, SyntaxErrorLog}
-import scala.collection.immutable.HashMap
 
 sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
   var topSymbolTable: SymbolTable = SymbolTable.topLevelSymbolTable(entryNode)
   var currentSymbolTable: SymbolTable = topSymbolTable
-  var currentFuncReturnType: TYPE = null
+  var currentFuncReturnType: TYPE = _
 
-  def getPos(token: Token): String = s"at ${token.getLine}:${token.getCharPositionInLine()}"
+  def getPos(token: Token): String = s"at ${token.getLine}:${token.getCharPositionInLine}"
 
   override def visit(ASTNode: ASTNode): Unit = ASTNode match {
 
@@ -30,13 +29,15 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
       var functionIdentifier: FUNCTION = null
       // check identNode is already defined
       if (currentSymbolTable.lookupFun(identNode.getKey).isDefined)
-        SemanticErrorLog.add(s"${getPos(token)} tried to define function: ${identNode.getKey} but it was already declared.")
+        SemanticErrorLog.add(s"${getPos(token)} tried to define function: " +
+                             s"${identNode.getKey} but it was already declared.")
       else {
         // Save the func return type for current scope
         var saveFuncReturnType: TYPE = currentFuncReturnType
         // Set new func return type for new scope
         currentFuncReturnType = funcType.getType(topSymbolTable, currentSymbolTable)
-        functionIdentifier = new FUNCTION(identNode.getKey, funcType.getType(topSymbolTable, currentSymbolTable).asInstanceOf[TYPE], paramTypes = null)
+        functionIdentifier = new FUNCTION(identNode.getKey, funcType.getType(topSymbolTable, currentSymbolTable),
+                                          paramTypes = null)
         currentSymbolTable.add(identNode.getKey, functionIdentifier)
 
         symbolTableCreatorWrapper(_ => {
@@ -80,7 +81,8 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
           typeIdentifier.isInstanceOf[PAIR] && rhsType == GENERAL_PAIR ||
           typeIdentifier.isInstanceOf[ARRAY] && rhsType == GENERAL_ARRAY)) {
 
-          SemanticErrorLog.add(s"${getPos(token)} declaration for ${ident.getKey} failed, expected type ${typeIdentifier.getKey} " +
+          SemanticErrorLog.add(s"${getPos(token)} declaration for ${ident.getKey} " +
+            s"failed, expected type ${typeIdentifier.getKey} " +
             s"but got type ${rhs.getType(topSymbolTable, currentSymbolTable).getKey} instead.")
         }
         if (currentSymbolTable.lookup(ident.getKey).isDefined) {
@@ -132,7 +134,8 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         if (currentFuncReturnType == null) {
           SemanticErrorLog.add(s"${getPos(token)} trying to global return on ${expr.toString}")
         } else if (exprType != null && exprType != currentFuncReturnType) {
-          SemanticErrorLog.add(s"${getPos(token)} expected retun type ${currentFuncReturnType.getKey} but got ${exprType.getKey}")
+          SemanticErrorLog.add(s"${getPos(token)} expected return " +
+                               s"type ${currentFuncReturnType.getKey} but got ${exprType.getKey}.")
         }
       }
 
@@ -166,7 +169,8 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         visit(statOne)
         visit(statTwo)
         if (statOne.isInstanceOf[ReturnNode]) {
-          SemanticErrorLog.add(s"${getPos(token)} return and exit statements may only be the last statement in a block")
+          SemanticErrorLog.add(s"${getPos(token)} return and exit statements " +
+                               s"may only be the last statement in a block.")
         }
     }
 
@@ -194,7 +198,8 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
           for (expr <- exprNodes) {
             val exprIdentifier = expr.getType(topSymbolTable, currentSymbolTable)
             if (exprIdentifier != firstIdentifier) {
-              SemanticErrorLog.add(s"${getPos(token)} expected type ${firstIdentifier.getKey} but got ${exprIdentifier.getKey}.")
+              SemanticErrorLog.add(s"${getPos(token)} expected type ${firstIdentifier.getKey} " +
+                                   s"but got ${exprIdentifier.getKey}.")
             }
           }
         }
@@ -206,7 +211,8 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         if (funcIdentifier.isEmpty)
           SemanticErrorLog.add(s"${getPos(token)} function ${identNode.getKey} not declared.")
         else if (argList.isDefined && funcIdentifier.get.paramTypes.length != argList.get.exprNodes.length){
-          SemanticErrorLog.add(s"${getPos(token)} function: ${identNode.getKey} expected ${funcIdentifier.get.paramTypes.length} " +
+          SemanticErrorLog.add(s"${getPos(token)} function: ${identNode.getKey} " +
+            s"expected ${funcIdentifier.get.paramTypes.length} " +
             s"arguments but got ${argList.get.exprNodes.length} arguments instead.")
         } else if (argList.isDefined){
           visit(argList.get)
@@ -251,7 +257,8 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
   }
 
   // Unary Operator Helpers
-  def unaryCheckerHelper(token: Token, expr: ExprNode, expectedIdentifier: IDENTIFIER, topSymbolTable: SymbolTable, ST: SymbolTable): Unit = {
+  def unaryCheckerHelper(token: Token, expr: ExprNode, expectedIdentifier: IDENTIFIER,
+                         topSymbolTable: SymbolTable, ST: SymbolTable): Unit = {
     visit(expr)
     val identifier: IDENTIFIER = expr.getType(topSymbolTable, currentSymbolTable)
     if (identifier != expectedIdentifier) {
@@ -268,13 +275,15 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
   // Binary Operator Helpers
   def comparatorsCheckerHelper(token: Token, argOne: ExprNode, argTwo: ExprNode,
-                               expectedIdentifier1: IDENTIFIER, expectedIdentifier2: IDENTIFIER, topSymbolTable: SymbolTable, ST: SymbolTable): Unit = {
+                               expectedIdentifier1: IDENTIFIER, expectedIdentifier2: IDENTIFIER,
+                               topSymbolTable: SymbolTable, ST: SymbolTable): Unit = {
     val argOneIdentifier: IDENTIFIER = argOne.getType(topSymbolTable, currentSymbolTable)
     val argTwoIdentifier: IDENTIFIER = argTwo.getType(topSymbolTable, currentSymbolTable)
     if (!((argOneIdentifier == expectedIdentifier1 || argOneIdentifier == expectedIdentifier2)
       && (argTwoIdentifier == expectedIdentifier1 || argTwoIdentifier == expectedIdentifier2))) {
-      SemanticErrorLog.add(s"${getPos(token)} expected input types ${expectedIdentifier1.getKey} or ${expectedIdentifier2.getKey}" +
-        s" but got ${argOneIdentifier.getKey} and ${argTwoIdentifier.getKey} instead.")
+      SemanticErrorLog.add(s"${getPos(token)} expected input types ${expectedIdentifier1.getKey} " +
+                           s"or ${expectedIdentifier2.getKey}" +
+                           s" but got ${argOneIdentifier.getKey} and ${argTwoIdentifier.getKey} instead.")
     }
   }
 
@@ -286,15 +295,18 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
     val argTwoIdentifier: IDENTIFIER = argTwo.getType(topSymbolTable, currentSymbolTable)
     if (argOneIdentifier == null || argTwoIdentifier == null){
       // If either identifier is null, dont check if they're equal to expected
-    } else if (expectedIdentifier1.isInstanceOf[PAIR] && expectedIdentifier2.isInstanceOf[PAIR]
-    && argOneIdentifier.isInstanceOf[PAIR] && argTwoIdentifier.isInstanceOf[PAIR]) {
-      // If all required areguments are of type pair then it's ok
-    } else if (expectedIdentifier1.isInstanceOf[ARRAY] && expectedIdentifier2.isInstanceOf[ARRAY]
-      && argOneIdentifier.isInstanceOf[ARRAY] && argTwoIdentifier.isInstanceOf[ARRAY]) {
+    } else expectedIdentifier1 match {
+      case _: PAIR if expectedIdentifier2.isInstanceOf[PAIR]
+                      && argOneIdentifier.isInstanceOf[PAIR] && argTwoIdentifier.isInstanceOf[PAIR] =>
+      // If all required arguments are of type pair then it's ok
+      case _: ARRAY if expectedIdentifier2.isInstanceOf[ARRAY]
+                       && argOneIdentifier.isInstanceOf[ARRAY] && argTwoIdentifier.isInstanceOf[ARRAY] =>
       // If all required arguments are of type array then it's ok
-    } else if (!(argOneIdentifier == expectedIdentifier1 && argTwoIdentifier == expectedIdentifier2)) {
-      SemanticErrorLog.add(s"${getPos(token)} expected input types ${expectedIdentifier1.getKey} and ${expectedIdentifier2.getKey}" +
-        s" but got ${argOneIdentifier.getKey} and ${argTwoIdentifier.getKey} instead.")
+      case _ => if (!(argOneIdentifier == expectedIdentifier1 && argTwoIdentifier == expectedIdentifier2)) {
+        SemanticErrorLog.add(s"${getPos(token)} expected input types" +
+                             s" ${expectedIdentifier1.getKey} and ${expectedIdentifier2.getKey}" +
+                             s" but got ${argOneIdentifier.getKey} and ${argTwoIdentifier.getKey} instead.")
+      }
     }
   }
 
@@ -306,7 +318,8 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
     for (expr <- exprNodes) visit(expr)
     // Check ident type is an array
     if (!identIdentifier.isInstanceOf[ARRAY]) {
-      SemanticErrorLog.add(s"${getPos(token)} expected array type for ${identNode.toString} but got ${identIdentifier.getKey} instead.")
+      SemanticErrorLog.add(s"${getPos(token)} expected array type for " +
+                           s"${identNode.toString} but got ${identIdentifier.getKey} instead.")
     } else {
       // Check that number of depths is valid
       var currentDepthType: TYPE = identIdentifier
