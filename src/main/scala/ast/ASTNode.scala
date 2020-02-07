@@ -213,7 +213,7 @@ case class ArrayLiteralNode(exprNodes: IndexedSeq[ExprNode]) extends AssignRHSNo
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
     val arrayIdentifierOption: Option[IDENTIFIER] = topST.lookup(getKey)
     if (arrayIdentifierOption.isEmpty) {
-      val arrayIdentifier = new ARRAY(getKey, exprNodes.apply(0).getType(topST, ST).asInstanceOf[TYPE])
+      val arrayIdentifier = new ARRAY(getKey, exprNodes.apply(0).getType(topST, ST))
       topST.add(getKey, arrayIdentifier)
       arrayIdentifier
     } else {

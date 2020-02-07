@@ -53,8 +53,8 @@ case class ArrayTypeNode(typeNode: TypeNode) extends TypeNode with PairElemTypeN
   override def initType(topST: SymbolTable, ST: SymbolTable): _root_.ast.TYPE = {
     val T: Option[IDENTIFIER] = topST.lookup(getKey)
     if (T.isEmpty) {
-      val arrayIdentifier = new ARRAY(getKey, typeNode.getType(topST, ST).asInstanceOf[TYPE])
-      topST.add(toString, arrayIdentifier)
+      val arrayIdentifier: TYPE = new ARRAY(getKey, typeNode.getType(topST, ST))
+      topST.add(getKey, arrayIdentifier)
       arrayIdentifier
     } else {
       assert(T.get.isInstanceOf[ARRAY], s"Something went wrong... $getKey should be a type but isn't")
