@@ -58,11 +58,11 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
         // If the type and the rhs don't match, throw exception
         if (typeIdentifier != rhs.getType(topSymbolTable, currentSymbolTable)) {
-          SemanticErrorLog.add(typeIdentifier.getKey + " expected but got " + rhs.getType(topSymbolTable, currentSymbolTable).getKey)
+          SemanticErrorLog.add(s"Declaration failed, ${typeIdentifier.getKey} expected but got ${rhs.getType(topSymbolTable, currentSymbolTable).getKey}")
         }
         if (currentSymbolTable.lookup(ident.getKey).isDefined) {
           // If variable is already defined log error
-          SemanticErrorLog.add(s"${ident.getKey} has already been declared.")
+          SemanticErrorLog.add(s"Declaration failed, ${ident.getKey} has already been declared.")
         } else {
           currentSymbolTable.add(ident.getKey, new VARIABLE(ident.getKey, typeIdentifier.asInstanceOf[TYPE]))
         }
@@ -72,7 +72,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         visit(rhs)
 
         if (lhs.getType(topSymbolTable, currentSymbolTable) != rhs.getType(topSymbolTable, currentSymbolTable)) {
-          SemanticErrorLog.add(s"${lhs.getKey} and ${rhs.getKey} have non-matching types.")
+          SemanticErrorLog.add(s"Assignment failed, ${lhs.getKey} and ${rhs.getKey} have non-matching types.")
         }
 
       case ReadNode(lhs) =>
@@ -80,7 +80,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
         if (!(lhs.getType(topSymbolTable, currentSymbolTable) == IntTypeNode.getType(topSymbolTable, currentSymbolTable)
           || lhs.getType(topSymbolTable, currentSymbolTable) == CharTypeNode.getType(topSymbolTable, currentSymbolTable))) {
-          SemanticErrorLog.add(s"${lhs.getKey} must be either a character or an integer.")
+          SemanticErrorLog.add(s"Cannot read ${lhs.getKey}, it must be either a character or an integer.")
         }
 
       case FreeNode(expr) =>
@@ -90,7 +90,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
         if (!(exprIdentifier.isInstanceOf[PAIR] || exprIdentifier == GENERAL_PAIR) ||
           !exprIdentifier.isInstanceOf[ARRAY]) {
-          SemanticErrorLog.add(s"${expr.getKey} must be a pair or an array.")
+          SemanticErrorLog.add(s"Cannot free ${expr.getKey}, it must be a pair or an array.")
         }
 
       // TODO: Check that return statement is present in body of non-main function.
@@ -104,7 +104,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         val exprIdentifier = expr.getType(topSymbolTable, currentSymbolTable)
 
         if (!(exprIdentifier == IntTypeNode.getType(topSymbolTable, currentSymbolTable))) {
-          SemanticErrorLog.add(s"${expr.getKey} must be an integer.")
+          SemanticErrorLog.add(s"Cannot exit with ${expr.getKey}, it must be an integer.")
         }
 
       case PrintNode(expr) => visit(expr)
