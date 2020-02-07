@@ -60,7 +60,11 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
         // If the type and the rhs don't match, throw exception
         val rhsType = rhs.getType(topSymbolTable, currentSymbolTable)
-        if (! (typeIdentifier == rhsType || (typeIdentifier.isInstanceOf[PAIR] && rhsType == GENERAL_PAIR))) {
+        // If types are not the same, or the rhs is not a general identifier for pair and array respectively
+        if (! (typeIdentifier == rhsType ||
+          typeIdentifier.isInstanceOf[PAIR] && rhsType == GENERAL_PAIR ||
+          typeIdentifier.isInstanceOf[ARRAY] && rhsType == GENERAL_ARRAY)) {
+
           SemanticErrorLog.add(s"Declaration for ${ident.getKey} failed, expected type ${typeIdentifier.getKey} " +
             s"but got type ${rhs.getType(topSymbolTable, currentSymbolTable).getKey} instead.")
         }
@@ -168,11 +172,13 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
     case assignRHSNode: AssignRHSNode => assignRHSNode match {
       case exprNode: ExprNode => exprNodeCheckerHelper(exprNode)
       case ArrayLiteralNode(exprNodes) =>
-        val firstIdentifier: IDENTIFIER = exprNodes.apply(0).getType(topSymbolTable, currentSymbolTable)
-        for (expr <- exprNodes) {
-          val exprIdentifier = expr.getType(topSymbolTable, currentSymbolTable)
-          if (exprIdentifier != firstIdentifier) {
-            SemanticErrorLog.add(s"Expected type ${firstIdentifier.getKey} but got ${exprIdentifier.getKey}.")
+        if (! exprNodes.isEmpty) {
+          val firstIdentifier: IDENTIFIER = exprNodes.apply(0).getType(topSymbolTable, currentSymbolTable)
+          for (expr <- exprNodes) {
+            val exprIdentifier = expr.getType(topSymbolTable, currentSymbolTable)
+            if (exprIdentifier != firstIdentifier) {
+              SemanticErrorLog.add(s"Expected type ${firstIdentifier.getKey} but got ${exprIdentifier.getKey}.")
+            }
           }
         }
       case NewPairNode(fstElem, sndElem) =>

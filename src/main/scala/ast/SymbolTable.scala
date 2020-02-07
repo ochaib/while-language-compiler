@@ -63,7 +63,8 @@ object SymbolTable {
       charKey -> charScalar,
       boolKey -> new SCALAR(boolKey, min=0, max=1),
       stringKey -> new ARRAY(stringKey, charScalar),
-      GENERAL_PAIR.getKey -> GENERAL_PAIR))
+      GENERAL_PAIR.getKey -> GENERAL_PAIR,
+      GENERAL_ARRAY.getKey -> GENERAL_ARRAY))
 
   }
 
