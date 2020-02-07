@@ -104,7 +104,7 @@ trait PairElemTypeNode extends ASTNode with Identifiable {
 class PairElemTypePairNode(token: Token) extends ASTNode(token) with PairElemTypeNode {
   override def initKey: String = GENERAL_PAIR.getKey
 
-  override def initType(topST: SymbolTable, ST: SymbolTable): _root_.ast.TYPE = {
+  override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
     val generalPairIdentifierOption: Option[IDENTIFIER] = topST.lookup(getKey)
     assert(generalPairIdentifierOption.isDefined && generalPairIdentifierOption.get == GENERAL_PAIR,
       "Something went wrong, the general pair was not defined")
