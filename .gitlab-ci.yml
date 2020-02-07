@@ -31,7 +31,7 @@ before_script:
 build:
   stage: build
   script:
-    - docker build --pull --cache-from $CONTAINER_TEST_IMAGE -t $CONTAINER_TEST_IMAGE .
+    - docker build --cache-from $CONTAINER_TEST_IMAGE -t $CONTAINER_TEST_IMAGE .
     - docker push $CONTAINER_TEST_IMAGE
 
 test:
