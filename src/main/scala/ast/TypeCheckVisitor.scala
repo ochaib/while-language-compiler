@@ -94,9 +94,18 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
       case AssignmentNode(lhs, rhs) =>
         visit(lhs)
         visit(rhs)
+        val lhsType = lhs.getType(topSymbolTable, currentSymbolTable)
+        val rhsType = rhs.getType(topSymbolTable, currentSymbolTable)
 
-        if (lhs.getType(topSymbolTable, currentSymbolTable) != rhs.getType(topSymbolTable, currentSymbolTable)) {
+        if (lhsType != rhsType) {
           SemanticErrorLog.add(s"Assignment failed, ${lhs.getKey} and ${rhs.getKey} have non-matching types.")
+        } else if (! (lhsType == rhsType ||
+          lhsType.isInstanceOf[PAIR] && rhsType == GENERAL_PAIR ||
+          lhsType.isInstanceOf[ARRAY] && rhsType == GENERAL_ARRAY)) {
+
+          SemanticErrorLog.add(s"Assignment for ${lhs.getKey} to ${rhs.getKey} failed, " +
+            s"expected type ${lhsType.getKey} "
+            + s"but got type ${rhsType.getKey} instead.")
         }
 
       case ReadNode(lhs) =>
