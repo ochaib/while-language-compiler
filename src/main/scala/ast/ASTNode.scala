@@ -222,6 +222,30 @@ case class IdentNode(ident: String) extends ExprNode with AssignLHSNode {
 }
 
 case class ArrayElemNode(identNode: IdentNode, exprNodes: IndexedSeq[ExprNode]) extends ExprNode with AssignLHSNode {
+  var innerMostKey = null
+  override def initKey: String = {
+    assert(identNode._type != null, "IdentNode needs _type to be defined to be referred to")
+    assert(identNode._type.isInstanceOf[ARRAY], "IdentNode's type needs to be ARRAY")
+    var currentDepthType: ARRAY = identNode._type.asInstanceOf[ARRAY]
+    var key: String = currentDepthType.getKey
+    for(_ <- exprNodes.indices) {
+      assert(currentDepthType._type != null, "IdentNode needs _type to be defined to be referred to")
+      assert(currentDepthType._type.isInstanceOf[ARRAY], s"${currentDepthType.getKey} needs to be an array")
+      currentDepthType = currentDepthType._type.asInstanceOf[ARRAY]
+      key = currentDepthType.getKey
+    }
+    key
+  }
+
+  override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
+    var innermostType: TYPE = identNode.getType(topST, ST)
+    for (_ <- exprNodes.indices) {
+      if (! innermostType.isInstanceOf[ARRAY]) SemanticErrorLog.add(s"Array elem $toString refers to an undefined depth")
+      innermostType = innermostType.asInstanceOf[ARRAY]._type
+    }
+    innerMostKey = innermostType.getKey
+    innermostType
+  }
 
   override def toTreeString: String = {
     val exprs : String = exprNodes.map("[" + _.toString + "]").mkString("")

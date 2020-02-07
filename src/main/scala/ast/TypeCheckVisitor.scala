@@ -253,17 +253,29 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
   }
 
   def arrayElemCheckerHelper(identNode: IdentNode, exprNodes: IndexedSeq[ExprNode]): Unit = {
+    // Check identifier has been defined
     visit(identNode)
-    val identIdentifier: IDENTIFIER = identNode.getType(topSymbolTable, currentSymbolTable)
+    val identIdentifier: TYPE = identNode.getType(topSymbolTable, currentSymbolTable)
+    // Check all indices evaluate to any type
     for (expr <- exprNodes) visit(expr)
+    // Check ident type is an array
     if (!identIdentifier.isInstanceOf[ARRAY]) {
-      SemanticErrorLog.add(s"Expected array type but got ${identIdentifier.getKey} instead.")
+      SemanticErrorLog.add(s"Expected array type for ${identNode.toString} but got ${identIdentifier.getKey} instead.")
     } else {
-      val identArrayType: IDENTIFIER = identIdentifier.asInstanceOf[ARRAY]._type
+      // Check that number of depths is valid
+      var currentDepthType: TYPE = identIdentifier
+      for (_ <- exprNodes.indices) {
+        if (! currentDepthType.isInstanceOf[ARRAY]){
+          SemanticErrorLog.add(s"Trying to access lower dimensions but ${identNode.toString}" +
+            s" has less than ${exprNodes.length} dimensions")
+        }
+        currentDepthType = currentDepthType.asInstanceOf[ARRAY]._type
+      }
+      // Check if all expressions evaluate to an int
       for (expr <- exprNodes) {
-        val exprIdentifier: IDENTIFIER = expr.getType(topSymbolTable, currentSymbolTable)
-        if (exprIdentifier != identArrayType) {
-          SemanticErrorLog.add(s"Expected ${identArrayType.getKey} but got ${exprIdentifier.getKey} instead.")
+        val exprIdentifier: TYPE = expr.getType(topSymbolTable, currentSymbolTable)
+        if (exprIdentifier != IntTypeNode.getType(topSymbolTable, currentSymbolTable)) {
+          SemanticErrorLog.add(s"Expected index value but got ${exprIdentifier.getKey} instead.")
         }
       }
     }
@@ -330,7 +342,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
   def symbolTableCreatorWrapper(contents: Unit => Unit): Unit = {
     // Prepare to visit stat by creating new symbol table
     currentSymbolTable = SymbolTable.newSymbolTable(currentSymbolTable)
-    contents.apply()
+    contents.apply(_)
     // Exit symbol table
     currentSymbolTable = currentSymbolTable.encSymbolTable
 
