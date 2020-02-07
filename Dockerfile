@@ -9,7 +9,7 @@ RUN apt-get install -y apt-transport-https ca-certificates
 RUN apt-get install -y software-properties-common
 
 # Install essential build tools incl. make
-RUN apt install build-essential checkinstall -y --no-install-recommends
+RUN apt install build-essential -y --no-install-recommends
 RUN apt install -y libreadline-gplv2-dev libncursesw5-dev libssl-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev
 RUN apt-get update
 RUN apt-get upgrade -y
