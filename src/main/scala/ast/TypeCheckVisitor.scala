@@ -108,10 +108,6 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
           SemanticErrorLog.add(s"Cannot free ${expr.getKey}, it must be a pair or an array.")
         }
 
-      // TODO: Check that return statement is present in body of non-main function.
-      // TODO: Check that the type of expression given to the return statement must
-      // TODO: match the return type of the expression.
-
       case ReturnNode(expr) => {
         visit(expr)
         val exprType = expr.getType(topSymbolTable, currentSymbolTable)
