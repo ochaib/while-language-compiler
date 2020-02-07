@@ -48,6 +48,7 @@ case class ParamNode(paramType: TypeNode, identNode: IdentNode) extends ASTNode 
     paramType.getType(topST, ST)
     if (ST.lookup(identNode.getKey).isDefined) {
       // If variable is already defined throw exception
+      // Can't change this exception a log because a TYPE would need to be returned.
       throw new TypeException(s"${identNode.getKey} has already been declared")
     } else {
       val paramIdentifier: PARAM = new PARAM(identNode.getKey, paramType.getType(topST, ST).asInstanceOf[TYPE])
@@ -130,7 +131,7 @@ case class CallNode(identNode: IdentNode, argList: Option[ArgListNode]) extends 
   }
 }
 
-case class ArgListNode(val exprNodes: IndexedSeq[ExprNode]) extends ASTNode {
+case class ArgListNode(exprNodes: IndexedSeq[ExprNode]) extends ASTNode {
   override def toTreeString: String = exprNodes.map(_.toString).mkString(", ")
 }
 
