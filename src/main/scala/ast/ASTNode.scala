@@ -206,8 +206,10 @@ case class IdentNode(ident: String) extends ExprNode with AssignLHSNode {
 
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
     val T: Option[IDENTIFIER] = ST.lookupAll(getKey)
-    assert(T.isDefined, "Ident nodes must be visited before trying to get their types")
-    if (! T.get.isInstanceOf[VARIABLE]) {
+    if (T.isEmpty) {
+      SemanticErrorLog.add(s"$getKey has not been declared.")
+      null
+    } else if (! T.get.isInstanceOf[VARIABLE]) {
       assert(assertion = false, s"Something went wrong... $getKey should be a variable but isn't")
       null
     } else {
