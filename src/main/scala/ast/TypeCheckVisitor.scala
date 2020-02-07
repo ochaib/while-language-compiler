@@ -1,20 +1,29 @@
 package ast
 
-import util.SemanticErrorLog
+import util.{SemanticErrorLog, SyntaxErrorLog}
 
 import scala.collection.immutable.HashMap
 
 sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
   var topSymbolTable: SymbolTable = SymbolTable.topLevelSymbolTable(entryNode)
-  var currentSymbolTable: SymbolTable = SymbolTable.newSymbolTable(topSymbolTable)
+  var currentSymbolTable: SymbolTable = topSymbolTable
 
   override def visit(ASTNode: ASTNode): Unit = ASTNode match {
 
     // AST NODES
 
     case ProgramNode(functions, stat) =>
-      for (functionNode <- functions) visit(functionNode)
-      visit(stat)
+      for (functionNode <- functions) {
+        if (functionReturnsOrExits(functionNode.stat)) {
+          // Add to syntax error log.
+          SyntaxErrorLog.add(s"Function ${functionNode.identNode.toString} does not return or exit")
+        }
+        visit(functionNode)
+      }
+      if (functionReturnsOrExits(stat)) {
+        SyntaxErrorLog.add("Program statement does not return or exit.")
+      }
+      symbolTableCreatorWrapper(_ => visit(stat))
 
     case FuncNode(funcType, identNode, paramList: Option[ParamListNode], stat: StatNode) =>
       visit(funcType)
@@ -26,18 +35,14 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         functionIdentifier = new FUNCTION(identNode.getKey, funcType.getType(topSymbolTable, currentSymbolTable).asInstanceOf[TYPE], paramTypes = null)
         currentSymbolTable.add(identNode.getKey, functionIdentifier)
 
-      // Prepare to visit stat by creating new symbol table
-      currentSymbolTable = SymbolTable.newSymbolTable(currentSymbolTable)
-      // Missing: link symbol table to function?
-      if (paramList.isDefined) {
-        // implicitly adds identifiers to the symbol table
-        functionIdentifier.paramTypes = paramList.get.getIdentifierList(topSymbolTable, currentSymbolTable)
-        visit(paramList.get)
-      }
-
-      visit(stat)
-      // Exit symbol table
-      currentSymbolTable = currentSymbolTable.encSymbolTable
+      symbolTableCreatorWrapper(_ => {
+        // Missing: link symbol table to function?
+        if (paramList.isDefined) {
+          // implicitly adds identifiers to the symbol table
+          functionIdentifier.paramTypes = paramList.get.getIdentifierList(topSymbolTable, currentSymbolTable)
+          visit(paramList.get)
+        }
+        visit(stat)})
 
     case ParamListNode(paramNodeList) => for (paramNode <- paramNodeList) visit(paramNode)
 
@@ -59,9 +64,14 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         visit(rhs)
 
         // If the type and the rhs don't match, throw exception
-        if (typeIdentifier != rhs.getType(topSymbolTable, currentSymbolTable)) {
-          SemanticErrorLog.add(s"Declaration failed, expected type ${typeIdentifier.getKey} " +
-            s"but got type ${rhs.getType(topSymbolTable, currentSymbolTable).getKey}.")
+        val rhsType = rhs.getType(topSymbolTable, currentSymbolTable)
+        // If types are not the same, or the rhs is not a general identifier for pair and array respectively
+        if (! (typeIdentifier == rhsType ||
+          typeIdentifier.isInstanceOf[PAIR] && rhsType == GENERAL_PAIR ||
+          typeIdentifier.isInstanceOf[ARRAY] && rhsType == GENERAL_ARRAY)) {
+
+          SemanticErrorLog.add(s"Declaration for ${ident.getKey} failed, expected type ${typeIdentifier.getKey} " +
+            s"but got type ${rhs.getType(topSymbolTable, currentSymbolTable).getKey} instead.")
         }
         if (currentSymbolTable.lookup(ident.getKey).isDefined) {
           // If variable is already defined log error
@@ -91,8 +101,8 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
         val exprIdentifier = expr.getType(topSymbolTable, currentSymbolTable)
 
-        if (!(exprIdentifier.isInstanceOf[PAIR] || exprIdentifier == GENERAL_PAIR) ||
-          !exprIdentifier.isInstanceOf[ARRAY]) {
+        if (!(exprIdentifier.isInstanceOf[PAIR] || exprIdentifier == GENERAL_PAIR ||
+          exprIdentifier.isInstanceOf[ARRAY])) {
           SemanticErrorLog.add(s"Cannot free ${expr.getKey}, it must be a pair or an array.")
         }
 
@@ -117,35 +127,20 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
       case IfNode(conditionExpr, thenStat, elseStat) =>
         conditionCheckerHelper(conditionExpr)
 
-        // Prepare to visit stat by creating new symbol table
-        currentSymbolTable = SymbolTable.newSymbolTable(currentSymbolTable)
-        visit(thenStat)
-        // Exit symbol table
-        currentSymbolTable = currentSymbolTable.encSymbolTable
-        // Prepare to visit stat by creating new symbol table
-        currentSymbolTable = SymbolTable.newSymbolTable(currentSymbolTable)
-        visit(elseStat)
-        // Exit symbol table
-        currentSymbolTable = currentSymbolTable.encSymbolTable
-
+        symbolTableCreatorWrapper(_ => visit(thenStat))
+        symbolTableCreatorWrapper(_ => visit(elseStat))
 
       case WhileNode(expr, stat) =>
         conditionCheckerHelper(expr)
         // Prepare to visit stat by creating new symbol table
-        currentSymbolTable = SymbolTable.newSymbolTable(currentSymbolTable)
-        visit(stat)
-        // Exit symbol table
-        currentSymbolTable = currentSymbolTable.encSymbolTable
+        symbolTableCreatorWrapper(_ => visit(stat))
 
-      case BeginNode(stat) => visit(stat)
+      case BeginNode(stat) => symbolTableCreatorWrapper(_ => visit(stat))
 
       case SequenceNode(statOne, statTwo) =>
-        // Prepare to visit stat by creating new symbol table
-//        currentSymbolTable = SymbolTable.newSymbolTable(currentSymbolTable)
+        // TODO optimise to halve visits
         visit(statOne)
         visit(statTwo)
-        // Exit symbol table
-//        currentSymbolTable = currentSymbolTable.encSymbolTable
     }
 
     // AssignLHSNodes
@@ -167,11 +162,13 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
     case assignRHSNode: AssignRHSNode => assignRHSNode match {
       case exprNode: ExprNode => exprNodeCheckerHelper(exprNode)
       case ArrayLiteralNode(exprNodes) =>
-        val firstIdentifier: IDENTIFIER = exprNodes.apply(0).getType(topSymbolTable, currentSymbolTable)
-        for (expr <- exprNodes) {
-          val exprIdentifier = expr.getType(topSymbolTable, currentSymbolTable)
-          if (exprIdentifier != firstIdentifier) {
-            SemanticErrorLog.add(s"Expected type ${firstIdentifier.getKey} but got ${exprIdentifier.getKey}.")
+        if (exprNodes.nonEmpty) {
+          val firstIdentifier: IDENTIFIER = exprNodes.apply(0).getType(topSymbolTable, currentSymbolTable)
+          for (expr <- exprNodes) {
+            val exprIdentifier = expr.getType(topSymbolTable, currentSymbolTable)
+            if (exprIdentifier != firstIdentifier) {
+              SemanticErrorLog.add(s"Expected type ${firstIdentifier.getKey} but got ${exprIdentifier.getKey}.")
+            }
           }
         }
       case NewPairNode(fstElem, sndElem) =>
@@ -225,9 +222,10 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
   }
 
   // Unary Operator Helpers
-  def checkHelper(expr: ExprNode, expectedIdentifier: String, topSymbolTable: SymbolTable, ST: SymbolTable): Unit = {
+  def unaryCheckerHelper(expr: ExprNode, expectedIdentifier: IDENTIFIER, topSymbolTable: SymbolTable, ST: SymbolTable): Unit = {
+    visit(expr)
     val identifier: IDENTIFIER = expr.getType(topSymbolTable, currentSymbolTable)
-    if (identifier != topSymbolTable.lookup(expectedIdentifier).get) {
+    if (identifier != expectedIdentifier) {
       SemanticErrorLog.add(s"Expected $expectedIdentifier but got $identifier.")
     }
   }
@@ -300,11 +298,11 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
     case unary: UnaryOperationNode => unary match {
 
-      case LogicalNotNode(expr: ExprNode) => checkHelper(expr, "bool", topSymbolTable, currentSymbolTable)
-      case NegateNode(expr: ExprNode) => checkHelper(expr, "int", topSymbolTable, currentSymbolTable)
+      case LogicalNotNode(expr: ExprNode) => unaryCheckerHelper(expr, BoolTypeNode.getType(topSymbolTable, currentSymbolTable), topSymbolTable, currentSymbolTable)
+      case NegateNode(expr: ExprNode) => unaryCheckerHelper(expr, IntTypeNode.getType(topSymbolTable, currentSymbolTable), topSymbolTable, currentSymbolTable)
       case LenNode(expr: ExprNode) => lenHelper(expr, topSymbolTable, currentSymbolTable)
-      case OrdNode(expr: ExprNode) => checkHelper(expr, "char", topSymbolTable, currentSymbolTable)
-      case ChrNode(expr: ExprNode) => checkHelper(expr, "int", topSymbolTable, currentSymbolTable)
+      case OrdNode(expr: ExprNode) => unaryCheckerHelper(expr, CharTypeNode.getType(topSymbolTable, currentSymbolTable), topSymbolTable, currentSymbolTable)
+      case ChrNode(expr: ExprNode) => unaryCheckerHelper(expr, IntTypeNode.getType(topSymbolTable, currentSymbolTable), topSymbolTable, currentSymbolTable)
 
     }
 
@@ -337,5 +335,35 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
     case Str_literNode(_) =>
     case Pair_literNode =>
   }
+
+  def symbolTableCreatorWrapper(contents: Unit => Unit): Unit = {
+    // Prepare to visit stat by creating new symbol table
+    currentSymbolTable = SymbolTable.newSymbolTable(currentSymbolTable)
+    contents.apply()
+    // Exit symbol table
+    currentSymbolTable = currentSymbolTable.encSymbolTable
+
+  }
+
+  // Helper function to check that function has a return or an exit, otherwise syntax error.
+  def functionReturnsOrExits(statNode: StatNode): Boolean = {
+    statNode match {
+      case exitNode: ExitNode =>
+        true
+      case returnNode: ReturnNode =>
+        true
+      case ifNode: IfNode =>
+        functionReturnsOrExits(ifNode.thenStat) && functionReturnsOrExits(ifNode.elseStat)
+      case whileNode: WhileNode =>
+        functionReturnsOrExits(whileNode.stat)
+      case beginNode: BeginNode =>
+        functionReturnsOrExits(beginNode.stat)
+      case sequenceNode: SequenceNode =>
+        functionReturnsOrExits(sequenceNode.statOne) && functionReturnsOrExits(sequenceNode.statTwo)
+      case _ =>
+        false
+    }
+  }
+
 }
 

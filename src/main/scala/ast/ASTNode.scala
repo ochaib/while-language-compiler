@@ -234,6 +234,7 @@ case class ArrayLiteralNode(exprNodes: IndexedSeq[ExprNode]) extends AssignRHSNo
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
     val arrayIdentifierOption: Option[IDENTIFIER] = topST.lookup(getKey)
     if (arrayIdentifierOption.isEmpty) {
+      assert(! exprNodes.isEmpty, "General Array needs to be defined in the top level symbol table")
       val arrayIdentifier = new ARRAY(getKey, exprNodes.apply(0).getType(topST, ST))
       topST.add(getKey, arrayIdentifier)
       arrayIdentifier
@@ -246,5 +247,5 @@ case class ArrayLiteralNode(exprNodes: IndexedSeq[ExprNode]) extends AssignRHSNo
 
   override def toTreeString: String = "[" + exprNodes.map(_.toString).mkString(", ") + "]"
 
-  override def initKey: String = exprNodes.apply(0).getKey + "[]"
+  override def initKey: String = if (!exprNodes.isEmpty) exprNodes.apply(0).getKey + "[]" else "[]"
 }
