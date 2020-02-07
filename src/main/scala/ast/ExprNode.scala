@@ -9,8 +9,6 @@ abstract class ExprNode extends AssignRHSNode {
     case Bool_literNode(_) => BoolTypeNode.getType(topST, ST)
     case Char_literNode(_) => CharTypeNode.getType(topST, ST)
     case Str_literNode(_) => StringTypeNode.getType(topST, ST)
-    case _ => assert(false, "No initType function provided")
-      _
   }
 
   override def initKey: String = this match {
@@ -18,8 +16,6 @@ abstract class ExprNode extends AssignRHSNode {
     case Bool_literNode(_) => BoolTypeNode.getKey
     case Char_literNode(_) => CharTypeNode.getKey
     case Str_literNode(_) => StringTypeNode.getKey
-    case _ => assert(false, "No initKey function provided")
-      _
   }
 
   override def toTreeString: String = console.color("<EXPR>", fg=Console.RED)
