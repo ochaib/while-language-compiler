@@ -53,8 +53,8 @@ case class ArrayTypeNode(typeNode: TypeNode) extends TypeNode with PairElemTypeN
   override def initType(topST: SymbolTable, ST: SymbolTable): _root_.ast.TYPE = {
     val T: Option[IDENTIFIER] = topST.lookup(getKey)
     if (T.isEmpty) {
-      val arrayIdentifier = new ARRAY(getKey, typeNode.getType(topST, ST).asInstanceOf[TYPE])
-      topST.add(toString, arrayIdentifier)
+      val arrayIdentifier: TYPE = new ARRAY(getKey, typeNode.getType(topST, ST))
+      topST.add(getKey, arrayIdentifier)
       arrayIdentifier
     } else {
       assert(T.get.isInstanceOf[ARRAY], s"Something went wrong... $getKey should be a type but isn't")
@@ -67,7 +67,7 @@ case class ArrayTypeNode(typeNode: TypeNode) extends TypeNode with PairElemTypeN
 
 case class PairTypeNode(firstPairElem: PairElemTypeNode, secondPairElem: PairElemTypeNode) extends TypeNode {
 
-  override def initKey: String = "pair (" + firstPairElem.getKey + "," + secondPairElem.getKey + ")"
+  override def initKey: String = "pair(" + firstPairElem.getKey + "," + secondPairElem.getKey + ")"
 
   override def initType(topST: SymbolTable, ST: SymbolTable): _root_.ast.TYPE = {
     val identifierLookupOption: Option[IDENTIFIER] = topST.lookup(getKey)
@@ -77,7 +77,9 @@ case class PairTypeNode(firstPairElem: PairElemTypeNode, secondPairElem: PairEle
       assert(firstPairIdentifier.isInstanceOf[TYPE],
         "Something went wrong, the first pair identifier was not an instance of TYPE")
       assert(secondPairIdentifier.isInstanceOf[TYPE], "Something went wrong, the second pair identifier was not an instance of TYPE")
-      new PAIR(getKey, firstPairIdentifier.asInstanceOf[TYPE], secondPairIdentifier.asInstanceOf[TYPE])
+      val pairIdentifier: PAIR = new PAIR(getKey, firstPairIdentifier.asInstanceOf[TYPE], secondPairIdentifier.asInstanceOf[TYPE])
+      topST.add(getKey, pairIdentifier)
+      pairIdentifier
     } else {
       val pairIdentifier = identifierLookupOption.get
       assert(pairIdentifier.isInstanceOf[PAIR], s"Expected pair type but got $getKey instead")

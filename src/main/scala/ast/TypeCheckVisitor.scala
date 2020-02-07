@@ -21,7 +21,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
       var functionIdentifier: FUNCTION = null
       // check identNode is already defined
       if (currentSymbolTable.lookupFun(identNode.getKey).isDefined)
-        throw new TypeException(s"Tried to define function: ${identNode.getKey} but it was already declared")
+        SemanticErrorLog.add(s"Tried to define function: ${identNode.getKey} but it was already declared.")
       else
         functionIdentifier = new FUNCTION(identNode.getKey, funcType.getType(topSymbolTable, currentSymbolTable).asInstanceOf[TYPE], paramTypes = null)
         currentSymbolTable.add(identNode.getKey, functionIdentifier)
@@ -29,10 +29,11 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
       // Prepare to visit stat by creating new symbol table
       currentSymbolTable = SymbolTable.newSymbolTable(currentSymbolTable)
       // Missing: link symbol table to function?
-      if (paramList.isDefined)
+      if (paramList.isDefined) {
         // implicitly adds identifiers to the symbol table
         functionIdentifier.paramTypes = paramList.get.getIdentifierList(topSymbolTable, currentSymbolTable)
         visit(paramList.get)
+      }
 
       visit(stat)
       // Exit symbol table
@@ -44,7 +45,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
       visit(paramType)
       val paramIdentifier: Option[IDENTIFIER] = currentSymbolTable.lookup(identNode.getKey)
       if (! (paramIdentifier.isDefined && paramIdentifier.get.isInstanceOf[PARAM]) ) {
-        throw new TypeException(s"Expected ${identNode.getKey} to refer to a parameter but it does not")
+        SemanticErrorLog.add(s"Expected ${identNode.getKey} to refer to a parameter but it does not.")
       }
 
     case statNode: StatNode => statNode match {
@@ -55,13 +56,13 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         val typeIdentifier: IDENTIFIER = _type.getType(topSymbolTable, currentSymbolTable)
         visit(rhs)
 
-        // If the type and the rhs dont match, throw exception
+        // If the type and the rhs don't match, throw exception
         if (typeIdentifier != rhs.getType(topSymbolTable, currentSymbolTable)) {
           SemanticErrorLog.add(typeIdentifier.getKey + " expected but got " + rhs.getType(topSymbolTable, currentSymbolTable).getKey)
         }
         if (currentSymbolTable.lookup(ident.getKey).isDefined) {
           // If variable is already defined log error
-          SemanticErrorLog.add(s"${ident.getKey} has already been declared")
+          SemanticErrorLog.add(s"${ident.getKey} has already been declared.")
         } else {
           currentSymbolTable.add(ident.getKey, new VARIABLE(ident.getKey, typeIdentifier.asInstanceOf[TYPE]))
         }
@@ -71,7 +72,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         visit(rhs)
 
         if (lhs.getType(topSymbolTable, currentSymbolTable) != rhs.getType(topSymbolTable, currentSymbolTable)) {
-          SemanticErrorLog.add(lhs.getKey + " and " + rhs.getKey + " have non-matching types")
+          SemanticErrorLog.add(lhs.getKey + " and " + rhs.getKey + " have non-matching types.")
         }
 
       case ReadNode(lhs) =>
@@ -104,7 +105,6 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
         if (!(exprIdentifier == IntTypeNode.getType(topSymbolTable, currentSymbolTable))) {
           SemanticErrorLog.add(s"${expr.getKey} must be an integer.")
-          throw new TypeException(s"Semantic Error: ${expr.getKey} must be an integer.")
         }
 
       case PrintNode(expr) => visit(expr)
@@ -145,9 +145,9 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
     case assignLHSNode: AssignLHSNode => assignLHSNode match {
 
-      case IdentNode(_) =>
+      case IdentNode(ident) =>
         if (currentSymbolTable.lookupAll(assignLHSNode.getKey).isEmpty) {
-          SemanticErrorLog.add(s"$toString has not been declared")
+          SemanticErrorLog.add(s"The identifier: $ident has not been declared.")
         }
 
       case ArrayElemNode(identNode, exprNodes) => arrayElemCheckerHelper(identNode, exprNodes)
@@ -164,7 +164,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         for (expr <- exprNodes) {
           val exprIdentifier = expr.getType(topSymbolTable, currentSymbolTable)
           if (exprIdentifier != firstIdentifier) {
-            SemanticErrorLog.add(s"Expected type ${firstIdentifier.getKey} but got ${exprIdentifier.getKey}")
+            SemanticErrorLog.add(s"Expected type ${firstIdentifier.getKey} but got ${exprIdentifier.getKey}.")
           }
         }
       case NewPairNode(fstElem, sndElem) =>
@@ -173,17 +173,17 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
       case CallNode(identNode, argList) => // TODO
         val funcIdentifier: Option[FUNCTION] = currentSymbolTable.lookupFunAll(identNode.getKey)
         if (funcIdentifier.isEmpty)
-          throw new TypeException(s"Function ${identNode.getKey} not declared")
+          SemanticErrorLog.add(s"Function ${identNode.getKey} not declared.")
         else if (argList.isDefined && funcIdentifier.get.paramTypes.length != argList.get.exprNodes.length){
-          throw new TypeException(s"Function expected ${funcIdentifier.get.paramTypes.length} arguments but got" +
-            s" ${argList.get.exprNodes.length} arguments instead")
+          SemanticErrorLog.add(s"Function: ${identNode.getKey} expected ${funcIdentifier.get.paramTypes.length} arguments but got" +
+            s" ${argList.get.exprNodes.length} arguments instead.")
         } else if (argList.isDefined){
           visit(argList.get)
           for (argIndex <- argList.get.exprNodes.indices) {
             val argType: TYPE = argList.get.exprNodes.apply(argIndex).getType(topSymbolTable, currentSymbolTable)
             val paramType: TYPE = funcIdentifier.get.paramTypes.apply(argIndex)
             if (argType != paramType) {
-              throw new TypeException(s"Expected type ${paramType.getKey} but got ${argType.getKey}")
+              SemanticErrorLog.add(s"Expected type ${paramType.getKey} but got ${argType.getKey}.")
             }
           }
           // funcObj = F in slides???
@@ -211,7 +211,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
   def pairElemNodeVisit(expr: ExprNode): Unit = {
     val pairIdentifier: IDENTIFIER = expr.getType(topSymbolTable, currentSymbolTable)
     if (! pairIdentifier.isInstanceOf[PAIR]) {
-      SemanticErrorLog.add("Expected pair type but got " + pairIdentifier)
+      SemanticErrorLog.add(s"Expected pair type but got $pairIdentifier.")
     } else {
       visit(expr)
     }
@@ -221,14 +221,14 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
   def checkHelper(expr: ExprNode, expectedIdentifier: String, topSymbolTable: SymbolTable, ST: SymbolTable): Unit = {
     val identifier: IDENTIFIER = expr.getType(topSymbolTable, currentSymbolTable)
     if (identifier != topSymbolTable.lookup(expectedIdentifier).get) {
-      SemanticErrorLog.add(s"Expected $expectedIdentifier but got $identifier")
+      SemanticErrorLog.add(s"Expected $expectedIdentifier but got $identifier.")
     }
   }
 
   def lenHelper(expr: ExprNode, topSymbolTable: SymbolTable, ST: SymbolTable): Unit = {
     val identifier: IDENTIFIER = expr.getType(topSymbolTable, currentSymbolTable)
     if (!identifier.isInstanceOf[ARRAY]) {
-      SemanticErrorLog.add("Expected an array but got " + identifier)
+      SemanticErrorLog.add(s"Expected an array but got $identifier.")
     }
   }
 
@@ -240,7 +240,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
     if (!((argOneIdentifier == expectedIdentifier1 || argOneIdentifier == expectedIdentifier2)
       && (argTwoIdentifier == expectedIdentifier1 || argTwoIdentifier == expectedIdentifier2))) {
       SemanticErrorLog.add(s"Expected input types ${expectedIdentifier1.getKey} or ${expectedIdentifier2.getKey}" +
-        s" but got ${argOneIdentifier.getKey} and ${argTwoIdentifier.getKey} instead")
+        s" but got ${argOneIdentifier.getKey} and ${argTwoIdentifier.getKey} instead.")
     }
   }
 
@@ -248,9 +248,11 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
                           expectedIdentifier2: IDENTIFIER, topSymbolTable: SymbolTable, ST: SymbolTable): Unit = {
     val argOneIdentifier: IDENTIFIER = argOne.getType(topSymbolTable, currentSymbolTable)
     val argTwoIdentifier: IDENTIFIER = argTwo.getType(topSymbolTable, currentSymbolTable)
+    visit(argOne)
+    visit(argTwo)
     if (!(argOneIdentifier == expectedIdentifier1 && argTwoIdentifier == expectedIdentifier2)) {
       SemanticErrorLog.add(s"Expected input types ${expectedIdentifier1.getKey} and ${expectedIdentifier2.getKey}" +
-        s" but got ${argOneIdentifier.getKey} and ${argTwoIdentifier.getKey} instead")
+        s" but got ${argOneIdentifier.getKey} and ${argTwoIdentifier.getKey} instead.")
     }
   }
 
@@ -275,8 +277,8 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
     visit(conditionExpr)
     val conditionIdentifier = conditionExpr.getType(topSymbolTable, currentSymbolTable)
 
-    if (!(conditionIdentifier == BoolTypeNode.getType(topSymbolTable, currentSymbolTable))) {
-      SemanticErrorLog.add(s"Semantic Error: ${conditionExpr.getKey} must evaluate to a boolean.")
+    if (conditionIdentifier != BoolTypeNode.getType(topSymbolTable, currentSymbolTable)) {
+      SemanticErrorLog.add(s"${conditionExpr.getKey} must evaluate to a boolean.")
     }
   }
 
