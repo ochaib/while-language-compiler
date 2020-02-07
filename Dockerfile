@@ -15,12 +15,15 @@ RUN apt-get update && apt-get upgrade -y && apt-get install wget gcc zlib1g-dev 
 RUN wget --quiet https://www.python.org/ftp/python/3.6.8/Python-3.6.8.tgz
 RUN tar zxf Python-3.6.8.tgz
 RUN cd Python-3.6.8 && ./configure && make && make install
+RUN cd ../ && rm -rf Python-3.6.8
 
-# Install SBT, from the official SBT installation instructions
-RUN echo "deb https://dl.bintray.com/sbt/debian /" | tee -a /etc/apt/sources.list.d/sbt.list
-RUN curl -sL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x2EE0EA64E40A89B84B2DF73499E82A75642AC823" | apt-key add
+# Install SBT, by downloading the deb and installing it manually
+# b/c the keyserver is unreliable as per SBT's own instructions
+RUN wget https://bintray.com/artifact/download/sbt/debian/sbt-1.3.7.deb
+RUN dpkg -i sbt-1.3.7.deb
 RUN apt-get update
 RUN apt-get install -y sbt
+RUN rm sbt-1.3.7.deb
 
 # Copy source files
 WORKDIR /usr/app
