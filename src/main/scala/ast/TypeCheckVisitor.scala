@@ -100,8 +100,8 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         if (lhsType == null || rhsType == null) {
 
         } else if (! (lhsType == rhsType ||
-          lhsType.isInstanceOf[PAIR] && rhsType == GENERAL_PAIR ||
-          lhsType.isInstanceOf[ARRAY] && rhsType == GENERAL_ARRAY)) {
+          lhsType.isInstanceOf[PAIR] && rhsType.isInstanceOf[PAIR] ||
+          lhsType.isInstanceOf[ARRAY] && rhsType.isInstanceOf[ARRAY])) {
 
           SemanticErrorLog.add(s"${getPos(token)} Assignment for ${lhs.getKey} to ${rhs.getKey} failed, " +
             s"expected type ${lhsType.getKey} "
@@ -213,7 +213,9 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
           for (argIndex <- argList.get.exprNodes.indices) {
             val argType: TYPE = argList.get.exprNodes.apply(argIndex).getType(topSymbolTable, currentSymbolTable)
             val paramType: TYPE = funcIdentifier.get.paramTypes.apply(argIndex)
-            if (argType != paramType) {
+            if (! (paramType == argType ||
+            paramType.isInstanceOf[PAIR] && argType == GENERAL_PAIR ||
+            paramType.isInstanceOf[ARRAY] && argType == GENERAL_ARRAY)) {
               SemanticErrorLog.add(s"${getPos(token)} expected type ${paramType.getKey} but got ${argType.getKey}.")
             }
           }
