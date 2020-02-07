@@ -277,7 +277,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
     visit(conditionExpr)
     val conditionIdentifier = conditionExpr.getType(topSymbolTable, currentSymbolTable)
 
-    if (!(conditionIdentifier == BoolTypeNode.getType(topSymbolTable, currentSymbolTable))) {
+    if (conditionIdentifier != BoolTypeNode.getType(topSymbolTable, currentSymbolTable)) {
       SemanticErrorLog.add(s"${conditionExpr.getKey} must evaluate to a boolean.")
     }
   }

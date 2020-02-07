@@ -118,8 +118,7 @@ case class CallNode(identNode: IdentNode, argList: Option[ArgListNode]) extends 
       SemanticErrorLog.add(s"$getKey has not been declared")
       null
     } else if (! F.get.isInstanceOf[FUNCTION]) {
-      // toString to getKey below???
-      assert(assertion = false, s"Something went wrong... $toString should be a function but isn't.")
+      assert(assertion = false, s"Something went wrong... $getKey should be a function but isn't.")
       null
     } else {
       F.get.returnType
@@ -208,12 +207,11 @@ case class IdentNode(ident: String) extends ExprNode with AssignLHSNode {
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
     val T: Option[IDENTIFIER] = ST.lookupAll(getKey)
     if (T.isEmpty) {
-      // toStrings should be getKeys in this?
-      SemanticErrorLog.add(s"$toString has not been declared.")
+      SemanticErrorLog.add(s"$getKey has not been declared.")
 //      "Semantic Error: Should not reach this."
       null
     } else if (! T.get.isInstanceOf[VARIABLE]) {
-      assert(assertion = false, s"Something went wrong... $toString should be a variable but isn't")
+      assert(assertion = false, s"Something went wrong... $getKey should be a variable but isn't")
       null
     } else {
       T.get.asInstanceOf[VARIABLE]._type
