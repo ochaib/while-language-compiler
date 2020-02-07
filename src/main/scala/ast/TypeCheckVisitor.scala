@@ -14,7 +14,8 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
     // AST NODES
 
     case ProgramNode(functions, stat) =>
-      for (functionNode <- functions) {
+      for (functionNode <- functions) visit(functionNode)
+/*      for (functionNode <- functions) {
         if (functionReturnsOrExits(functionNode.stat)) {
           // Add to syntax error log.
           SyntaxErrorLog.add(s"Function ${functionNode.identNode.getKey} does not return or exit")
@@ -23,7 +24,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
       }
       if (functionReturnsOrExits(stat)) {
         SyntaxErrorLog.add("Program statement does not return or exit.")
-      }
+      }*/
       symbolTableCreatorWrapper(_ => visit(stat))
 
     case FuncNode(funcType, identNode, paramList: Option[ParamListNode], stat: StatNode) =>
