@@ -1,5 +1,6 @@
-package ast
-import ast._
+package ast.visitors
+
+import ast.nodes._
 import antlr.{WACCLexer, WACCParser, WACCParserBaseVisitor}
 import org.antlr.v4.runtime._
 import util.SyntaxErrorLog

@@ -1,4 +1,6 @@
-package ast
+package ast.visitors
+
+import ast.nodes.ASTNode
 
 abstract class Visitor(entryNode: ASTNode) {
   def visit(tree: ASTNode): Unit

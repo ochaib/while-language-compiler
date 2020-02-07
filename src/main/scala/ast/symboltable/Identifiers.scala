@@ -1,4 +1,4 @@
-package ast
+package ast.symboltable
 
 // key denotes the unique name of the identifier in a symbol table
 abstract class IDENTIFIER(key: String) {

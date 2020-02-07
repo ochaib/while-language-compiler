@@ -1,5 +1,7 @@
-package ast
+package ast.visitors
 
+import ast.nodes._
+import ast.symboltable._
 import org.antlr.v4.runtime.Token
 import util.{SemanticErrorLog, SyntaxErrorLog}
 
