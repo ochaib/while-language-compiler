@@ -39,13 +39,13 @@ class SymbolTable(var map: Map[String, IDENTIFIER], var funcMap: Map[String, FUN
   }
 
   def lookupAll(name: String): Option[IDENTIFIER] = {
-    var s: Option[SymbolTable] = Some(this)
+    var s: Option[SymbolTable] = Option(this)
     while (s.isDefined) {
       val obj = s.get.lookup(name)
       if (obj.isDefined){
         return obj
       }
-      s = Some(s.get.encSymbolTable)
+      s = Option(s.get.encSymbolTable)
     }
     None
   }
