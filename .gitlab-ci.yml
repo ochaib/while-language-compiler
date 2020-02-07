@@ -22,6 +22,7 @@ variables:
   # TODO: should use tls
   DOCKER_TLS_CERTDIR: ""
   CONTAINER_TEST_IMAGE: gitlab.doc.ic.ac.uk:4567/lab1920_spring/wacc_11:wacc-frontend
+  DOCKER_DRIVER: overlay2
 
 # TODO: change these to environmental vars we shouldnt be exposing the deploy token
 before_script:
@@ -30,7 +31,7 @@ before_script:
 build:
   stage: build
   script:
-    - docker build --pull -t $CONTAINER_TEST_IMAGE .
+    - docker build --pull --cache-from $CONTAINER_TEST_IMAGE -t $CONTAINER_TEST_IMAGE .
     - docker push $CONTAINER_TEST_IMAGE
 
 test:
