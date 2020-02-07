@@ -29,10 +29,11 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
       // Prepare to visit stat by creating new symbol table
       currentSymbolTable = SymbolTable.newSymbolTable(currentSymbolTable)
       // Missing: link symbol table to function?
-      if (paramList.isDefined)
+      if (paramList.isDefined) {
         // implicitly adds identifiers to the symbol table
         functionIdentifier.paramTypes = paramList.get.getIdentifierList(topSymbolTable, currentSymbolTable)
         visit(paramList.get)
+      }
 
       visit(stat)
       // Exit symbol table
