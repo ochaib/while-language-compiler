@@ -1,32 +1,33 @@
 package ast
+import org.antlr.v4.runtime.Token
 
 import util.{ColoredConsole => console}
 
-abstract class ExprNode extends AssignRHSNode {
+abstract class ExprNode(token: Token) extends ASTNode(token) with AssignRHSNode {
 
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = this match {
-    case Int_literNode(_) => IntTypeNode.getType(topST, ST)
-    case Bool_literNode(_) => BoolTypeNode.getType(topST, ST)
-    case Char_literNode(_) => CharTypeNode.getType(topST, ST)
-    case Str_literNode(_) => StringTypeNode.getType(topST, ST)
+    case _: Int_literNode => new IntTypeNode(null).getType(topST, ST)
+    case _: Bool_literNode => new BoolTypeNode(null).getType(topST, ST)
+    case _: Char_literNode => new CharTypeNode(null).getType(topST, ST)
+    case _: Str_literNode => new StringTypeNode(null).getType(topST, ST)
   }
 
   override def initKey: String = this match {
-    case Int_literNode(_) => IntTypeNode.getKey
-    case Bool_literNode(_) => BoolTypeNode.getKey
-    case Char_literNode(_) => CharTypeNode.getKey
-    case Str_literNode(_) => StringTypeNode.getKey
+    case _: Int_literNode => new IntTypeNode(null).getKey
+    case _: Bool_literNode => new BoolTypeNode(null).getKey
+    case _: Char_literNode => new CharTypeNode(null).getKey
+    case _: Str_literNode => new StringTypeNode(null).getKey
   }
 
   override def toTreeString: String = console.color("<EXPR>", fg=Console.RED)
 }
 
-case class Int_literNode(num: String) extends ExprNode {
+case class Int_literNode(token: Token, num: String) extends ExprNode(token) {
 
   override def toTreeString: String = console.color(num.toString, fg=Console.MAGENTA)
 }
 
-case class Bool_literNode(value: Boolean) extends ExprNode {
+case class Bool_literNode(token: Token, value: Boolean) extends ExprNode(token) {
 
   override def toTreeString: String = if (value)
     console.color("true", fg=Console.MAGENTA)
@@ -34,17 +35,17 @@ case class Bool_literNode(value: Boolean) extends ExprNode {
 
 }
 
-case class Char_literNode(value: Char) extends ExprNode {
+case class Char_literNode(token: Token, value: Char) extends ExprNode(token) {
 
   override def toTreeString: String = console.color(s"'$value'", fg=Console.YELLOW)
 }
 
-case class Str_literNode(str: String) extends ExprNode {
+case class Str_literNode(token: Token, str: String) extends ExprNode(token) {
 
   override def toTreeString: String = console.color(str, fg=Console.YELLOW)
 }
 
-object Pair_literNode extends ExprNode {
+case class Pair_literNode(token: Token) extends ExprNode(token) {
 
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
     val T: Option[IDENTIFIER] = topST.lookup(getKey)
@@ -57,7 +58,7 @@ object Pair_literNode extends ExprNode {
   override def toTreeString: String = console.color("null", fg=Console.MAGENTA)
 }
 
-class ParenExprNode(expr: ExprNode) extends ExprNode {
+class ParenExprNode(token: Token, expr: ExprNode) extends ExprNode(token) {
 
   override def getType(topST: SymbolTable, ST: SymbolTable): TYPE = expr.getType(topST, ST)
 

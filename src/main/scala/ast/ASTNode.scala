@@ -1,15 +1,15 @@
 package ast
-
+import org.antlr.v4.runtime.Token
 import util.{SemanticErrorLog, ColoredConsole => console}
 
 // Every node necessary to generate AST. From the WACCLangSpec.
 
-class ASTNode {
+class ASTNode(token: Token) {
   def toTreeString: String = console.color("<NODE>", fg=Console.RED)
   override def toString: String = this.toTreeString
 }
 
-case class ProgramNode(functions: IndexedSeq[FuncNode], stat: StatNode) extends ASTNode {
+case class ProgramNode(token: Token, functions: IndexedSeq[FuncNode], stat: StatNode) extends ASTNode(token) {
 
   override def toTreeString: String = {
     val funcs : String = functions.map(_.toString).mkString("\n")
@@ -19,8 +19,8 @@ case class ProgramNode(functions: IndexedSeq[FuncNode], stat: StatNode) extends 
   }
 }
 
-case class FuncNode(funcType: TypeNode, identNode: IdentNode, paramList: Option[ParamListNode],
-                    stat: StatNode) extends ASTNode {
+case class FuncNode(token: Token, funcType: TypeNode, identNode: IdentNode, paramList: Option[ParamListNode],
+                    stat: StatNode) extends ASTNode(token) {
 
   override def toTreeString: String = paramList match {
     case Some(params) => s"${funcType.toString} ${identNode.toString} (${params.toString}) is\n${stat.toString}\nend"
@@ -28,7 +28,7 @@ case class FuncNode(funcType: TypeNode, identNode: IdentNode, paramList: Option[
   }
 }
 
-case class ParamListNode(paramList: IndexedSeq[ParamNode]) extends ASTNode {
+case class ParamListNode(token: Token, paramList: IndexedSeq[ParamNode]) extends ASTNode(token) {
 
   def getIdentifierList(topST: SymbolTable, ST: SymbolTable): IndexedSeq[TYPE] = {
     assert(paramList.nonEmpty, "Parameter lists have to be at least size 1")
@@ -42,7 +42,7 @@ case class ParamListNode(paramList: IndexedSeq[ParamNode]) extends ASTNode {
   override def toTreeString: String = paramList.map(_.toString).mkString(", ")
 }
 
-case class ParamNode(paramType: TypeNode, identNode: IdentNode) extends ASTNode with Identifiable {
+case class ParamNode(token: Token, paramType: TypeNode, identNode: IdentNode) extends ASTNode(token) with Identifiable {
 
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
     paramType.getType(topST, ST)
@@ -72,7 +72,7 @@ trait AssignRHSNode extends ASTNode with Identifiable {
   override def toTreeString: String = console.color("<RHS>", fg=Console.RED)
 }
 
-case class NewPairNode(fstElem: ExprNode, sndElem: ExprNode) extends AssignRHSNode {
+case class NewPairNode(token: Token, fstElem: ExprNode, sndElem: ExprNode) extends ASTNode(token) with AssignRHSNode {
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
     val newPairIdentifierLookup: Option[IDENTIFIER] = topST.lookup(getKey)
     if (newPairIdentifierLookup.isDefined) {
@@ -110,7 +110,7 @@ case class NewPairNode(fstElem: ExprNode, sndElem: ExprNode) extends AssignRHSNo
   override def toTreeString: String = console.color(s"newpair (${fstElem.toString}, ${sndElem.toString})", fg=Console.BLUE)
 }
 
-case class CallNode(identNode: IdentNode, argList: Option[ArgListNode]) extends AssignRHSNode {
+case class CallNode(token: Token, identNode: IdentNode, argList: Option[ArgListNode]) extends ASTNode(token) with AssignRHSNode {
 
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
     val F: Option[FUNCTION] = ST.lookupFunAll(getKey)
@@ -133,16 +133,16 @@ case class CallNode(identNode: IdentNode, argList: Option[ArgListNode]) extends 
   }
 }
 
-case class ArgListNode(exprNodes: IndexedSeq[ExprNode]) extends ASTNode {
+case class ArgListNode(token: Token, exprNodes: IndexedSeq[ExprNode]) extends ASTNode(token) {
   override def toTreeString: String = exprNodes.map(_.toString).mkString(", ")
 }
 
-abstract class PairElemNode(expr: ExprNode) extends ASTNode with AssignLHSNode with AssignRHSNode {
+abstract class PairElemNode(token: Token, expr: ExprNode) extends ASTNode(token) with AssignLHSNode with AssignRHSNode {
 
   override def toTreeString: String = console.color("<PAIR ELEM>", fg=Console.RED)
 }
 
-case class FstNode(expression: ExprNode) extends PairElemNode(expression) {
+case class FstNode(token: Token, expression: ExprNode) extends PairElemNode(token, expression) {
 
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
     val pairIdentifier: IDENTIFIER = expression.getType(topST, ST)
@@ -156,7 +156,7 @@ case class FstNode(expression: ExprNode) extends PairElemNode(expression) {
 
   override def initKey: String = {
     val exprKey: String = expression.getKey
-    if (expression == Pair_literNode) {
+    if (expression.isInstanceOf[Pair_literNode]) {
       // TODO in backend throw error
       SemanticErrorLog.add(s"Expected a pair type but got a null pair literal instead.")
       "Semantic Error: Should not reach this."
@@ -171,7 +171,7 @@ case class FstNode(expression: ExprNode) extends PairElemNode(expression) {
   override def toTreeString: String = console.color(s"fst ${expression.toString}", fg=Console.BLUE)
 }
 
-case class SndNode(expression: ExprNode) extends PairElemNode(expression) {
+case class SndNode(token: Token, expression: ExprNode) extends PairElemNode(token, expression) {
 
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
     val pairIdentifier: IDENTIFIER = expression.getType(topST, ST)
@@ -186,7 +186,7 @@ case class SndNode(expression: ExprNode) extends PairElemNode(expression) {
 
   override def initKey: String = {
     val exprKey: String = expression.getKey
-    if (expression == Pair_literNode) {
+    if (expression.isInstanceOf[Pair_literNode]) {
       // TODO in backend throw error
       SemanticErrorLog.add(s"Expected a pair type but got a null pair literal instead.")
       "Semantic Error: Should not reach this."
@@ -201,14 +201,14 @@ case class SndNode(expression: ExprNode) extends PairElemNode(expression) {
   override def toTreeString: String = console.color(s"snd ${expression.toString}", fg=Console.BLUE)
 }
 
-case class IdentNode(ident: String) extends ExprNode with AssignLHSNode {
+case class IdentNode(token: Token, ident: String) extends ExprNode(token) with AssignLHSNode {
   override def initKey: String = ident
 
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
     val T: Option[IDENTIFIER] = ST.lookupAll(getKey)
     if (T.isEmpty) {
       SemanticErrorLog.add(s"$getKey has not been declared, the current symbol table is empty.")
-//      "Semantic Error: Should not reach this."
+      // "Semantic Error: Should not reach this."
       null
     } else if (! T.get.isInstanceOf[VARIABLE]) {
       assert(assertion = false, s"Something went wrong... $getKey should be a variable but isn't")
@@ -221,7 +221,7 @@ case class IdentNode(ident: String) extends ExprNode with AssignLHSNode {
   override def toTreeString: String = console.color(ident, fg=Console.GREEN)
 }
 
-case class ArrayElemNode(identNode: IdentNode, exprNodes: IndexedSeq[ExprNode]) extends ExprNode with AssignLHSNode {
+case class ArrayElemNode(token: Token, identNode: IdentNode, exprNodes: IndexedSeq[ExprNode]) extends ExprNode(token) with AssignLHSNode {
 
   override def toTreeString: String = {
     val exprs : String = exprNodes.map("[" + _.toString + "]").mkString("")
@@ -229,7 +229,7 @@ case class ArrayElemNode(identNode: IdentNode, exprNodes: IndexedSeq[ExprNode]) 
   }
 }
 
-case class ArrayLiteralNode(exprNodes: IndexedSeq[ExprNode]) extends AssignRHSNode {
+case class ArrayLiteralNode(token: Token, exprNodes: IndexedSeq[ExprNode]) extends ASTNode(token) with AssignRHSNode {
 
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
     val arrayIdentifierOption: Option[IDENTIFIER] = topST.lookup(getKey)

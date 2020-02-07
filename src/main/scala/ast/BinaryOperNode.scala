@@ -1,21 +1,23 @@
 package ast
+import org.antlr.v4.runtime.Token
+
 import util.{ColoredConsole => console}
 
-sealed abstract class BinaryOperationNode(argOne: ExprNode, argTwo: ExprNode) extends ExprNode {
+sealed abstract class BinaryOperationNode(token: Token, argOne: ExprNode, argTwo: ExprNode) extends ExprNode(token) {
   override def getType(topST: SymbolTable, ST: SymbolTable): TYPE = this match {
-    case MultiplyNode(_,_)
-          | DivideNode(_, _)
-          | ModNode(_, _)
-          | PlusNode(_, _)
-          | MinusNode(_, _) => IntTypeNode.getType(topST, ST)
-    case GreaterThanNode(_, _)
-          | GreaterEqualNode(_, _)
-          | LessThanNode(_, _)
-          | LessEqualNode(_, _)
-          | EqualToNode(_, _)
-          | NotEqualNode(_, _)
-          | LogicalAndNode(_, _)
-          | LogicalOrNode(_, _) => BoolTypeNode.getType(topST, ST)
+    case MultiplyNode(_, _, _)
+          | DivideNode(_, _, _)
+          | ModNode(_, _, _)
+          | PlusNode(_, _, _)
+          | MinusNode(_, _, _) => new IntTypeNode(null).getType(topST, ST)
+    case GreaterThanNode(_, _, _)
+          | GreaterEqualNode(_, _, _)
+          | LessThanNode(_, _, _)
+          | LessEqualNode(_, _, _)
+          | EqualToNode(_, _, _)
+          | NotEqualNode(_, _, _)
+          | LogicalAndNode(_, _, _)
+          | LogicalOrNode(_, _, _) => new BoolTypeNode(null).getType(topST, ST)
   }
 
   def getOperator: String = this match {
@@ -37,16 +39,16 @@ sealed abstract class BinaryOperationNode(argOne: ExprNode, argTwo: ExprNode) ex
   override def toTreeString: String = s"${argOne.toString} $getOperator ${argTwo.toString}"
 }
 
-case class MultiplyNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(argOne, argTwo)
-case class DivideNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(argOne, argTwo)
-case class ModNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(argOne, argTwo)
-case class PlusNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(argOne, argTwo)
-case class MinusNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(argOne, argTwo)
-case class GreaterThanNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(argOne, argTwo)
-case class GreaterEqualNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(argOne, argTwo)
-case class LessThanNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(argOne, argTwo)
-case class LessEqualNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(argOne, argTwo)
-case class EqualToNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(argOne, argTwo)
-case class NotEqualNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(argOne, argTwo)
-case class LogicalAndNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(argOne, argTwo)
-case class LogicalOrNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(argOne, argTwo)
+case class MultiplyNode(token: Token, argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(token, argOne, argTwo)
+case class DivideNode(token: Token, argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(token, argOne, argTwo)
+case class ModNode(token: Token, argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(token, argOne, argTwo)
+case class PlusNode(token: Token, argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(token, argOne, argTwo)
+case class MinusNode(token: Token, argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(token, argOne, argTwo)
+case class GreaterThanNode(token: Token, argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(token, argOne, argTwo)
+case class GreaterEqualNode(token: Token, argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(token, argOne, argTwo)
+case class LessThanNode(token: Token, argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(token, argOne, argTwo)
+case class LessEqualNode(token: Token, argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(token, argOne, argTwo)
+case class EqualToNode(token: Token, argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(token, argOne, argTwo)
+case class NotEqualNode(token: Token, argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(token, argOne, argTwo)
+case class LogicalAndNode(token: Token, argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(token, argOne, argTwo)
+case class LogicalOrNode(token: Token, argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(token, argOne, argTwo)
