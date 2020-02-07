@@ -288,5 +288,11 @@ case class ArrayLiteralNode(token: Token, exprNodes: IndexedSeq[ExprNode]) exten
 
   override def toTreeString: String = "[" + exprNodes.map(_.toString).mkString(", ") + "]"
 
-  override def initKey: String = if (exprNodes.nonEmpty) exprNodes.apply(0).getKey + "[]" else "[]"
+  override def initKey: String = {
+    if (exprNodes.nonEmpty && exprNodes.apply(0).isInstanceOf[IdentNode]) {
+      exprNodes.apply(0).asInstanceOf[IdentNode].getTypeKey + "[]"
+    } else if (exprNodes.nonEmpty) {
+      exprNodes.apply(0).getKey + "[]"
+    } else "[]"
+  }
 }
