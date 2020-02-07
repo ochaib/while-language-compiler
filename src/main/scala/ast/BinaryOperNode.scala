@@ -1,37 +1,40 @@
 package ast
+import util.{ColoredConsole => console}
 
 sealed abstract class BinaryOperationNode(argOne: ExprNode, argTwo: ExprNode) extends ExprNode {
   override def getType(topST: SymbolTable, ST: SymbolTable): TYPE = this match {
-    case MultiplyNode(_, _) => IntTypeNode.getType(topST, ST)
-    case DivideNode(_, _) => IntTypeNode.getType(topST, ST)
-    case ModNode(_, _) => IntTypeNode.getType(topST, ST)
-    case PlusNode(_, _) => IntTypeNode.getType(topST, ST)
-    case MinusNode(_, _) => IntTypeNode.getType(topST, ST)
-    case GreaterThanNode(_, _) => BoolTypeNode.getType(topST, ST)
-    case GreaterEqualNode(_, _) => BoolTypeNode.getType(topST, ST)
-    case LessThanNode(_, _) => BoolTypeNode.getType(topST, ST)
-    case LessEqualNode(_, _) => BoolTypeNode.getType(topST, ST)
-    case EqualToNode(_, _) => BoolTypeNode.getType(topST, ST)
-    case NotEqualNode(_, _) => BoolTypeNode.getType(topST, ST)
-    case LogicalAndNode(_, _) => BoolTypeNode.getType(topST, ST)
-    case LogicalOrNode(_, _) => BoolTypeNode.getType(topST, ST)
+    case MultiplyNode(_,_)
+          | DivideNode(_, _)
+          | ModNode(_, _)
+          | PlusNode(_, _)
+          | MinusNode(_, _) => IntTypeNode.getType(topST, ST)
+    case GreaterThanNode(_, _)
+          | GreaterEqualNode(_, _)
+          | LessThanNode(_, _)
+          | LessEqualNode(_, _)
+          | EqualToNode(_, _)
+          | NotEqualNode(_, _)
+          | LogicalAndNode(_, _)
+          | LogicalOrNode(_, _) => BoolTypeNode.getType(topST, ST)
   }
 
-  override def toTreeString: String = this match {
-    case MultiplyNode(argOne, argTwo) => s"${argOne.toString} * ${argTwo.toString}"
-    case DivideNode(argOne, argTwo) => s"${argOne.toString} / ${argTwo.toString}"
-    case ModNode(argOne, argTwo) => s"${argOne.toString} % ${argTwo.toString}"
-    case PlusNode(argOne, argTwo) => s"${argOne.toString} + ${argTwo.toString}"
-    case MinusNode(argOne, argTwo) => s"${argOne.toString} - ${argTwo.toString}"
-    case GreaterThanNode(argOne, argTwo) => s"${argOne.toString} > ${argTwo.toString}"
-    case GreaterEqualNode(argOne, argTwo) => s"${argOne.toString} >= ${argTwo.toString}"
-    case LessThanNode(argOne, argTwo) => s"${argOne.toString} < ${argTwo.toString}"
-    case LessEqualNode(argOne, argTwo) => s"${argOne.toString} <= ${argTwo.toString}"
-    case EqualToNode(argOne, argTwo) => s"${argOne.toString} == ${argTwo.toString}"
-    case NotEqualNode(argOne, argTwo) => s"${argOne.toString} != ${argTwo.toString}"
-    case LogicalAndNode(argOne, argTwo) => s"${argOne.toString} && ${argTwo.toString}"
-    case LogicalOrNode(argOne, argTwo) => s"${argOne.toString} || ${argTwo.toString}"
+  def getOperator: String = this match {
+    case _: MultiplyNode => "*"
+    case _: DivideNode => "/"
+    case _: ModNode => "%"
+    case _: PlusNode => "+"
+    case _: MinusNode => "-"
+    case _: GreaterThanNode => ">"
+    case _: GreaterEqualNode => ">="
+    case _: LessThanNode => "<"
+    case _: LessEqualNode => "<="
+    case _: EqualToNode => "=="
+    case _: NotEqualNode => "!="
+    case _: LogicalAndNode => "&&"
+    case _: LogicalOrNode => "||"
   }
+
+  override def toTreeString: String = s"${argOne.toString} $getOperator ${argTwo.toString}"
 }
 
 case class MultiplyNode(argOne: ExprNode, argTwo: ExprNode) extends BinaryOperationNode(argOne, argTwo)
