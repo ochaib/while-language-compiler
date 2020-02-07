@@ -120,7 +120,9 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
       case ReturnNode(expr) => {
         visit(expr)
         val exprType = expr.getType(topSymbolTable, currentSymbolTable)
-        if (exprType != null && exprType != currentFuncReturnType) {
+        if (currentFuncReturnType == null) {
+          SemanticErrorLog.add(s"Trying to global return on ${expr.toString}")
+        } else if (exprType != null && exprType != currentFuncReturnType) {
           SemanticErrorLog.add(s"Expected retun type ${currentFuncReturnType.getKey} but got ${exprType.getKey}")
         }
       }
