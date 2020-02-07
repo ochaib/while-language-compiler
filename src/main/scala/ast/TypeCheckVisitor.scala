@@ -15,14 +15,11 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
     case ProgramNode(functions, stat) =>
       for (functionNode <- functions) {
-        if (functionReturnsOrExits(functionNode.stat)) {
+        if (!functionReturnsOrExits(functionNode.stat)) {
           // Add to syntax error log.
           SyntaxErrorLog.add(s"Function ${functionNode.identNode.getKey} does not return or exit")
         }
         visit(functionNode)
-      }
-      if (functionReturnsOrExits(stat)) {
-        SyntaxErrorLog.add("Program statement does not return or exit.")
       }
       symbolTableCreatorWrapper(_ => visit(stat))
 
@@ -391,20 +388,14 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
   // Helper function to check that function has a return or an exit, otherwise syntax error.
   def functionReturnsOrExits(statNode: StatNode): Boolean = {
     statNode match {
-      case exitNode: ExitNode =>
-        true
-      case returnNode: ReturnNode =>
-        true
+      case _: ExitNode | _: ReturnNode => true
       case ifNode: IfNode =>
         functionReturnsOrExits(ifNode.thenStat) && functionReturnsOrExits(ifNode.elseStat)
-      case whileNode: WhileNode =>
-        functionReturnsOrExits(whileNode.stat)
       case beginNode: BeginNode =>
         functionReturnsOrExits(beginNode.stat)
       case sequenceNode: SequenceNode =>
-        functionReturnsOrExits(sequenceNode.statOne) && functionReturnsOrExits(sequenceNode.statTwo)
-      case _ =>
-        false
+        functionReturnsOrExits(sequenceNode.statTwo)
+      case _ => false
     }
   }
 
