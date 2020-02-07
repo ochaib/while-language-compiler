@@ -44,8 +44,4 @@ class SyntaxErrorVisitor {
     }
   }
 
-  def intLiterOverflowCheck(intLiter: Int_literNode): Boolean = {
-    intLiter.toString.toInt > Int.MaxValue
-  }
-
 }
