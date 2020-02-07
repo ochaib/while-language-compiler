@@ -59,7 +59,8 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         visit(rhs)
 
         // If the type and the rhs don't match, throw exception
-        if (typeIdentifier != rhs.getType(topSymbolTable, currentSymbolTable)) {
+        val rhsType = rhs.getType(topSymbolTable, currentSymbolTable)
+        if (! (typeIdentifier == rhsType || (typeIdentifier.isInstanceOf[PAIR] && rhsType == GENERAL_PAIR))) {
           SemanticErrorLog.add(s"Declaration for ${ident.getKey} failed, expected type ${typeIdentifier.getKey} " +
             s"but got type ${rhs.getType(topSymbolTable, currentSymbolTable).getKey} instead.")
         }
