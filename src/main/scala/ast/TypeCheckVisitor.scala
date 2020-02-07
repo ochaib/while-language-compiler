@@ -17,7 +17,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
       for (functionNode <- functions) {
         if (functionReturnsOrExits(functionNode.stat)) {
           // Add to syntax error log.
-          SyntaxErrorLog.add(s"Function ${functionNode.identNode.toString} does not return or exit")
+          SyntaxErrorLog.add(s"Function ${functionNode.identNode.getKey} does not return or exit")
         }
         visit(functionNode)
       }
