@@ -58,7 +58,8 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
         // If the type and the rhs don't match, throw exception
         if (typeIdentifier != rhs.getType(topSymbolTable, currentSymbolTable)) {
-          SemanticErrorLog.add(s"Declaration failed, expected type ${typeIdentifier.getKey} but got ${rhs.getType(topSymbolTable, currentSymbolTable).getKey}")
+          SemanticErrorLog.add(s"Declaration failed, expected type ${typeIdentifier.getKey} " +
+            s"but got type ${rhs.getType(topSymbolTable, currentSymbolTable).getKey}.")
         }
         if (currentSymbolTable.lookup(ident.getKey).isDefined) {
           // If variable is already defined log error
@@ -175,8 +176,8 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         if (funcIdentifier.isEmpty)
           SemanticErrorLog.add(s"Function ${identNode.getKey} not declared.")
         else if (argList.isDefined && funcIdentifier.get.paramTypes.length != argList.get.exprNodes.length){
-          SemanticErrorLog.add(s"Function: ${identNode.getKey} expected ${funcIdentifier.get.paramTypes.length} arguments but got" +
-            s" ${argList.get.exprNodes.length} arguments instead.")
+          SemanticErrorLog.add(s"Function: ${identNode.getKey} expected ${funcIdentifier.get.paramTypes.length} " +
+            s"arguments but got ${argList.get.exprNodes.length} arguments instead.")
         } else if (argList.isDefined){
           visit(argList.get)
           for (argIndex <- argList.get.exprNodes.indices) {
