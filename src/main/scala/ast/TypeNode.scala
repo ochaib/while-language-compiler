@@ -105,7 +105,7 @@ class PairElemTypePairNode extends PairElemTypeNode {
     val generalPairIdentifierOption: Option[IDENTIFIER] = topST.lookup(getKey)
     assert(generalPairIdentifierOption.isDefined && generalPairIdentifierOption.get == GENERAL_PAIR,
       "Something went wrong, the general pair was not defined")
-    generalPairIdentifierOption.asInstanceOf[TYPE]
+    generalPairIdentifierOption.get.asInstanceOf[TYPE]
   }
 
   override def toTreeString: String = console.color("pair", fg=Console.MAGENTA)

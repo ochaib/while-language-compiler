@@ -60,8 +60,8 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
         // If the type and the rhs don't match, throw exception
         if (typeIdentifier != rhs.getType(topSymbolTable, currentSymbolTable)) {
-          SemanticErrorLog.add(s"Declaration failed, expected type ${typeIdentifier.getKey} " +
-            s"but got type ${rhs.getType(topSymbolTable, currentSymbolTable).getKey}.")
+          SemanticErrorLog.add(s"Declaration for ${ident.getKey} failed, expected type ${typeIdentifier.getKey} " +
+            s"but got type ${rhs.getType(topSymbolTable, currentSymbolTable).getKey} instead.")
         }
         if (currentSymbolTable.lookup(ident.getKey).isDefined) {
           // If variable is already defined log error
