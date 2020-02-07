@@ -165,5 +165,5 @@ passed, total = run_tests(
     every_semantic_error_should_fail
 )
 
-coverage = passed/total
+coverage = "%.2f" % (passed/total*100)
 print(f'coverage: {coverage}% ({passed}/{total})')
