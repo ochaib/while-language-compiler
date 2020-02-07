@@ -7,6 +7,7 @@ import scala.collection.immutable.HashMap
 sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
   var topSymbolTable: SymbolTable = SymbolTable.topLevelSymbolTable(entryNode)
   var currentSymbolTable: SymbolTable = topSymbolTable
+  var currentFuncReturnType: TYPE = null
 
   def getPos(token: Token): String = s"at ${token.getLine}:${token.getCharPositionInLine()}"
 
@@ -16,14 +17,11 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
     case ProgramNode(token: Token, functions, stat) =>
       for (functionNode <- functions) {
-        if (functionReturnsOrExits(functionNode.stat)) {
+        if (!functionReturnsOrExits(functionNode.stat)) {
           // Add to syntax error log.
-          SyntaxErrorLog.add(s"${getPos(token)} function ${functionNode.identNode.toString} does not return or exit")
+          SyntaxErrorLog.add(s"Function ${functionNode.identNode.getKey} does not return or exit")
         }
         visit(functionNode)
-      }
-      if (functionReturnsOrExits(stat)) {
-        SyntaxErrorLog.add(s"${getPos(token)} program statement does not return or exit.")
       }
       symbolTableCreatorWrapper(_ => visit(stat))
 
@@ -34,6 +32,10 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
       if (currentSymbolTable.lookupFun(identNode.getKey).isDefined)
         SemanticErrorLog.add(s"${getPos(token)} tried to define function: ${identNode.getKey} but it was already declared.")
       else {
+        // Save the func return type for current scope
+        var saveFuncReturnType: TYPE = currentFuncReturnType
+        // Set new func return type for new scope
+        currentFuncReturnType = funcType.getType(topSymbolTable, currentSymbolTable)
         functionIdentifier = new FUNCTION(identNode.getKey, funcType.getType(topSymbolTable, currentSymbolTable).asInstanceOf[TYPE], paramTypes = null)
         currentSymbolTable.add(identNode.getKey, functionIdentifier)
 
@@ -46,6 +48,8 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
           }
           visit(stat)
         })
+        // Restore func return type of scope
+        currentFuncReturnType = saveFuncReturnType
       }
 
     case ParamListNode(token: Token, paramNodeList) => for (paramNode <- paramNodeList) visit(paramNode)
@@ -89,9 +93,19 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
       case AssignmentNode(token: Token, lhs, rhs) =>
         visit(lhs)
         visit(rhs)
+        val lhsType = lhs.getType(topSymbolTable, currentSymbolTable)
+        val rhsType = rhs.getType(topSymbolTable, currentSymbolTable)
 
-        if (lhs.getType(topSymbolTable, currentSymbolTable) != rhs.getType(topSymbolTable, currentSymbolTable)) {
-          SemanticErrorLog.add(s"${getPos(token)} assignment failed, ${lhs.getKey} and ${rhs.getKey} have non-matching types.")
+        // If either side evaluated to an incorrect expression, stop checking
+        if (lhsType == null || rhsType == null) {
+
+        } else if (! (lhsType == rhsType ||
+          lhsType.isInstanceOf[PAIR] && rhsType == GENERAL_PAIR ||
+          lhsType.isInstanceOf[ARRAY] && rhsType == GENERAL_ARRAY)) {
+
+          SemanticErrorLog.add(s"${getPos(token)} Assignment for ${lhs.getKey} to ${rhs.getKey} failed, " +
+            s"expected type ${lhsType.getKey} "
+            + s"but got type ${rhsType.getKey} instead.")
         }
 
       case ReadNode(token: Token, lhs) =>
@@ -112,11 +126,15 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
           SemanticErrorLog.add(s"${getPos(token)} cannot free ${expr.getKey}, it must be a pair or an array.")
         }
 
-      // TODO: Check that return statement is present in body of non-main function.
-      // TODO: Check that the type of expression given to the return statement must
-      // TODO: match the return type of the expression.
-
-      case ReturnNode(token: Token, expr) => visit(expr)
+      case ReturnNode(token: Token, expr) => {
+        visit(expr)
+        val exprType = expr.getType(topSymbolTable, currentSymbolTable)
+        if (currentFuncReturnType == null) {
+          SemanticErrorLog.add(s"${getPos(token)} trying to global return on ${expr.toString}")
+        } else if (exprType != null && exprType != currentFuncReturnType) {
+          SemanticErrorLog.add(s"${getPos(token)} expected retun type ${currentFuncReturnType.getKey} but got ${exprType.getKey}")
+        }
+      }
 
       case ExitNode(token: Token, expr) => visit(expr)
 
@@ -183,7 +201,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
       case NewPairNode(token: Token, fstElem, sndElem) =>
         visit(fstElem)
         visit(sndElem)
-      case CallNode(token: Token, identNode, argList) => // TODO
+      case CallNode(token: Token, identNode, argList) =>
         val funcIdentifier: Option[FUNCTION] = currentSymbolTable.lookupFunAll(identNode.getKey)
         if (funcIdentifier.isEmpty)
           SemanticErrorLog.add(s"${getPos(token)} function ${identNode.getKey} not declared.")
@@ -268,6 +286,12 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
     val argTwoIdentifier: IDENTIFIER = argTwo.getType(topSymbolTable, currentSymbolTable)
     if (argOneIdentifier == null || argTwoIdentifier == null){
       // If either identifier is null, dont check if they're equal to expected
+    } else if (expectedIdentifier1.isInstanceOf[PAIR] && expectedIdentifier2.isInstanceOf[PAIR]
+    && argOneIdentifier.isInstanceOf[PAIR] && argTwoIdentifier.isInstanceOf[PAIR]) {
+      // If all required areguments are of type pair then it's ok
+    } else if (expectedIdentifier1.isInstanceOf[ARRAY] && expectedIdentifier2.isInstanceOf[ARRAY]
+      && argOneIdentifier.isInstanceOf[ARRAY] && argTwoIdentifier.isInstanceOf[ARRAY]) {
+      // If all required arguments are of type array then it's ok
     } else if (!(argOneIdentifier == expectedIdentifier1 && argTwoIdentifier == expectedIdentifier2)) {
       SemanticErrorLog.add(s"${getPos(token)} expected input types ${expectedIdentifier1.getKey} and ${expectedIdentifier2.getKey}" +
         s" but got ${argOneIdentifier.getKey} and ${argTwoIdentifier.getKey} instead.")
@@ -375,20 +399,14 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
   // Helper function to check that function has a return or an exit, otherwise syntax error.
   def functionReturnsOrExits(statNode: StatNode): Boolean = {
     statNode match {
-      case exitNode: ExitNode =>
-        true
-      case returnNode: ReturnNode =>
-        true
+      case _: ExitNode | _: ReturnNode => true
       case ifNode: IfNode =>
         functionReturnsOrExits(ifNode.thenStat) && functionReturnsOrExits(ifNode.elseStat)
-      case whileNode: WhileNode =>
-        functionReturnsOrExits(whileNode.stat)
       case beginNode: BeginNode =>
         functionReturnsOrExits(beginNode.stat)
       case sequenceNode: SequenceNode =>
-        functionReturnsOrExits(sequenceNode.statOne) && functionReturnsOrExits(sequenceNode.statTwo)
-      case _ =>
-        false
+        functionReturnsOrExits(sequenceNode.statTwo)
+      case _ => false
     }
   }
 

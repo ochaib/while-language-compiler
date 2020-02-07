@@ -75,14 +75,15 @@ trait AssignRHSNode extends ASTNode with Identifiable {
 
 case class NewPairNode(token: Token, fstElem: ExprNode, sndElem: ExprNode) extends ASTNode(token) with AssignRHSNode {
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
+    val fstElemType: TYPE = getElemIdentifier(fstElem, topST, ST).asInstanceOf[TYPE]
+    val sndElemType: TYPE = getElemIdentifier(sndElem, topST, ST).asInstanceOf[TYPE]
     val newPairIdentifierLookup: Option[IDENTIFIER] = topST.lookup(getKey)
     if (newPairIdentifierLookup.isDefined) {
       assert(newPairIdentifierLookup.get.isInstanceOf[PAIR],
         s"Expected instance of pair for ${newPairIdentifierLookup.get.getKey}.")
       newPairIdentifierLookup.get.asInstanceOf[PAIR]
     } else {
-      val newIdentifier = new PAIR(getKey, getElemIdentifier(fstElem, topST, ST).asInstanceOf[TYPE],
-        getElemIdentifier(sndElem, topST, ST).asInstanceOf[TYPE])
+      val newIdentifier = new PAIR(getKey, fstElemType, sndElemType)
       topST.add(getKey, newIdentifier)
       newIdentifier
     }
@@ -100,8 +101,11 @@ case class NewPairNode(token: Token, fstElem: ExprNode, sndElem: ExprNode) exten
   override def initKey: String = s"pair(${getElemKey(fstElem)},${getElemKey(sndElem)})"
 
   private def getElemKey(elemNode: ExprNode): String = {
-    val elemKey: String = elemNode.getKey
-    if (elemKey.startsWith("pair")){
+    var elemKey: String = elemNode.getKey
+    if (elemNode.isInstanceOf[IdentNode]) {
+      elemKey = elemNode.asInstanceOf[IdentNode].getTypeKey
+    }
+    if (elemKey.startsWith("pair")) {
       "pair"
     } else {
       elemKey
@@ -155,8 +159,13 @@ case class FstNode(token: Token, expression: ExprNode) extends PairElemNode(toke
     }
   }
 
+
   override def initKey: String = {
-    val exprKey: String = expression.getKey
+    var exprKey: String = expression.getKey
+    if (expression.isInstanceOf[IdentNode]) {
+      exprKey = expression.asInstanceOf[IdentNode].getTypeKey
+      exprKey = exprKey.slice(4, exprKey.length)
+    }
     if (expression.isInstanceOf[Pair_literNode]) {
       // TODO in backend throw error
       SemanticErrorLog.add(s"${getPos(token)} expected a pair type but got a null pair literal instead.")
@@ -165,10 +174,9 @@ case class FstNode(token: Token, expression: ExprNode) extends PairElemNode(toke
       SemanticErrorLog.add(s"${getPos(token)} expected a pair type but got a non-pair type: ${expression.getKey}.")
       "Semantic Error: Should not reach this."
     } else {
-      exprKey.slice(1, exprKey.indexOf(','))
+      exprKey.slice(exprKey.indexOf(',') + 1, exprKey.length - 1)
     }
   }
-
   override def toTreeString: String = console.color(s"fst ${expression.toString}", fg=Console.BLUE)
 }
 
@@ -186,7 +194,11 @@ case class SndNode(token: Token, expression: ExprNode) extends PairElemNode(toke
 
 
   override def initKey: String = {
-    val exprKey: String = expression.getKey
+    var exprKey: String = expression.getKey
+    if (expression.isInstanceOf[IdentNode]) {
+      exprKey = expression.asInstanceOf[IdentNode].getTypeKey
+      exprKey = exprKey.slice(4, exprKey.length)
+    }
     if (expression.isInstanceOf[Pair_literNode]) {
       // TODO in backend throw error
       SemanticErrorLog.add(s"${getPos(token)} expected a pair type but got a null pair literal instead.")
@@ -195,7 +207,7 @@ case class SndNode(token: Token, expression: ExprNode) extends PairElemNode(toke
       SemanticErrorLog.add(s"${getPos(token)} expected a pair type but got a non-pair type: ${expression.getKey}.")
       "Semantic Error: Should not reach this."
     } else {
-      exprKey.slice(exprKey.indexOf(',') + 1, exprKey.length)
+      exprKey.slice(exprKey.indexOf(',') + 1, exprKey.length - 1)
     }
   }
 
@@ -203,6 +215,9 @@ case class SndNode(token: Token, expression: ExprNode) extends PairElemNode(toke
 }
 
 case class IdentNode(token: Token, ident: String) extends ExprNode(token) with AssignLHSNode {
+  var typeKey: String = null
+  def getTypeKey: String = typeKey
+
   override def initKey: String = ident
 
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
@@ -215,9 +230,13 @@ case class IdentNode(token: Token, ident: String) extends ExprNode(token) with A
       null
     } else {
       if (T.get.isInstanceOf[VARIABLE]){
-        T.get.asInstanceOf[VARIABLE]._type
+        val variableType: TYPE = T.get.asInstanceOf[VARIABLE]._type
+        typeKey = variableType.getKey
+        variableType
       } else if (T.get.isInstanceOf[PARAM]) {
-        T.get.asInstanceOf[PARAM]._type
+        val paramType: TYPE = T.get.asInstanceOf[PARAM]._type
+        typeKey = paramType.getKey
+        paramType
       } else {
         assert(assertion = false, "Above if statement should prevent getting here")
         null
