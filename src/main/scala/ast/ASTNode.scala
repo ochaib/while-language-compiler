@@ -1,6 +1,6 @@
 package ast
 
-import util.{ColoredConsole => console}
+import util.{SemanticErrorLog, ColoredConsole => console}
 
 // Every node necessary to generate AST. From the WACCLangSpec.
 
@@ -49,7 +49,8 @@ case class ParamNode(paramType: TypeNode, identNode: IdentNode) extends ASTNode 
     if (ST.lookup(identNode.getKey).isDefined) {
       // If variable is already defined throw exception
       // Can't change this exception a log because a TYPE would need to be returned.
-      throw new TypeException(s"${identNode.getKey} has already been declared")
+      SemanticErrorLog.add(s"${identNode.getKey} has already been declared")
+      null
     } else {
       val paramIdentifier: PARAM = new PARAM(identNode.getKey, paramType.getType(topST, ST).asInstanceOf[TYPE])
       ST.add(identNode.getKey, paramIdentifier)
@@ -76,7 +77,7 @@ case class NewPairNode(fstElem: ExprNode, sndElem: ExprNode) extends AssignRHSNo
     val newPairIdentifierLookup: Option[IDENTIFIER] = topST.lookup(getKey)
     if (newPairIdentifierLookup.isDefined) {
       assert(newPairIdentifierLookup.get.isInstanceOf[PAIR],
-        s"Expected instance of pair for ${newPairIdentifierLookup.get.getKey}")
+        s"Expected instance of pair for ${newPairIdentifierLookup.get.getKey}.")
       newPairIdentifierLookup.get.asInstanceOf[PAIR]
     } else {
       val newIdentifier = new PAIR(getKey, getElemIdentifier(fstElem, topST, ST).asInstanceOf[TYPE],
@@ -114,9 +115,11 @@ case class CallNode(identNode: IdentNode, argList: Option[ArgListNode]) extends 
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
     val F: Option[FUNCTION] = ST.lookupFunAll(getKey)
     if (F.isEmpty) {
-      throw new TypeException(s"$toString has not been declared")
+      SemanticErrorLog.add(s"$getKey has not been declared")
+      null
     } else if (! F.get.isInstanceOf[FUNCTION]) {
-      assert(assertion = false, s"Something went wrong... $toString should be a function but isn't")
+      // toString to getKey below???
+      assert(assertion = false, s"Something went wrong... $toString should be a function but isn't.")
       null
     } else {
       F.get.returnType
@@ -145,7 +148,8 @@ case class FstNode(expression: ExprNode) extends PairElemNode(expression) {
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
     val pairIdentifier: IDENTIFIER = expression.getType(topST, ST)
     if (! pairIdentifier.isInstanceOf[PAIR]) {
-      throw new TypeException(s"Expected pair type but got a non-pair type: ${expression.getKey}}")
+      SemanticErrorLog.add(s"Expected pair type but got a non-pair type: ${expression.getKey}.")
+      null
     } else {
       pairIdentifier.asInstanceOf[PAIR]._type1
     }
@@ -155,9 +159,11 @@ case class FstNode(expression: ExprNode) extends PairElemNode(expression) {
     val exprKey: String = expression.getKey
     if (expression == Pair_literNode) {
       // TODO in backend throw error
-      throw new TypeException(s"Expected a pair type but got a null pair literal instead")
+      SemanticErrorLog.add(s"Expected a pair type but got a null pair literal instead.")
+      "Semantic Error: Should not reach this."
     } else if (exprKey.slice(0, 1) != "(" || ")" != exprKey.slice(exprKey.length() - 1, exprKey.length)) {
-      throw new TypeException(s"Expected a pair type but got a non-pair type: ${expression.getKey}")
+      SemanticErrorLog.add(s"Expected a pair type but got a non-pair type: ${expression.getKey}.")
+      "Semantic Error: Should not reach this."
     } else {
       exprKey.slice(1, exprKey.indexOf(','))
     }
@@ -171,7 +177,8 @@ case class SndNode(expression: ExprNode) extends PairElemNode(expression) {
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
     val pairIdentifier: IDENTIFIER = expression.getType(topST, ST)
     if (! pairIdentifier.isInstanceOf[PAIR]) {
-      throw new TypeException("Expected pair type but got a non-pair type")
+      SemanticErrorLog.add("Expected pair type but got a non-pair type.")
+      null
     } else {
       pairIdentifier.asInstanceOf[PAIR]._type2
     }
@@ -182,9 +189,11 @@ case class SndNode(expression: ExprNode) extends PairElemNode(expression) {
     val exprKey: String = expression.getKey
     if (expression == Pair_literNode) {
       // TODO in backend throw error
-      throw new TypeException(s"Expected a pair type but got a null pair literal instead")
+      SemanticErrorLog.add(s"Expected a pair type but got a null pair literal instead.")
+      "Semantic Error: Should not reach this."
     } else if (exprKey.slice(0, 1) != "(" || ")" != exprKey.slice(exprKey.length() - 1, exprKey.length)) {
-      throw new TypeException(s"Expected a pair type but got a non-pair type: ${expression.getKey}")
+      SemanticErrorLog.add(s"Expected a pair type but got a non-pair type: ${expression.getKey}.")
+      "Semantic Error: Should not reach this."
     } else {
       exprKey.slice(exprKey.indexOf(',') + 1, exprKey.length)
     }
@@ -199,7 +208,10 @@ case class IdentNode(ident: String) extends ExprNode with AssignLHSNode {
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
     val T: Option[IDENTIFIER] = ST.lookupAll(getKey)
     if (T.isEmpty) {
-      throw new TypeException(s"$toString has not been declared")
+      // toStrings should be getKeys in this?
+      SemanticErrorLog.add(s"$toString has not been declared.")
+//      "Semantic Error: Should not reach this."
+      null
     } else if (! T.get.isInstanceOf[VARIABLE]) {
       assert(assertion = false, s"Something went wrong... $toString should be a variable but isn't")
       null
@@ -228,7 +240,7 @@ case class ArrayLiteralNode(exprNodes: IndexedSeq[ExprNode]) extends AssignRHSNo
       topST.add(getKey, arrayIdentifier)
       arrayIdentifier
     } else {
-      assert(arrayIdentifierOption.get.isInstanceOf[ARRAY], s"Something went wrong... $getKey should be a an array type but isn't")
+      assert(arrayIdentifierOption.get.isInstanceOf[ARRAY], s"Something went wrong... $getKey should be a an array type but isn't.")
       arrayIdentifierOption.get.asInstanceOf[ARRAY]
     }
   }
