@@ -36,6 +36,6 @@ COPY . .
 # you may have to wait until SBT is downloaded + everything installed
 RUN cd /usr/app
 RUN make all
-RUN pip install -r -y requirements.txt
+RUN python3 -m pip install -r requirements.txt
 
 ENTRYPOINT [ "python3.6", "/usr/app/test.py" ]
