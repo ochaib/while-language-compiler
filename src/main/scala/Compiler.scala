@@ -14,7 +14,6 @@ object Compiler extends App {
 
   if (args.length == 0) error("No filename provided")
 
-  console.info("Compiling: " + args(0))
   try {
     // Build the lexer and parse out tokens
     val file : ANTLRCharStream = ANTLRCharStreams.fromFileName(args(0))
@@ -41,9 +40,7 @@ object Compiler extends App {
     }
 
     val visitor : ASTGenerator = new ASTGenerator()
-    console.info("Building AST")
     val tree : ASTNode = visitor.visit(program)
-    println(tree.toString)
 
     // Check the AST for semantic errors
     val semanticVisitor : Visitor = new TypeCheckVisitor(tree)
@@ -58,6 +55,8 @@ object Compiler extends App {
       SemanticErrorLog.printAllErrors()
       System.exit(200)
     }
+
+    println(tree.toString)
   }
   catch {
     case ioerror : IOException => error("File does not exist")

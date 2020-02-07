@@ -2,6 +2,7 @@ package ast
 import ast._
 import antlr.{WACCLexer, WACCParser, WACCParserBaseVisitor}
 import org.antlr.v4.runtime._
+import util.SyntaxErrorLog
 
 // Class used to traverse the parse tree built by ANTLR
 class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
@@ -338,15 +339,15 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     // negative numbers are handled by the unary oper
     // childCount - 1 in case it is signed
     // TODO: maybe we handle overflow here?
-    val num: Int = ctx.getChild(childCount - 1).getText.toInt
+    val num: Option[Int] = ctx.getChild(childCount - 1).getText.toIntOption
 
-    if (Math.abs(num) > Int.MaxValue) {
-        // Log to syntax error.
-        println("Syntax Error: Integer overflow when trying to generate IntLiteral.")
-        // Create error node instead or something?.
+    num match {
+      case None => {
+        SyntaxErrorLog.add("Invalid integer value.")
+        new Int_literNode(0)
+      }
+      case Some(n) => new Int_literNode(n)
     }
-
-    new Int_literNode(num)
   }
 
   override def visitExprBoolLiter(ctx: WACCParser.ExprBoolLiterContext): ExprNode = {

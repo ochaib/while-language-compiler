@@ -6,9 +6,19 @@ FROM openjdk:11.0.6
 # Enable HTTPS sources in apt-get
 RUN apt-get update
 RUN apt-get install -y apt-transport-https ca-certificates
+RUN apt-get install -y software-properties-common
 
 # Install essential build tools incl. make
-RUN apt install build-essential -y --no-install-recommends
+RUN apt install build-essential checkinstall -y --no-install-recommends
+RUN apt install -y libreadline-gplv2-dev libncursesw5-dev libssl-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev
+RUN apt-get update
+RUN apt-get upgrade -y
+RUN apt-get install wget gcc zlib1g-dev -y
+
+# Build Python 3.6
+RUN wget --quiet https://www.python.org/ftp/python/3.6.8/Python-3.6.8.tgz
+RUN tar zxf Python-3.6.8.tgz
+RUN cd Python-3.6.8 && ./configure && make && make install
 
 # Install SBT, from the official SBT installation instructions
 RUN echo "deb https://dl.bintray.com/sbt/debian /" | tee -a /etc/apt/sources.list.d/sbt.list
@@ -26,5 +36,6 @@ COPY . .
 # you may have to wait until SBT is downloaded + everything installed
 RUN cd /usr/app
 RUN make all
+RUN python3 -m pip install -r requirements.txt
 
-ENTRYPOINT [ "/usr/app/lextest" ]
+ENTRYPOINT [ "python3.6", "/usr/app/test.py" ]
