@@ -7,7 +7,7 @@ sealed abstract class UnaryOperationNode(token: Token, expr: ExprNode) extends E
 
   override def getType(topST: SymbolTable, ST: SymbolTable): TYPE = this match {
     case LogicalNotNode(_, _) => new BoolTypeNode(null).getType(topST, ST)
-    case LenNode(_, _) | OrdNode(_, _) | NegateNode(_) => new IntTypeNode(null).getType(topST, ST)
+    case LenNode(_, _) | OrdNode(_, _) | NegateNode(_, _) => new IntTypeNode(null).getType(topST, ST)
     case ChrNode(_, _) => new CharTypeNode(null).getType(topST, ST)
   }
 

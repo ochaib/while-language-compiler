@@ -5,6 +5,7 @@ import util.{ColoredConsole => console}
 
 sealed abstract class BinaryOperationNode(token: Token, argOne: ExprNode, argTwo: ExprNode) extends ExprNode(token) {
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = this match {
+    // TODO: refactor
     case MultiplyNode(_, _, _)
           | DivideNode(_, _, _)
           | ModNode(_, _, _)
@@ -21,19 +22,20 @@ sealed abstract class BinaryOperationNode(token: Token, argOne: ExprNode, argTwo
   }
 
   override def initKey: String = this match {
-    case MultiplyNode(_,_)
-         | DivideNode(_, _)
-         | ModNode(_, _)
-         | PlusNode(_, _)
-         | MinusNode(_, _) => IntTypeNode.getKey
-    case GreaterThanNode(_, _)
-         | GreaterEqualNode(_, _)
-         | LessThanNode(_, _)
-         | LessEqualNode(_, _)
-         | EqualToNode(_, _)
-         | NotEqualNode(_, _)
-         | LogicalAndNode(_, _)
-         | LogicalOrNode(_, _) => BoolTypeNode.getKey
+    // TODO: refactor
+    case MultiplyNode(_, _, _)
+         | DivideNode(_, _, _)
+         | ModNode(_, _, _)
+         | PlusNode(_, _, _)
+         | MinusNode(_, _, _) => new IntTypeNode(null).getKey
+    case GreaterThanNode(_, _, _)
+         | GreaterEqualNode(_, _, _)
+         | LessThanNode(_, _, _)
+         | LessEqualNode(_, _, _)
+         | EqualToNode(_, _, _)
+         | NotEqualNode(_, _, _)
+         | LogicalAndNode(_, _, _)
+         | LogicalOrNode(_, _, _) => new BoolTypeNode(null).getKey
   }
 
   def getOperator: String = this match {

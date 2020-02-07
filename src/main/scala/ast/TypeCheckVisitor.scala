@@ -107,7 +107,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
         val exprIdentifier = expr.getType(topSymbolTable, currentSymbolTable)
 
-        if (!(exprIdentifier.isInstanceOf[PAIR] || exprIdentifier == GENERAL_PAIR) ||
+        if (!(exprIdentifier.isInstanceOf[PAIR] || exprIdentifier == GENERAL_PAIR ||
           exprIdentifier.isInstanceOf[ARRAY])) {
           SemanticErrorLog.add(s"${getPos(token)} cannot free ${expr.getKey}, it must be a pair or an array.")
         }
@@ -296,7 +296,8 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
       // Check if all expressions evaluate to an int
       for (expr <- exprNodes) {
         val exprIdentifier: TYPE = expr.getType(topSymbolTable, currentSymbolTable)
-        if (exprIdentifier != IntTypeNode.getType(topSymbolTable, currentSymbolTable)) {
+        // TODO: refactor
+        if (exprIdentifier != new IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
           SemanticErrorLog.add(s"${getPos(token)} expected index value but got ${exprIdentifier.getKey} instead.")
         }
       }
@@ -307,6 +308,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
     visit(conditionExpr)
     val conditionIdentifier = conditionExpr.getType(topSymbolTable, currentSymbolTable)
 
+    // TODO: refactor
     if (conditionIdentifier != new BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
       SemanticErrorLog.add(s"${getPos(token)} ${conditionExpr.getKey} must evaluate to a boolean.")
     }
