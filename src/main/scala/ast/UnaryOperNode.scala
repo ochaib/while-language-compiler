@@ -5,8 +5,8 @@ import util.{ColoredConsole => console}
 sealed abstract class UnaryOperationNode(expr: ExprNode) extends ExprNode {
 
   override def getType(topST: SymbolTable, ST: SymbolTable): TYPE = this match {
-    case LogicalNotNode(_) | NegateNode(_) => BoolTypeNode.getType(topST, ST)
-    case LenNode(_) | OrdNode(_) => IntTypeNode.getType(topST, ST)
+    case LogicalNotNode(_) => BoolTypeNode.getType(topST, ST)
+    case LenNode(_) | OrdNode(_) | NegateNode(_) => IntTypeNode.getType(topST, ST)
     case ChrNode(_) => CharTypeNode.getType(topST, ST)
   }
 

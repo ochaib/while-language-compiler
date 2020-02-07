@@ -124,20 +124,14 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
       case WhileNode(expr, stat) =>
         conditionCheckerHelper(expr)
         // Prepare to visit stat by creating new symbol table
-        currentSymbolTable = SymbolTable.newSymbolTable(currentSymbolTable)
-        visit(stat)
-        // Exit symbol table
-        currentSymbolTable = currentSymbolTable.encSymbolTable
+        symbolTableCreatorWrapper(_ => visit(stat))
 
       case BeginNode(stat) => symbolTableCreatorWrapper(_ => visit(stat))
 
       case SequenceNode(statOne, statTwo) =>
-        // Prepare to visit stat by creating new symbol table
-//        currentSymbolTable = SymbolTable.newSymbolTable(currentSymbolTable)
+        // TODO optimise to halve visits
         visit(statOne)
         visit(statTwo)
-        // Exit symbol table
-//        currentSymbolTable = currentSymbolTable.encSymbolTable
     }
 
     // AssignLHSNodes
@@ -219,9 +213,10 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
   }
 
   // Unary Operator Helpers
-  def checkHelper(expr: ExprNode, expectedIdentifier: String, topSymbolTable: SymbolTable, ST: SymbolTable): Unit = {
+  def unaryCheckerHelper(expr: ExprNode, expectedIdentifier: IDENTIFIER, topSymbolTable: SymbolTable, ST: SymbolTable): Unit = {
+    visit(expr)
     val identifier: IDENTIFIER = expr.getType(topSymbolTable, currentSymbolTable)
-    if (identifier != topSymbolTable.lookup(expectedIdentifier).get) {
+    if (identifier != expectedIdentifier) {
       SemanticErrorLog.add(s"Expected $expectedIdentifier but got $identifier.")
     }
   }
@@ -294,11 +289,11 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
     case unary: UnaryOperationNode => unary match {
 
-      case LogicalNotNode(expr: ExprNode) => checkHelper(expr, "bool", topSymbolTable, currentSymbolTable)
-      case NegateNode(expr: ExprNode) => checkHelper(expr, "int", topSymbolTable, currentSymbolTable)
+      case LogicalNotNode(expr: ExprNode) => unaryCheckerHelper(expr, BoolTypeNode.getType(topSymbolTable, currentSymbolTable), topSymbolTable, currentSymbolTable)
+      case NegateNode(expr: ExprNode) => unaryCheckerHelper(expr, IntTypeNode.getType(topSymbolTable, currentSymbolTable), topSymbolTable, currentSymbolTable)
       case LenNode(expr: ExprNode) => lenHelper(expr, topSymbolTable, currentSymbolTable)
-      case OrdNode(expr: ExprNode) => checkHelper(expr, "char", topSymbolTable, currentSymbolTable)
-      case ChrNode(expr: ExprNode) => checkHelper(expr, "int", topSymbolTable, currentSymbolTable)
+      case OrdNode(expr: ExprNode) => unaryCheckerHelper(expr, CharTypeNode.getType(topSymbolTable, currentSymbolTable), topSymbolTable, currentSymbolTable)
+      case ChrNode(expr: ExprNode) => unaryCheckerHelper(expr, IntTypeNode.getType(topSymbolTable, currentSymbolTable), topSymbolTable, currentSymbolTable)
 
     }
 
