@@ -6,7 +6,7 @@ import scala.collection.immutable.HashMap
 
 sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
   var topSymbolTable: SymbolTable = SymbolTable.topLevelSymbolTable(entryNode)
-  var currentSymbolTable: SymbolTable = SymbolTable.newSymbolTable(topSymbolTable)
+  var currentSymbolTable: SymbolTable = topSymbolTable
 
   override def visit(ASTNode: ASTNode): Unit = ASTNode match {
 
@@ -14,7 +14,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
     case ProgramNode(functions, stat) =>
       for (functionNode <- functions) visit(functionNode)
-      visit(stat)
+      symbolTableCreatorWrapper(_ => visit(stat))
 
     case FuncNode(funcType, identNode, paramList: Option[ParamListNode], stat: StatNode) =>
       visit(funcType)
@@ -26,18 +26,14 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         functionIdentifier = new FUNCTION(identNode.getKey, funcType.getType(topSymbolTable, currentSymbolTable).asInstanceOf[TYPE], paramTypes = null)
         currentSymbolTable.add(identNode.getKey, functionIdentifier)
 
-      // Prepare to visit stat by creating new symbol table
-      currentSymbolTable = SymbolTable.newSymbolTable(currentSymbolTable)
-      // Missing: link symbol table to function?
-      if (paramList.isDefined) {
-        // implicitly adds identifiers to the symbol table
-        functionIdentifier.paramTypes = paramList.get.getIdentifierList(topSymbolTable, currentSymbolTable)
-        visit(paramList.get)
-      }
-
-      visit(stat)
-      // Exit symbol table
-      currentSymbolTable = currentSymbolTable.encSymbolTable
+      symbolTableCreatorWrapper(_ => {
+        // Missing: link symbol table to function?
+        if (paramList.isDefined) {
+          // implicitly adds identifiers to the symbol table
+          functionIdentifier.paramTypes = paramList.get.getIdentifierList(topSymbolTable, currentSymbolTable)
+          visit(paramList.get)
+        }
+        visit(stat)})
 
     case ParamListNode(paramNodeList) => for (paramNode <- paramNodeList) visit(paramNode)
 
@@ -122,17 +118,8 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
       case IfNode(conditionExpr, thenStat, elseStat) =>
         conditionCheckerHelper(conditionExpr)
 
-        // Prepare to visit stat by creating new symbol table
-        currentSymbolTable = SymbolTable.newSymbolTable(currentSymbolTable)
-        visit(thenStat)
-        // Exit symbol table
-        currentSymbolTable = currentSymbolTable.encSymbolTable
-        // Prepare to visit stat by creating new symbol table
-        currentSymbolTable = SymbolTable.newSymbolTable(currentSymbolTable)
-        visit(elseStat)
-        // Exit symbol table
-        currentSymbolTable = currentSymbolTable.encSymbolTable
-
+        symbolTableCreatorWrapper(_ => visit(thenStat))
+        symbolTableCreatorWrapper(_ => visit(elseStat))
 
       case WhileNode(expr, stat) =>
         conditionCheckerHelper(expr)
@@ -142,7 +129,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         // Exit symbol table
         currentSymbolTable = currentSymbolTable.encSymbolTable
 
-      case BeginNode(stat) => visit(stat)
+      case BeginNode(stat) => symbolTableCreatorWrapper(_ => visit(stat))
 
       case SequenceNode(statOne, statTwo) =>
         // Prepare to visit stat by creating new symbol table
@@ -344,5 +331,15 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
     case Str_literNode(_) =>
     case Pair_literNode =>
   }
+
+  def symbolTableCreatorWrapper(contents: Unit => Unit): Unit = {
+    // Prepare to visit stat by creating new symbol table
+    currentSymbolTable = SymbolTable.newSymbolTable(currentSymbolTable)
+    contents.apply()
+    // Exit symbol table
+    currentSymbolTable = currentSymbolTable.encSymbolTable
+
+  }
+
 }
 
