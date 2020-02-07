@@ -7,6 +7,7 @@ import scala.collection.immutable.HashMap
 sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
   var topSymbolTable: SymbolTable = SymbolTable.topLevelSymbolTable(entryNode)
   var currentSymbolTable: SymbolTable = topSymbolTable
+  var currentFuncReturnType: TYPE = null
 
   override def visit(ASTNode: ASTNode): Unit = ASTNode match {
 
@@ -23,6 +24,10 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
       if (currentSymbolTable.lookupFun(identNode.getKey).isDefined)
         SemanticErrorLog.add(s"Tried to define function: ${identNode.getKey} but it was already declared.")
       else {
+        // Save the func return type for current scope
+        var saveFuncReturnType: TYPE = currentFuncReturnType
+        // Set new func return type for new scope
+        currentFuncReturnType = funcType.getType(topSymbolTable, currentSymbolTable)
         functionIdentifier = new FUNCTION(identNode.getKey, funcType.getType(topSymbolTable, currentSymbolTable).asInstanceOf[TYPE], paramTypes = null)
         currentSymbolTable.add(identNode.getKey, functionIdentifier)
 
@@ -35,6 +40,8 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
           }
           visit(stat)
         })
+        // Restore func return type of scope
+        currentFuncReturnType = saveFuncReturnType
       }
 
     case ParamListNode(paramNodeList) => for (paramNode <- paramNodeList) visit(paramNode)
@@ -105,7 +112,13 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
       // TODO: Check that the type of expression given to the return statement must
       // TODO: match the return type of the expression.
 
-      case ReturnNode(expr) => visit(expr)
+      case ReturnNode(expr) => {
+        visit(expr)
+        val exprType = expr.getType(topSymbolTable, currentSymbolTable)
+        if (exprType != null && exprType != currentFuncReturnType) {
+          SemanticErrorLog.add(s"Expected retun type ${currentFuncReturnType.getKey} but got ${exprType.getKey}")
+        }
+      }
 
       case ExitNode(expr) => visit(expr)
 
@@ -172,7 +185,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
       case NewPairNode(fstElem, sndElem) =>
         visit(fstElem)
         visit(sndElem)
-      case CallNode(identNode, argList) => // TODO
+      case CallNode(identNode, argList) =>
         val funcIdentifier: Option[FUNCTION] = currentSymbolTable.lookupFunAll(identNode.getKey)
         if (funcIdentifier.isEmpty)
           SemanticErrorLog.add(s"Function ${identNode.getKey} not declared.")
