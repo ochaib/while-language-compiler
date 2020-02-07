@@ -5,7 +5,7 @@ import util.{SemanticErrorLog, ColoredConsole => console}
 // Every node necessary to generate AST. From the WACCLangSpec.
 
 class ASTNode(token: Token) {
-  def getPos(token: Token): String = s"at ${token.getLine}:${token.getCharPositionInLine()}"
+  def getPos(token: Token): String = s"at ${token.getLine}:${token.getCharPositionInLine}"
   def toTreeString: String = console.color("<NODE>", fg=Console.RED)
   override def toString: String = this.toTreeString
 }
@@ -102,8 +102,10 @@ case class NewPairNode(token: Token, fstElem: ExprNode, sndElem: ExprNode) exten
 
   private def getElemKey(elemNode: ExprNode): String = {
     var elemKey: String = elemNode.getKey
-    if (elemNode.isInstanceOf[IdentNode]) {
-      elemKey = elemNode.asInstanceOf[IdentNode].getTypeKey
+    elemNode match {
+      case node: IdentNode =>
+        elemKey = node.getTypeKey
+      case _ =>
     }
     if (elemKey.startsWith("pair")) {
       "pair"
@@ -162,9 +164,11 @@ case class FstNode(token: Token, expression: ExprNode) extends PairElemNode(toke
 
   override def initKey: String = {
     var exprKey: String = expression.getKey
-    if (expression.isInstanceOf[IdentNode]) {
-      exprKey = expression.asInstanceOf[IdentNode].getTypeKey
-      exprKey = exprKey.slice(4, exprKey.length)
+    expression match {
+      case node: IdentNode =>
+        exprKey = node.getTypeKey
+        exprKey = exprKey.slice(4, exprKey.length)
+      case _ =>
     }
     if (expression.isInstanceOf[Pair_literNode]) {
       // TODO in backend throw error
@@ -195,9 +199,11 @@ case class SndNode(token: Token, expression: ExprNode) extends PairElemNode(toke
 
   override def initKey: String = {
     var exprKey: String = expression.getKey
-    if (expression.isInstanceOf[IdentNode]) {
-      exprKey = expression.asInstanceOf[IdentNode].getTypeKey
-      exprKey = exprKey.slice(4, exprKey.length)
+    expression match {
+      case node: IdentNode =>
+        exprKey = node.getTypeKey
+        exprKey = exprKey.slice(4, exprKey.length)
+      case _ =>
     }
     if (expression.isInstanceOf[Pair_literNode]) {
       // TODO in backend throw error
@@ -229,17 +235,18 @@ case class IdentNode(token: Token, ident: String) extends ExprNode(token) with A
       assert(assertion = false, s"Something went wrong... $getKey should be a variable or parameter but isn't")
       null
     } else {
-      if (T.get.isInstanceOf[VARIABLE]){
-        val variableType: TYPE = T.get.asInstanceOf[VARIABLE]._type
-        typeKey = variableType.getKey
-        variableType
-      } else if (T.get.isInstanceOf[PARAM]) {
-        val paramType: TYPE = T.get.asInstanceOf[PARAM]._type
-        typeKey = paramType.getKey
-        paramType
-      } else {
-        assert(assertion = false, "Above if statement should prevent getting here")
-        null
+      T.get match {
+        case variable: VARIABLE =>
+          val variableType: TYPE = variable._type
+          typeKey = variableType.getKey
+          variableType
+        case param: PARAM =>
+          val paramType: TYPE = param._type
+          typeKey = paramType.getKey
+          paramType
+        case _ =>
+          assert(assertion = false, "Above if statement should prevent getting here")
+          null
       }
     }
   }
@@ -288,5 +295,11 @@ case class ArrayLiteralNode(token: Token, exprNodes: IndexedSeq[ExprNode]) exten
 
   override def toTreeString: String = "[" + exprNodes.map(_.toString).mkString(", ") + "]"
 
-  override def initKey: String = if (exprNodes.nonEmpty) exprNodes.apply(0).getKey + "[]" else "[]"
+  override def initKey: String = {
+    if (exprNodes.nonEmpty && exprNodes.apply(0).isInstanceOf[IdentNode]) {
+      exprNodes.apply(0).asInstanceOf[IdentNode].getTypeKey + "[]"
+    } else if (exprNodes.nonEmpty) {
+      exprNodes.apply(0).getKey + "[]"
+    } else "[]"
+  }
 }
