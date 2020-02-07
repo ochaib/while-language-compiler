@@ -134,7 +134,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         // TODO optimise to halve visits
         visit(statOne)
         visit(statTwo)
-        if (statOne.isInstanceOf[ReturnNode] || statOne.isInstanceOf[ExitNode]) {
+        if (statOne.isInstanceOf[ReturnNode]) {
           SemanticErrorLog.add(s"Return and exit statements may only be the last statement in a block")
         }
     }
