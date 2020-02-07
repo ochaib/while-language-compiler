@@ -48,7 +48,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
       // STAT NODES
 
-      case _:SkipNode =>
+      case _: SkipNode =>
 
       case DeclarationNode(_type, ident, rhs) =>
         val typeIdentifier: IDENTIFIER = _type.getType(topSymbolTable, currentSymbolTable)
@@ -56,8 +56,10 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
         // If the type and the rhs don't match, throw exception
         val rhsType = rhs.getType(topSymbolTable, currentSymbolTable)
+        // If the rhs could not have its type evaluated, do not attempt to compare them
+        if (rhsType == null) {
         // If types are not the same, or the rhs is not a general identifier for pair and array respectively
-        if (! (typeIdentifier == rhsType ||
+        } else if (! (typeIdentifier == rhsType ||
           typeIdentifier.isInstanceOf[PAIR] && rhsType == GENERAL_PAIR ||
           typeIdentifier.isInstanceOf[ARRAY] && rhsType == GENERAL_ARRAY)) {
 
@@ -210,6 +212,8 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
     val pairIdentifier: IDENTIFIER = expr.getType(topSymbolTable, currentSymbolTable)
     if (! pairIdentifier.isInstanceOf[PAIR]) {
       SemanticErrorLog.add(s"Expected pair type but got $pairIdentifier.")
+    } else if (pairIdentifier == GENERAL_PAIR) {
+      SemanticErrorLog.add(s"Expected pair type but got null.")
     } else {
       visit(expr)
     }
