@@ -72,7 +72,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
         visit(rhs)
 
         if (lhs.getType(topSymbolTable, currentSymbolTable) != rhs.getType(topSymbolTable, currentSymbolTable)) {
-          SemanticErrorLog.add(lhs.getKey + " and " + rhs.getKey + " have non-matching types.")
+          SemanticErrorLog.add(s"${lhs.getKey} and ${rhs.getKey} have non-matching types.")
         }
 
       case ReadNode(lhs) =>
