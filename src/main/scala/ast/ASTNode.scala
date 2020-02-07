@@ -110,7 +110,17 @@ case class NewPairNode(fstElem: ExprNode, sndElem: ExprNode) extends AssignRHSNo
 
 case class CallNode(identNode: IdentNode, argList: Option[ArgListNode]) extends AssignRHSNode {
 
-  override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = identNode.getType(topST, ST)
+  override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
+    val F: Option[FUNCTION] = ST.lookupFunAll(getKey)
+    if (F.isEmpty) {
+      throw new TypeException(s"$toString has not been declared")
+    } else if (! F.get.isInstanceOf[FUNCTION]) {
+      assert(assertion = false, s"Something went wrong... $toString should be a function but isn't")
+      null
+    } else {
+      F.get.returnType
+    }
+  }
 
   override def initKey: String = identNode.getKey
 
