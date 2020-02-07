@@ -1,6 +1,6 @@
 package ast
 
-import util.SemanticErrorLog
+import util.{SemanticErrorLog, SyntaxErrorLog}
 
 import scala.collection.immutable.HashMap
 
@@ -14,7 +14,16 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
     // AST NODES
 
     case ProgramNode(functions, stat) =>
-      for (functionNode <- functions) visit(functionNode)
+      for (functionNode <- functions) {
+        if (functionReturnsOrExits(functionNode.stat)) {
+          // Add to syntax error log.
+          SyntaxErrorLog.add(s"Function ${functionNode.identNode.toString} does not return or exit")
+        }
+        visit(functionNode)
+      }
+      if (functionReturnsOrExits(stat)) {
+        SyntaxErrorLog.add("Program statement does not return or exit.")
+      }
       symbolTableCreatorWrapper(_ => visit(stat))
 
     case FuncNode(funcType, identNode, paramList: Option[ParamListNode], stat: StatNode) =>
@@ -169,7 +178,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
     case assignRHSNode: AssignRHSNode => assignRHSNode match {
       case exprNode: ExprNode => exprNodeCheckerHelper(exprNode)
       case ArrayLiteralNode(exprNodes) =>
-        if (! exprNodes.isEmpty) {
+        if (exprNodes.nonEmpty) {
           val firstIdentifier: IDENTIFIER = exprNodes.apply(0).getType(topSymbolTable, currentSymbolTable)
           for (expr <- exprNodes) {
             val exprIdentifier = expr.getType(topSymbolTable, currentSymbolTable)
@@ -366,6 +375,26 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
     // Exit symbol table
     currentSymbolTable = currentSymbolTable.encSymbolTable
 
+  }
+
+  // Helper function to check that function has a return or an exit, otherwise syntax error.
+  def functionReturnsOrExits(statNode: StatNode): Boolean = {
+    statNode match {
+      case exitNode: ExitNode =>
+        true
+      case returnNode: ReturnNode =>
+        true
+      case ifNode: IfNode =>
+        functionReturnsOrExits(ifNode.thenStat) && functionReturnsOrExits(ifNode.elseStat)
+      case whileNode: WhileNode =>
+        functionReturnsOrExits(whileNode.stat)
+      case beginNode: BeginNode =>
+        functionReturnsOrExits(beginNode.stat)
+      case sequenceNode: SequenceNode =>
+        functionReturnsOrExits(sequenceNode.statOne) && functionReturnsOrExits(sequenceNode.statTwo)
+      case _ =>
+        false
+    }
   }
 
 }
