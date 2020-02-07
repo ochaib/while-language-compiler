@@ -342,7 +342,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
   def symbolTableCreatorWrapper(contents: Unit => Unit): Unit = {
     // Prepare to visit stat by creating new symbol table
     currentSymbolTable = SymbolTable.newSymbolTable(currentSymbolTable)
-    contents.apply(_)
+    contents.apply()
     // Exit symbol table
     currentSymbolTable = currentSymbolTable.encSymbolTable
 
