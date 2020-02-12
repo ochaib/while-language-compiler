@@ -61,7 +61,12 @@ pair_elem_type: base_type                   #PETBaseType
 
 expr:
      OPEN_PARENTHESES expr CLOSE_PARENTHESES    #BracketExpr
-    | expr binary_oper expr                 #ExprBinaryOper
+    | expr binaryMulDivModOp expr           #ExprBinaryMulDivModOp
+    | expr binaryAddSubOp expr              #ExprBinaryAddSupOp
+    | expr binaryComparatorOp expr          #ExprBinaryComparatorOp
+    | expr binaryEqualityOp expr            #ExprBinaryEqualityOp
+    | expr binaryLogicalAndOp expr          #ExprBinaryLogicalAndOp
+    | expr binaryLogicalOrOp expr           #ExprBinaryLogicalOrOp
     | unary_oper expr                       #ExprUnaryOper
     | int_liter                             #ExprIntLiter
     | bool_liter                            #ExprBoolLiter
@@ -73,9 +78,17 @@ expr:
 
 ident: IDENT;
 
+binaryMulDivModOp: MULTIPLY | DIVIDE | MODULO;
 
-binary_oper: MULTIPLY | DIVIDE | MODULO | PLUS | MINUS |
-             GT | GTE | LT | LTE | EE | NE | AND | OR ;
+binaryAddSubOp: PLUS | MINUS;
+
+binaryComparatorOp: GT | GTE | LT | LTE;
+
+binaryEqualityOp: EE | NE;
+
+binaryLogicalAndOp: AND;
+
+binaryLogicalOrOp: OR;
 
 unary_oper: NOT | MINUS | LEN | ORD | CHR;
 
