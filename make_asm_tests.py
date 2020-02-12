@@ -17,10 +17,11 @@ results = [_ for _ in refASM.split('calling the reference compiler on ') if _]
 # filename is first line
 get_filename = lambda result: result[:result.find('\n')]
 # pieces separated by ====, the assembly is the second piece
+# .partition doesn't cut it here as 'finished' comes after this boundary
 get_assembled = lambda result: result.split('===========================================================')[1]
 
 # asm starts with line num and an indent we need to remove that
-RE_LINE_OFFSET = re.compile('^[0-9]\t?')
+RE_LINE_OFFSET = re.compile('^[0-9]+\t?')
 clean_assembled = lambda assembled: '\n'.join([
     re.sub(RE_LINE_OFFSET, '', line)
     for line in assembled.strip().split('\n')
