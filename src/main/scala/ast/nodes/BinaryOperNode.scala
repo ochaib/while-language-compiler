@@ -7,12 +7,11 @@ import util.{ColoredConsole => console}
 
 sealed abstract class BinaryOperationNode(token: Token, argOne: ExprNode, argTwo: ExprNode) extends ExprNode(token) {
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = this match {
-    // TODO: refactor
     case MultiplyNode(_, _, _)
           | DivideNode(_, _, _)
           | ModNode(_, _, _)
           | PlusNode(_, _, _)
-          | MinusNode(_, _, _) => new IntTypeNode(null).getType(topST, ST)
+          | MinusNode(_, _, _) => IntTypeNode(null).getType(topST, ST)
     case GreaterThanNode(_, _, _)
           | GreaterEqualNode(_, _, _)
           | LessThanNode(_, _, _)
@@ -20,7 +19,7 @@ sealed abstract class BinaryOperationNode(token: Token, argOne: ExprNode, argTwo
           | EqualToNode(_, _, _)
           | NotEqualNode(_, _, _)
           | LogicalAndNode(_, _, _)
-          | LogicalOrNode(_, _, _) => new BoolTypeNode(null).getType(topST, ST)
+          | LogicalOrNode(_, _, _) => BoolTypeNode(null).getType(topST, ST)
   }
 
   override def initKey: String = this match {
@@ -29,7 +28,7 @@ sealed abstract class BinaryOperationNode(token: Token, argOne: ExprNode, argTwo
          | DivideNode(_, _, _)
          | ModNode(_, _, _)
          | PlusNode(_, _, _)
-         | MinusNode(_, _, _) => new IntTypeNode(null).getKey
+         | MinusNode(_, _, _) => IntTypeNode(null).getKey
     case GreaterThanNode(_, _, _)
          | GreaterEqualNode(_, _, _)
          | LessThanNode(_, _, _)
@@ -37,7 +36,7 @@ sealed abstract class BinaryOperationNode(token: Token, argOne: ExprNode, argTwo
          | EqualToNode(_, _, _)
          | NotEqualNode(_, _, _)
          | LogicalAndNode(_, _, _)
-         | LogicalOrNode(_, _, _) => new BoolTypeNode(null).getKey
+         | LogicalOrNode(_, _, _) => BoolTypeNode(null).getKey
   }
 
   def getOperator: String = this match {
