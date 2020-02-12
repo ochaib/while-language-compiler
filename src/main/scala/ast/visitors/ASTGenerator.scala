@@ -436,29 +436,6 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     }
   }
 
-//  override def visitExprBinaryOper(ctx: WACCParser.ExprBinaryOperContext): ExprNode = {
-//    // ⟨expr⟩ ⟨binary-oper⟩ ⟨expr⟩
-//    val firstExpr: ExprNode = visit(ctx.getChild(0)).asInstanceOf[ExprNode]
-//    val binaryOperator: String = ctx.getChild(1).getText
-//    val secondExpr: ExprNode = visit(ctx.getChild(2)).asInstanceOf[ExprNode]
-//
-//    binaryOperator match {
-//      case "*"  => MultiplyNode(ctx.start, firstExpr, secondExpr)
-//      case "/"  => DivideNode(ctx.start, firstExpr, secondExpr)
-//      case "%"  => ModNode(ctx.start, firstExpr, secondExpr)
-//      case "+"  => PlusNode(ctx.start, firstExpr, secondExpr)
-//      case "-"  => MinusNode(ctx.start, firstExpr, secondExpr)
-//      case ">"  => GreaterThanNode(ctx.start, firstExpr, secondExpr)
-//      case ">=" => GreaterEqualNode(ctx.start, firstExpr, secondExpr)
-//      case "<"  => LessThanNode(ctx.start, firstExpr, secondExpr)
-//      case "<=" => LessEqualNode(ctx.start, firstExpr, secondExpr)
-//      case "==" => EqualToNode(ctx.start, firstExpr, secondExpr)
-//      case "!=" => NotEqualNode(ctx.start, firstExpr, secondExpr)
-//      case "&&" => LogicalAndNode(ctx.start, firstExpr, secondExpr)
-//      case "||" => LogicalOrNode(ctx.start, firstExpr, secondExpr)
-//    }
-//  }
-
   override def visitExprBinaryMulDivModOp(ctx: WACCParser.ExprBinaryMulDivModOpContext): ExprNode = {
     val firstExpr: ExprNode = visit(ctx.getChild(0)).asInstanceOf[ExprNode]
     val binaryOperator: String = ctx.getChild(1).getText
