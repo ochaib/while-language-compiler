@@ -1,0 +1,5 @@
+package instructions
+
+trait FlexibleSndOp {
+
+}
