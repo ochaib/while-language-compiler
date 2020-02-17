@@ -2,13 +2,13 @@ package instructions
 
 import registers.Register
 
-//sealed abstract class Instructions(condition: Condition)
+sealed abstract class Instruction(condition: Condition)
 
-//case class Push(condition: Condition, registers: List[Register]) extends Instructions(condition)
-//case class Pop(condition: Condition, registers: List[Register]) extends Instructions(condition)
+//case class Push(condition: Condition, registers: List[Register]) extends Instruction(condition)
+//case class Pop(condition: Condition, registers: List[Register]) extends Instruction(condition)
 
 //sealed abstract class MemAccess(condition: Condition, dest: Register, src: Register, includeOffset: Boolean, offset: FlexOffset,
-//                                loadable: Loadable) extends Instructions(condition)
+//                                loadable: Loadable) extends Instruction(condition)
 //case class LoadDirect(condition: Condition, dest: Register, src: Register, includeOffset: Boolean,
 //                      offset: FlexOffset, loadable: Loadable)
 //  extends MemAccess(condition, dest, src, includeOffset, offset, loadable)
@@ -17,7 +17,7 @@ import registers.Register
 //  extends MemAccess(condition, dest, src, includeOffset, offset, loadable)
 
 
-// Data Process instructions include ADD, SUB, ORR, EOR
+// Data Process Instruction include ADD, SUB, ORR, EOR
 //case abstract class DataProcess(condition: Condition, conditionFlag: Boolean, dest: Register,
 //                                src1: Register, src2: FlexibleSndOp)
 //case class Add(condition: Condition, conditionFlag: Boolean, dest: Register,

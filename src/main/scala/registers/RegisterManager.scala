@@ -1,7 +1,9 @@
 package registers
 
-class RegisterManager {
+import instructions._
 
-  instructionSet: Instruction
+abstract class RegisterManager {
+
+  val instructionSet: Instruction
 
 }
