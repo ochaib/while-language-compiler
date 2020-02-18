@@ -1,5 +1,7 @@
 package registers
 
+import scala.collection.mutable.ListBuffer
+
 sealed trait Register {def registerID: String; }
 object Register {
   case object R1 extends Register {val registerID = "R1"}
@@ -20,6 +22,12 @@ object Register {
   case object LR extends Register {val registerID = "LR"}
   // Program counter (R15)
   case object PC extends Register {val registerID = "PC"}
+}
+
+object Registers {
+  val availableARMRegisters: ListBuffer[Register] = ListBuffer[Register](
+    Register.R1, Register.R2, Register.R3, Register.R4, Register.R5, Register.R6, Register.R7,
+    Register.R8, Register.R9, Register.R10, Register.R11, Register.R12)
 }
 
 //object Register extends Enumeration {

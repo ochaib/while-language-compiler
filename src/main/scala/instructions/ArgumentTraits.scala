@@ -1,5 +1,5 @@
 package instructions
 
 trait FlexOffset
-trait FlexibleSndOp
+//trait FlexibleSndOp
 trait Loadable
