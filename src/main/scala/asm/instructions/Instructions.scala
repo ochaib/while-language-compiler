@@ -21,6 +21,7 @@ sealed abstract class MemAccess(
     offset: FlexOffset,
     loadable: Loadable
 ) extends Instruction(condition)
+
 sealed abstract class LoadDirect(
     condition: Condition,
     dest: Register,
@@ -29,6 +30,7 @@ sealed abstract class LoadDirect(
     offset: FlexOffset,
     loadable: Loadable
 ) extends MemAccess(condition, dest, src, includeOffset, offset, loadable)
+
 sealed abstract class Store(
     condition: Condition,
     dest: Register,
