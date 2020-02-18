@@ -1,9 +1,10 @@
 package asm.instructions
 
+import asm.AssemblyLine
 import asm.registers.Register
 
 class Immediate(val immediate: Int) extends Loadable with FlexibleSndOp with FlexOffset
-class Label(val label: String) extends Loadable
+class Label(val label: String) extends Loadable with AssemblyLine
 class ShiftedRegister(val register: Register /* Unimplemented ARM fields */) extends FlexibleSndOp
 
 sealed class WordType

@@ -1,9 +1,10 @@
 package asm.instructions
 
+import asm.AssemblyLine
 import asm.registers.Register
 
 // could condition be an Option here instead of having an Any condition?
-abstract class Instruction(condition: Option[Condition])
+abstract class Instruction(condition: Option[Condition]) extends AssemblyLine
 
 case class Push(condition: Option[Condition], registers: List[Register])
     extends Instruction(condition)
