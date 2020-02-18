@@ -4,8 +4,8 @@ import asm.instructions._
 import ast.nodes._
 
 object CodeGenerator extends Generator {
-    def generate(program: Any): IndexedSeq[Any] = {
+    def generate(program: ASTNode): IndexedSeq[Instruction] = {
         // TODO
-        new IndexedSeq[Instruction]
+        IndexedSeq[Instruction]()
     }
 }

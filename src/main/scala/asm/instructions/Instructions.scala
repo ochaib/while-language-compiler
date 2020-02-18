@@ -9,6 +9,10 @@ case class Push(condition: Condition, registers: List[Register])
 case class Pop(condition: Condition, registers: List[Register])
     extends Instruction(condition)
 
+// NOTE: a case class can't inherit a case class
+// the workaround is to make them `sealed abstract` so that
+// these non-leaf classes can't be pattern matched on
+// alternatively, we could turn these into traits
 sealed abstract class MemAccess(
     condition: Condition,
     dest: Register,
@@ -17,7 +21,7 @@ sealed abstract class MemAccess(
     offset: FlexOffset,
     loadable: Loadable
 ) extends Instruction(condition)
-case class LoadDirect(
+sealed abstract class LoadDirect(
     condition: Condition,
     dest: Register,
     src: Register,
@@ -25,7 +29,7 @@ case class LoadDirect(
     offset: FlexOffset,
     loadable: Loadable
 ) extends MemAccess(condition, dest, src, includeOffset, offset, loadable)
-case class Store(
+sealed abstract class Store(
     condition: Condition,
     dest: Register,
     src: Register,
@@ -35,7 +39,7 @@ case class Store(
 ) extends MemAccess(condition, dest, src, includeOffset, offset, loadable)
 
 // Data Process Instructions include ADD, SUB, ORR, EOR
-abstract case class DataProcess(
+sealed abstract class DataProcess(
     condition: Condition,
     conditionFlag: Boolean,
     dest: Register,
