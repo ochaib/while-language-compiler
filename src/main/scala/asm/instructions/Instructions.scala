@@ -14,8 +14,6 @@ case class Pop(condition: Condition, registers: List[Register])
 // the workaround is to make them `sealed abstract` so that
 // these non-leaf classes can't be pattern matched on
 // alternatively, we could turn these into traits
-// TODO: we should have default arguments everywhere so we
-// don't have to define every single argument
 case class LoadDirect private(
     condition: Condition,
     dest: Register,
@@ -42,13 +40,26 @@ case class LoadDirect private(
     this(condition, dest, null, null, null, loadable, null)
 }
 case class Store(
-    condition: Condition,
-    dest: Register,
-    src: Register,
-    includeOffset: Boolean,
-    offset: FlexOffset,
-    loadable: Loadable
-) extends Instruction(condition)
+                  condition: Condition,
+                  dest: Register,
+                  src: Register,
+                  offset: FlexOffset,
+                  registerWriteBack: Boolean, // the "!"
+                  label: Label
+    ) extends Instruction(condition) {
+  // STR{cond} Rd, [Rn]
+  def this(condition: Condition, dest: Register, src: Register) =
+    this(condition, dest, src, null, null, null)
+  // STR{cond} Rd, [Rn, FlexOffset]{!}
+  def this(condition: Condition, dest: Register, src: Register, flexOffset: FlexOffset, registerWriteBack: Boolean) =
+    this(condition, dest, src, flexOffset, registerWriteBack, null)
+  // STR{cond} Rd, label
+  def this(condition: Condition, dest: Register, label: Label) =
+    this(condition, dest, null, null, null, label)
+  // STR{cond} Rd, [Rn], FlexOffset
+  def this(condition: Condition, dest: Register, src: Register, offset: FlexOffset) =
+    this(condition, dest, src, offset, null, null)
+}
 
 // Data Process Instructions include ADD, SUB, ORR, EOR
 sealed abstract class DataProcess(
