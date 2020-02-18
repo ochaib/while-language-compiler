@@ -74,7 +74,7 @@ object Compiler extends App {
       SemanticErrorLog.printAllErrors()
       System.exit(200)
     }
-
+/*
     // Generate ASM instructions from AST
     val instructions: IndexedSeq[Instruction] = CodeGenerator.generate(tree, ARM11)
     // Format using ARM11 syntax
@@ -86,6 +86,7 @@ object Compiler extends App {
     val writer = new PrintWriter(new File(outputFile))
     writer.write(compiled)
     writer.close
+ */
   } catch {
     case ioerror: IOException => error("File does not exist")
   }

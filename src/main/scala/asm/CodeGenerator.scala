@@ -4,7 +4,7 @@ import asm.instructions._
 import asm.instructionset._
 import asm.registers.RegisterManager
 import ast.nodes._
-
+/*
 object CodeGenerator {
     def generate(program: ASTNode, instructionSet: InstructionSet): IndexedSeq[Instruction] = {
         val RM: RegisterManager = new RegisterManager(instructionSet)
@@ -20,4 +20,4 @@ object CodeGenerator {
             new EndBranch,
         )
     }
-}
+}*/

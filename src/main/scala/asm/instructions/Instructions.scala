@@ -17,53 +17,53 @@ case class Pop(condition: Condition, registers: List[Register])
 case class LoadDirect private(
                                condition: Condition,
                                byteType: Boolean,
-                               _type: WordType,
+                               _type: Option[WordType],
                                dest: Register,
-                               src: Register,
-                               offset: FlexOffset,
+                               src: Option[Register],
+                               offset: Option[FlexOffset],
                                registerWriteBack: Boolean, // the "!"
-                               loadable: Loadable,
-                               label: Label
+                               loadable: Option[Loadable],
+                               label: Option[Label]
 ) extends Instruction(condition) {
-  assert(!(byteType && _type != null), "Can't simultaneously be a byteType and another type")
+  assert(!(byteType && _type.isDefined), "Can't simultaneously be a byteType and another type")
   // LDR{cond}{B|Type} Rd, [Rn]
-  def this(condition: Condition, byteType: Boolean, _type: WordType, dest: Register, src: Register) =
-    this(condition, byteType, _type, dest, src, null, null, null, null)
+  def this(condition: Condition, byteType: Boolean = false, _type: WordType, dest: Register, src: Register) =
+    this(condition, byteType, Some(_type), dest, Some(src), None, registerWriteBack = false, None, None)
   // LDR{cond}{B|Type} Rd, [Rn, FlexOffset]{!}
-  def this(condition: Condition, byteType: Boolean, _type: WordType, dest: Register, src: Register, flexOffset: FlexOffset, registerWriteBack: Boolean) =
-    this(condition, byteType, _type, dest, src, flexOffset, registerWriteBack, null, null)
+  def this(condition: Condition, byteType: Boolean = false, _type: WordType, dest: Register, src: Register, flexOffset: FlexOffset, registerWriteBack: Boolean = false) =
+    this(condition, byteType, Some(_type), dest, Some(src), Some(flexOffset), registerWriteBack, None, None)
   // LDR{cond}{B|Type} Rd, label
-  def this(condition: Condition, byteType: Boolean, _type: WordType, dest: Register, label: Label) =
-    this(condition, byteType, _type, dest, null, null, null, null, label)
+  def this(condition: Condition, byteType: Boolean = false, _type: WordType, dest: Register, label: Label) =
+    this(condition, byteType, Some(_type), dest, None, None, registerWriteBack = false, None, Some(label))
   // LDR{cond}{B|Type} Rd, [Rn], FlexOffset
-  def this(condition: Condition, byteType: Boolean, _type: WordType, dest: Register, src: Register, offset: FlexOffset) =
-    this(condition, byteType, _type, dest, src, offset, null, null, null)
+  def this(condition: Condition, byteType: Boolean = false, _type: WordType, dest: Register, src: Register, offset: FlexOffset) =
+    this(condition, byteType, Some(_type), dest, Some(src), Some(offset), registerWriteBack = false, None, None)
   // LDR{cond}{B|Type} register, =[expr | label-expr]
-  def this(condition: Condition, byteType: Boolean, _type: WordType, dest: Register, loadable: Loadable) =
-    this(condition, byteType, _type, dest, null, null, null, loadable, null)
+  def this(condition: Condition, byteType: Boolean = false, _type: WordType, dest: Register, loadable: Loadable) =
+    this(condition, byteType, Some(_type), dest, None, None, registerWriteBack = false, Some(loadable), null)
 }
 
-case class Store(
-                  condition: Condition,
-                  byteType: Boolean,
-                  dest: Register,
-                  src: Register,
-                  offset: FlexOffset,
-                  registerWriteBack: Boolean, // the "!"
-                  label: Label
-    ) extends Instruction(condition) {
+case class Store private(
+                          condition: Condition,
+                          byteType: Boolean,
+                          dest: Register,
+                          src: Option[Register],
+                          offset: Option[FlexOffset],
+                          registerWriteBack: Boolean, // the "!"
+                          label: Option[Label]
+                        ) extends Instruction(condition) {
   // STR{cond}{B} Rd, [Rn]
-  def this(condition: Condition, byteType: Boolean, dest: Register, src: Register) =
-    this(condition, byteType, dest, src, null, null, null)
+  def this(condition: Condition, byteType: Boolean = false, dest: Register, src: Register) =
+    this(condition, byteType, dest, Some(src), None, registerWriteBack = false, None)
   // STR{cond}{B} Rd, [Rn, FlexOffset]{!}
-  def this(condition: Condition, byteType: Boolean, dest: Register, src: Register, flexOffset: FlexOffset, registerWriteBack: Boolean) =
-    this(condition, byteType, dest, src, flexOffset, registerWriteBack, null)
+  def this(condition: Condition, byteType: Boolean = false, dest: Register, src: Register, flexOffset: FlexOffset, registerWriteBack: Boolean) =
+    this(condition, byteType, dest, Some(src), Some(flexOffset), registerWriteBack, None)
   // STR{cond}{B} Rd, label
-  def this(condition: Condition, byteType: Boolean, dest: Register, label: Label) =
-    this(condition, byteType, dest, null, null, null, label)
+  def this(condition: Condition, byteType: Boolean = false, dest: Register, label: Label) =
+    this(condition, byteType, dest, None, None, registerWriteBack = false, Some(label))
   // STR{cond}{B} Rd, [Rn], FlexOffset
-  def this(condition: Condition, dest: Register, src: Register, offset: FlexOffset) =
-    this(condition, byteType, dest, src, offset, null, null)
+  def this(condition: Condition, byteType: Boolean = false, dest: Register, src: Register, offset: FlexOffset) =
+    this(condition, byteType, dest, Some(src), Some(offset), registerWriteBack = false, None)
 }
 
 // Data Process Instructions include ADD, SUB, ORR, EOR
