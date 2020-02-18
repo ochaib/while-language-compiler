@@ -38,11 +38,11 @@ case class LoadDirect private(
   def this(condition: Option[Condition], byteType: Boolean = false, _type: WordType, dest: Register, label: Label) =
     this(condition, byteType, Some(_type), dest, None, None, None, None, Some(label))
   // LDR{cond}{B|Type} Rd, [Rn], FlexOffset
-  def this(condition: Option[Condition], byteType: Boolean = false, _type: WordType, dest: Register, src: Register, offset: FlexOffset) =
-    this(condition, byteType, Some(_type), dest, Some(src), Some(offset), None, None, None)
+  def this(condition: Option[Condition], byteType: Boolean = false, _type: WordType, dest: Register, src: Register, flexOffset: FlexOffset) =
+    this(condition, byteType, Some(_type), dest, Some(src), Some(flexOffset), None, None, None)
   // LDR{cond}{B|Type} register, =[expr | label-expr]
   def this(condition: Option[Condition], byteType: Boolean = false, _type: WordType, dest: Register, loadable: Loadable) =
-    this(condition, byteType, Some(_type), dest, None, None, None, Some(loadable), null)
+    this(condition, byteType, Some(_type), dest, None, None, None, Some(loadable), None)
 }
 
 case class Store private(
@@ -65,8 +65,8 @@ case class Store private(
   def this(condition: Option[Condition], byteType: Boolean = false, dest: Register, label: Label) =
     this(condition, byteType, dest, None, None, registerWriteBack = false, Some(label))
   // STR{cond}{B} Rd, [Rn], FlexOffset
-  def this(condition: Option[Condition], byteType: Boolean = false, dest: Register, src: Register, offset: FlexOffset) =
-    this(condition, byteType, dest, Some(src), Some(offset), registerWriteBack = false, None)
+  def this(condition: Option[Condition], byteType: Boolean = false, dest: Register, src: Register, flexOffset: FlexOffset) =
+    this(condition, byteType, dest, Some(src), Some(flexOffset), registerWriteBack = false, None)
 }
 
 // Data Process Instructions include ADD, SUB, ORR, EOR
