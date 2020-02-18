@@ -28,6 +28,6 @@ trait InstructionSet {
   def getVariableRegisters: ListBuffer[Register]
 
   // Print the instructions to a string with the instruction set's syntax
-  def print(instructions: IndexedSeq[Instruction]): String
+  def print(strings: IndexedSeq[String], instructions: IndexedSeq[Instruction]): String
 
 }
