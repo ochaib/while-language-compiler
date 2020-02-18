@@ -241,9 +241,9 @@ def run_tests(*test_defs):
 
 # every valid program should compile and invalid program should not compile
 parse_tests = [
-#    every_valid_program_should_compile,
-#    every_syntax_error_should_fail,
-#    every_semantic_error_should_fail
+    every_valid_program_should_compile,
+    every_syntax_error_should_fail,
+    every_semantic_error_should_fail
 ]
 
 # compiler should generate correct assembly
