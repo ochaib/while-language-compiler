@@ -10,6 +10,7 @@ case class Push(condition: Condition, registers: List[Register])
 case class Pop(condition: Condition, registers: List[Register])
     extends Instruction(condition)
 
+case class LabelBranch(label: Label) extends Instruction(Anything)
 case class Branch(condition: Condition, label: Label)
     extends Instruction(condition)
 
