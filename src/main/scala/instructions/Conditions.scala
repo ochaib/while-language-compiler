@@ -1,4 +1,4 @@
-package ast.instructions
+package instructions
 
 sealed abstract class Condition
 

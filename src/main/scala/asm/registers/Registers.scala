@@ -1,4 +1,4 @@
-package ast.registers
+package asm.registers
 
 class Register {
   // TODO

@@ -1,4 +1,4 @@
-package ast.instructions
+package instructions
 
 trait FlexibleSndOp {
 
