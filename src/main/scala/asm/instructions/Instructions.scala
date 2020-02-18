@@ -10,33 +10,37 @@ case class Push(condition: Condition, registers: List[Register])
 case class Pop(condition: Condition, registers: List[Register])
     extends Instruction(condition)
 
-case class LabelBranch(label: Label) extends Instruction(Anything)
-case class Branch(condition: Condition, label: Label)
-    extends Instruction(condition)
-case class EndBranch() extends Instruction(Anything)
-
 // NOTE: a case class can't inherit a case class
 // the workaround is to make them `sealed abstract` so that
 // these non-leaf classes can't be pattern matched on
 // alternatively, we could turn these into traits
 // TODO: we should have default arguments everywhere so we
 // don't have to define every single argument
-sealed abstract class MemAccess(
+case class LoadDirect private(
     condition: Condition,
     dest: Register,
     src: Register,
-    includeOffset: Boolean,
     offset: FlexOffset,
-    loadable: Loadable
-) extends Instruction(condition)
-case class LoadDirect(
-    condition: Condition,
-    dest: Register,
-    src: Register,
-    includeOffset: Boolean,
-    offset: FlexOffset,
-    loadable: Loadable
-) extends MemAccess(condition, dest, src, includeOffset, offset, loadable)
+    registerWriteBack: Boolean, // the "!"
+    loadable: Loadable,
+    label: Label
+) extends Instruction(condition) {
+  // LDR{cond} Rd, [Rn]
+  def this(condition: Condition, dest: Register, src: Register) =
+    this(condition, dest, src, null, null, null, null)
+  // LDR{cond} Rd, [Rn, FlexOffset]{!}
+  def this(condition: Condition, dest: Register, src: Register, flexOffset: FlexOffset, registerWriteBack: Boolean) =
+    this(condition, dest, src, flexOffset, registerWriteBack, null, null)
+  // LDR{cond} Rd, label
+  def this(condition: Condition, dest: Register, label: Label) =
+    this(condition, dest, null, null, null, null, label)
+  // LDR{cond} Rd, [Rn], FlexOffset
+  def this(condition: Condition, dest: Register, src: Register, offset: FlexOffset) =
+    this(condition, dest, src, offset, null, null, null)
+  // LDR{cond} register, =[expr | label-expr]
+  def this(condition: Condition, dest: Register, loadable: Loadable) =
+    this(condition, dest, null, null, null, loadable, null)
+}
 case class Store(
     condition: Condition,
     dest: Register,
@@ -44,7 +48,7 @@ case class Store(
     includeOffset: Boolean,
     offset: FlexOffset,
     loadable: Loadable
-) extends MemAccess(condition, dest, src, includeOffset, offset, loadable)
+) extends Instruction(condition)
 
 // Data Process Instructions include ADD, SUB, ORR, EOR
 sealed abstract class DataProcess(
@@ -94,4 +98,14 @@ case class ExclusiveOr(
     src2: FlexibleSndOp
 ) extends DataProcess(condition, conditionFlag, dest, src1, src2)
 
-case class Move(condition: Condition, dest: Register, src: FlexibleSndOp)
+case class Move(condition: Condition, dest: Register, src: FlexibleSndOp
+               ) extends Instruction(condition)
+
+case class Compare(condition: Condition, operand1: Register, operand2: FlexibleSndOp
+                  ) extends Instruction(condition)
+
+case class Branch(condition: Condition, label: Label
+                 ) extends Instruction(condition)
+
+case class BranchLabel(condition: Condition, label: Label
+                      ) extends Instruction(condition)

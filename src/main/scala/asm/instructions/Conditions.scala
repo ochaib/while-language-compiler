@@ -16,5 +16,4 @@ case object GreaterEqual extends Condition
 case object LessThan extends Condition
 case object GreaterThan extends Condition
 case object LessEqual extends Condition
-// Any is a reserved class we shouldn't override it
 case object Anything extends Condition
