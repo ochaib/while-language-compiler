@@ -1,4 +1,6 @@
 import antlr._
+import asm.generator.CodeGenerator
+import asm.instructions.Instruction
 import ast.nodes.ASTNode
 import ast.visitors.{ASTGenerator, TypeCheckVisitor, Visitor}
 import java.io.IOException
@@ -67,8 +69,9 @@ object Compiler extends App {
       System.exit(200)
     }
 
-
-    // TODO: compile
+    // Generate ASM instructions from AST
+    val generator: CodeGenerator = new CodeGenerator()
+    val instructions: IndexedSeq[Instruction] = generator.generate(tree)
 
   } catch {
     case ioerror: IOException => error("File does not exist")
