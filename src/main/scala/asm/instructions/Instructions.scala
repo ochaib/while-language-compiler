@@ -95,5 +95,3 @@ case class ExclusiveOr(
 ) extends DataProcess(condition, conditionFlag, dest, src1, src2)
 
 case class Move(condition: Condition, dest: Register, src: FlexibleSndOp)
-
-case class Custom(str: String) extends Instruction(Anything)

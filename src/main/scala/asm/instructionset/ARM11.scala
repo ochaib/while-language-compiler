@@ -1,6 +1,6 @@
 package asm.instructionset
 
-import asm.instructions.Instruction
+import asm.instructions._
 import asm.registers.Register
 import scala.collection.mutable.ListBuffer
 
@@ -58,6 +58,31 @@ object ARM11 extends InstructionSet {
   )
 
   // Print the instructions to a string with the instruction set's syntax
-  def print(instructions: IndexedSeq[Instruction]): String = ""
+  def print(instructions: IndexedSeq[Instruction]): String =
+    ".text\n\n" +
+    ".global main\n" +
+    instructions.map(print).mkString("\n")
+
+  def print(instruction: Instruction): String = instruction match {
+    // ARM 11 syntax as per ref manual:
+    // OP{COND} *ARGS
+
+    case Push(c, rs) => s"\tPUSH${print(c)} {" + rs.map(_.registerID).mkString(", ") + "}"
+    case Pop(c, rs) => s"\tPOP${print(c)} {" + rs.map(_.registerID).mkString(", ") + "}"
+
+    case LabelBranch(l) => "." + l.label + ":"
+    case Branch(c, l) => s"\tBL${print(c)} " + "." + l.label
+    case EndBranch() => s"\t.ltorg"
+
+
+    case _ => "<undefined instruction>"
+
+  }
+
+  def print(condition: Condition): String = condition match {
+    // TODO: implement
+    case Anything => ""
+    case _ => " <condition>"
+  }
 
 }

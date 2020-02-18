@@ -11,17 +11,13 @@ object CodeGenerator {
 
         // TODO: generate functions
         val mainLabel: Label = new Label("main")
-        var main = IndexedSeq[Instruction](
+        IndexedSeq[Instruction](
             new LabelBranch(mainLabel),
             new Push(Anything, List(instructionSet.getLR)),
             // TODO: generate stats
             new LoadDirect(Anything, instructionSet.getReturn, null, false, null, new Immediate(0)),
-            new Pop(Anything, List(instructionSet.getPC))
+            new Pop(Anything, List(instructionSet.getPC)),
+            new EndBranch,
         )
-        instructionSet match {
-            case ARM11 => main = main :+ new Custom(".ltorg")
-            case _ =>
-        }
-        main
     }
 }
