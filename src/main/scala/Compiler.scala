@@ -1,9 +1,14 @@
 import antlr._
-import asm.generator.CodeGenerator
+import asm.CodeGenerator
 import asm.instructions.Instruction
+import asm.instructionset.ARM11
 import ast.nodes.ASTNode
 import ast.visitors.{ASTGenerator, TypeCheckVisitor, Visitor}
-import java.io.IOException
+import java.io.{
+  IOException,
+  PrintWriter,
+  File
+}
 import org.antlr.v4.runtime.{
   CharStream => ANTLRCharStream,
   CharStreams => ANTLRCharStreams,
@@ -23,6 +28,7 @@ object Compiler extends App {
   }
 
   if (args.length == 0) error("No filename provided")
+  if (!args(0).endsWith(".wacc")) error("Source code must be a .wacc file")
 
   try {
     // Build the lexer and parse out tokens
@@ -70,8 +76,16 @@ object Compiler extends App {
     }
 
     // Generate ASM instructions from AST
-    val instructions: IndexedSeq[Instruction] = CodeGenerator.generate(tree)
-
+    val instructions: IndexedSeq[Instruction] = CodeGenerator.generate(tree, ARM11)
+    // Format using ARM11 syntax
+    val compiled: String = ARM11.print(instructions)
+    // Appropriately name output file, no prefix because it should go in root directory
+    val baseFilename: String = args(0).split("/").last
+    val outputFile: String = baseFilename.stripSuffix(".wacc") + ".s"
+    // Write our compiled code to the assembly file
+    val writer = new PrintWriter(new File(outputFile))
+    writer.write(compiled)
+    writer.close
   } catch {
     case ioerror: IOException => error("File does not exist")
   }
