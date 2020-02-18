@@ -13,11 +13,14 @@ case class Pop(condition: Condition, registers: List[Register])
 case class LabelBranch(label: Label) extends Instruction(Anything)
 case class Branch(condition: Condition, label: Label)
     extends Instruction(condition)
+case class EndBranch() extends Instruction(Anything)
 
 // NOTE: a case class can't inherit a case class
 // the workaround is to make them `sealed abstract` so that
 // these non-leaf classes can't be pattern matched on
 // alternatively, we could turn these into traits
+// TODO: we should have default arguments everywhere so we
+// don't have to define every single argument
 sealed abstract class MemAccess(
     condition: Condition,
     dest: Register,
@@ -26,7 +29,7 @@ sealed abstract class MemAccess(
     offset: FlexOffset,
     loadable: Loadable
 ) extends Instruction(condition)
-sealed abstract class LoadDirect(
+case class LoadDirect(
     condition: Condition,
     dest: Register,
     src: Register,
@@ -34,7 +37,7 @@ sealed abstract class LoadDirect(
     offset: FlexOffset,
     loadable: Loadable
 ) extends MemAccess(condition, dest, src, includeOffset, offset, loadable)
-sealed abstract class Store(
+case class Store(
     condition: Condition,
     dest: Register,
     src: Register,
