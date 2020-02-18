@@ -15,50 +15,55 @@ case class Pop(condition: Condition, registers: List[Register])
 // these non-leaf classes can't be pattern matched on
 // alternatively, we could turn these into traits
 case class LoadDirect private(
-    condition: Condition,
-    dest: Register,
-    src: Register,
-    offset: FlexOffset,
-    registerWriteBack: Boolean, // the "!"
-    loadable: Loadable,
-    label: Label
+                               condition: Condition,
+                               byteType: Boolean,
+                               _type: WordType,
+                               dest: Register,
+                               src: Register,
+                               offset: FlexOffset,
+                               registerWriteBack: Boolean, // the "!"
+                               loadable: Loadable,
+                               label: Label
 ) extends Instruction(condition) {
-  // LDR{cond} Rd, [Rn]
-  def this(condition: Condition, dest: Register, src: Register) =
-    this(condition, dest, src, null, null, null, null)
-  // LDR{cond} Rd, [Rn, FlexOffset]{!}
-  def this(condition: Condition, dest: Register, src: Register, flexOffset: FlexOffset, registerWriteBack: Boolean) =
-    this(condition, dest, src, flexOffset, registerWriteBack, null, null)
-  // LDR{cond} Rd, label
-  def this(condition: Condition, dest: Register, label: Label) =
-    this(condition, dest, null, null, null, null, label)
-  // LDR{cond} Rd, [Rn], FlexOffset
-  def this(condition: Condition, dest: Register, src: Register, offset: FlexOffset) =
-    this(condition, dest, src, offset, null, null, null)
-  // LDR{cond} register, =[expr | label-expr]
-  def this(condition: Condition, dest: Register, loadable: Loadable) =
-    this(condition, dest, null, null, null, loadable, null)
+  assert(!(byteType && _type != null), "Can't simultaneously be a byteType and another type")
+  // LDR{cond}{B|Type} Rd, [Rn]
+  def this(condition: Condition, byteType: Boolean, _type: WordType, dest: Register, src: Register) =
+    this(condition, byteType, _type, dest, src, null, null, null, null)
+  // LDR{cond}{B|Type} Rd, [Rn, FlexOffset]{!}
+  def this(condition: Condition, byteType: Boolean, _type: WordType, dest: Register, src: Register, flexOffset: FlexOffset, registerWriteBack: Boolean) =
+    this(condition, byteType, _type, dest, src, flexOffset, registerWriteBack, null, null)
+  // LDR{cond}{B|Type} Rd, label
+  def this(condition: Condition, byteType: Boolean, _type: WordType, dest: Register, label: Label) =
+    this(condition, byteType, _type, dest, null, null, null, null, label)
+  // LDR{cond}{B|Type} Rd, [Rn], FlexOffset
+  def this(condition: Condition, byteType: Boolean, _type: WordType, dest: Register, src: Register, offset: FlexOffset) =
+    this(condition, byteType, _type, dest, src, offset, null, null, null)
+  // LDR{cond}{B|Type} register, =[expr | label-expr]
+  def this(condition: Condition, byteType: Boolean, _type: WordType, dest: Register, loadable: Loadable) =
+    this(condition, byteType, _type, dest, null, null, null, loadable, null)
 }
+
 case class Store(
                   condition: Condition,
+                  byteType: Boolean,
                   dest: Register,
                   src: Register,
                   offset: FlexOffset,
                   registerWriteBack: Boolean, // the "!"
                   label: Label
     ) extends Instruction(condition) {
-  // STR{cond} Rd, [Rn]
-  def this(condition: Condition, dest: Register, src: Register) =
-    this(condition, dest, src, null, null, null)
-  // STR{cond} Rd, [Rn, FlexOffset]{!}
-  def this(condition: Condition, dest: Register, src: Register, flexOffset: FlexOffset, registerWriteBack: Boolean) =
-    this(condition, dest, src, flexOffset, registerWriteBack, null)
-  // STR{cond} Rd, label
-  def this(condition: Condition, dest: Register, label: Label) =
-    this(condition, dest, null, null, null, label)
-  // STR{cond} Rd, [Rn], FlexOffset
+  // STR{cond}{B} Rd, [Rn]
+  def this(condition: Condition, byteType: Boolean, dest: Register, src: Register) =
+    this(condition, byteType, dest, src, null, null, null)
+  // STR{cond}{B} Rd, [Rn, FlexOffset]{!}
+  def this(condition: Condition, byteType: Boolean, dest: Register, src: Register, flexOffset: FlexOffset, registerWriteBack: Boolean) =
+    this(condition, byteType, dest, src, flexOffset, registerWriteBack, null)
+  // STR{cond}{B} Rd, label
+  def this(condition: Condition, byteType: Boolean, dest: Register, label: Label) =
+    this(condition, byteType, dest, null, null, null, label)
+  // STR{cond}{B} Rd, [Rn], FlexOffset
   def this(condition: Condition, dest: Register, src: Register, offset: FlexOffset) =
-    this(condition, dest, src, offset, null, null)
+    this(condition, byteType, dest, src, offset, null, null)
 }
 
 // Data Process Instructions include ADD, SUB, ORR, EOR
