@@ -28,5 +28,6 @@ bin:
 clean:
 	$(RM) rules $(SOURCE_DIR)/main/java/antlr
 	$(SBT) clean
+	$(RM) *.s
 
 .PHONY: all rules clean sources antlr bin
