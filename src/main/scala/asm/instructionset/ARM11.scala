@@ -2,6 +2,8 @@ package asm.instructionset
 
 import asm.instructions._
 import asm.registers.Register
+import com.sun.jdi.ByteType
+
 import scala.collection.mutable.ListBuffer
 
 sealed trait ARM11Register extends Register
@@ -83,10 +85,13 @@ object ARM11 extends InstructionSet {
   )
 
   // Print the instructions to a string with the instruction set's syntax
-  def print(instructions: IndexedSeq[Instruction]): String =
+  def print(strings: IndexedSeq[String], instructions: IndexedSeq[Instruction]): String =
+    // TODO print required strings
     ".text\n\n" +
       ".global main\n" +
       instructions.map(print).mkString("\n")
+
+  def registerWBToString(registerWriteBack: Boolean): String = if (registerWriteBack) "!" else ""
 
   def print(instruction: Instruction): String = instruction match {
     // ARM 11 syntax as per ref manual:
@@ -97,23 +102,77 @@ object ARM11 extends InstructionSet {
     case Pop(condition, registers) =>
       s"\tPOP${print(condition)} {" + registers.map(_.registerID).mkString(", ") + "}"
 
-    case LabelBranch(label) => label.label + ":"
+    // LDR{cond}{B|Type} Rd, [Rn]
+    case LoadDirect(condition, byteType, Some(_type), dest, Some(src), None, None, None, None) =>
+      s"\tLDR${print(condition)}${byteTypeToString(byteType)}${print(_type)}" +
+        s" ${print(dest)}, [${print(src)}]"
+
+    // LDR{cond}{B|Type} Rd, [Rn, FlexOffset]{!}
+    case LoadDirect(condition, byteType, Some(_type), dest, Some(src), Some(flexOffset), Some(registerWriteBack), None, None) =>
+      s"LDR${print(condition)}${byteTypeToString(byteType)}${print(_type)}" +
+        s" ${print(dest)}, [${print(src)}, ${print(flexOffset)}]${registerWBToString(registerWriteBack)}"
+    case Store(condition, byteType, dest, src, offset, registerWriteBack, label) =>
+    case process: DataProcess => process match {
+      case Add(condition, conditionFlag, dest, src1, src2) =>
+      case Subtract(condition, conditionFlag, dest, src1, src2) =>
+      case And(condition, conditionFlag, dest, src1, src2) =>
+      case Or(condition, conditionFlag, dest, src1, src2) =>
+      case ExclusiveOr(condition, conditionFlag, dest, src1, src2) =>
+    }
+    case Move(condition, dest, src) =>
+    case Compare(condition, operand1, operand2) =>
+    case Branch(condition, label) =>
+    case BranchLabel(condition, label) =>
+
+    /*case LabelBranch(label) => label.label + ":"
     case Branch(condition, label) =>
       s"\tBL${print(condition)} " + label.label
-    case EndBranch() => s"\t.ltorg"
+    case EndBranch() => s"\t.ltorg"*/
 
-    // TODO: registers need to be loadable or else this is going to be really messy
-    case LoadDirect(condition, dest, src, includeOffset, offset, loadable) =>
-      s"\tLDR${print(condition)} ???"
-
-    case _ => "<undefined instruction>"
 
   }
 
-  def print(condition: Condition): String = condition match {
-    // TODO: implement
-    case Anything => ""
-    case _        => " <condition>"
+  def byteTypeToString(byteType: Boolean): String = if (byteType) "B" else ""
+
+  def print(flexOffset: FlexOffset): String = flexOffset match {
+    case immediate: Immediate => immediate.immediate.toString
+    case _ => assert(assertion = false, "print for FlexOffset type is undefined")
+      ""
   }
+  def print(register: Register): String = register match {
+    case register: ARM11Register => register.registerID
+    case _ =>
+      assert(assertion = false, "print for register type is undefined")
+      ""
+  }
+
+  def print(_type: WordType): String = _type match {
+    case byte: SignedByte => "SB"
+    case _ =>
+      assert(assertion = false, "print for word type is undefined")
+      ""
+  }
+
+  def print(condition: Option[Condition]): String =
+    if (condition.isDefined) {
+      condition.get match {
+        case Equal => "EQ"
+        case NotEqual => "NE"
+        case HigherSame => "HS"
+        case Lower => "LO"
+        case Negative => "MI"
+        case NonNegative => "PL"
+        case Overflow => "VS"
+        case NoOverflow => "VC"
+        case Higher => "HI"
+        case LowerSame => "LS"
+        case GreaterEqual => "GE"
+        case LessThan => "LT"
+        case GreaterThan => "GT"
+        case LessEqual => "LE"
+        case Anything => "AL"
+      }
+    } else ""
+
 
 }
