@@ -1,8 +1,10 @@
-package registers
+package asm.instructionset
 
+import asm.instructions.Instruction
+import asm.registers.Register
 import scala.collection.mutable.ListBuffer
 
-trait Instruction {
+trait InstructionSet {
 
   // Particular register set for the instruction.
   val registerObject: Register
@@ -12,7 +14,6 @@ trait Instruction {
   // Return registers that are saved by the thing that calls the function e.g. r0-r3, r12
   def getCallerSaved: ListBuffer[Register]
 
-  def instructionPrinter: String
   // Return stack pointer.
   def getSP: Register
   // Return program counter.
@@ -25,5 +26,8 @@ trait Instruction {
   def getArgumentRegisters: ListBuffer[Register]
   // Return the variable? registers, possibly not necessary.
   def getVariableRegisters: ListBuffer[Register]
+
+  // Print the instructions to a string with the instruction set's syntax
+  def print(instructions: IndexedSeq[Instruction]): String
 
 }

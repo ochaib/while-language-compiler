@@ -1,14 +1,14 @@
-package registers
+package asm.registers
 
-import instructions._
+import asm.instructionset.InstructionSet
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
-class RegisterManager(instruction: Instruction) {
+class RegisterManager(_instructionSet: InstructionSet) {
 
   // Particular instruction set that RegisterManager conforms to.
-  val instructionSet: Instruction = instruction
+  val instructionSet: InstructionSet = _instructionSet
   // List of all registers that are available.
   var availableRegisters: ListBuffer[Register] = new ListBuffer[Register]
   // Memory stack, tracks available registers in each scope.
