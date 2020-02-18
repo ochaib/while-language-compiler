@@ -18,6 +18,8 @@ case class Branch(condition: Condition, label: Label)
 // the workaround is to make them `sealed abstract` so that
 // these non-leaf classes can't be pattern matched on
 // alternatively, we could turn these into traits
+// TODO: we should have default arguments everywhere so we
+// don't have to define every single argument
 sealed abstract class MemAccess(
     condition: Condition,
     dest: Register,
@@ -92,3 +94,5 @@ case class ExclusiveOr(
 ) extends DataProcess(condition, conditionFlag, dest, src1, src2)
 
 case class Move(condition: Condition, dest: Register, src: FlexibleSndOp)
+
+case class Custom(str: String) extends Instruction
