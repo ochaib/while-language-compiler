@@ -1,8 +1,9 @@
-package registers
+package asm.instructionset
 
+import asm.registers.Register
 import scala.collection.mutable.ListBuffer
 
-trait Instruction {
+trait InstructionSet {
 
   // Particular register set for the instruction.
   val registerObject: Register

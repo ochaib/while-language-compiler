@@ -1,4 +1,4 @@
-package registers
+package asm.registers
 
 import scala.collection.mutable.ListBuffer
 
