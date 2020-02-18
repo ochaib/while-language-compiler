@@ -1,6 +1,6 @@
-package instructions
+package asm.instructions
 
-import registers.Register
+import asm.registers.Register
 
 class Immediate(val immediate: Int) extends Loadable with FlexibleSndOp with FlexOffset
 class Label(val label: String) extends Loadable

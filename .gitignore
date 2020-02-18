@@ -34,3 +34,9 @@ project/plugins/project/
 
 # ignore test logs
 test_logs/
+
+# ignore scala metals
+*.db
+
+# ignore generated assembly
+*.s

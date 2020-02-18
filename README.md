@@ -14,17 +14,17 @@ Call `make` to compile everything. Then you can run interactively with sbt shell
 
 ```
 [hikari-pc]/wacc_11 $ sbt
-sbt:wacc-compiler> sbt run <filename>
+sbt:wacc-compiler> run <filename>
 ```
 
 Example:
 ```
 [hikari-pc]/wacc_11 $ sbt
-sbt:wacc-compiler> sbt run testcases/valid/basic/exit/exitBasic.wacc
+sbt:wacc-compiler> run testcases/valid/basic/exit/exitBasic.wacc
 ```
 
 ----------------------------
-Provided files/directories  
+Provided files/directories
 ----------------------------
 
 > antlr_config <
@@ -47,12 +47,6 @@ The Scala project for the compiler.
 
 The grun script allows you to run the ANTLR TestRig program that can assist you
 in debugging you lexer and parser.
-
-> compile <
-
-The compile script should be edited to provide a frontend interface to your WACC
-compiler. You are free to change the language used in this script, but do not
-change its name (more details below).
 
 > Makefile <
 
@@ -92,14 +86,9 @@ groups these tokens you can use the -tree or -gui options instead, such as:
 
 > compile <
 
-This script currently writes a TODO: message to the console, but you should
-update it to call the the main class of your compiler with appropriate 
-arguments. Note that the lab's automated testing service will be using this 
-script as the access point to your compiler.
+To compile the .wacc file:
+```
+./compile mysourcecode.wacc
+```
 
-You will need to add the ANTLR jar file to the classpath of your calls to Java
-if you want to be able to use any of the built in ANTLR features. You can do 
-this be setting the -cp option on the command line
-  e.g.  java -cp bin:lib/antlr-4.7-complete.jar ...rest of call...
-note that the bin: ensures that the bin directory is still part of your java 
-classpath.
+Generates `mysourcecode.s` in the root of the repository.
