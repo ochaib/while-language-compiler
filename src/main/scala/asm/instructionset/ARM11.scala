@@ -33,11 +33,11 @@ object ARM11 extends InstructionSet {
     R1, R2, R3, R4, R5, R6, R7, R8, R9, R10, R11, R12, SP, LR, PC)
 
   // Return registers that are saved by the function e.g. r4-r11, r13
-  def getCalleeSaved: ListBuffer[Register] = ListBuffer[Register](
-    R4, R5, R6, R7, R8, R9, R10, R11, // registers for local variables
-    SP // stack pointer
-  )
-  // Return registers that are saved by the thing that calls the function e.g. r0-r3, r12
+  // SP is the stack pointer and needs to be saved as well
+  def getCalleeSaved: ListBuffer[Register] = SP +: getVariableRegisters
+
+  // Return registers that are saved by the thing that calls the function
+  // R12 is the IPC scratch register and needs to be saved as well
   def getCallerSaved: ListBuffer[Register] = R12 +: getArgumentRegisters
 
   // Return stack pointer.
@@ -52,8 +52,10 @@ object ARM11 extends InstructionSet {
   def getArgumentRegisters: ListBuffer[Register] = ListBuffer[Register](
     R0, R1, R2, R3
   )
-  // Return the variable? registers, possibly not necessary.
-  def getVariableRegisters: ListBuffer[Register] = ???
+  // Return the variable registers
+  def getVariableRegisters: ListBuffer[Register] = ListBuffer[Register](
+    R4, R5, R6, R7, R8, R9, R10, R11
+  )
 
   // Print the instructions to a string with the instruction set's syntax
   def print(instructions: IndexedSeq[Instruction]): String = ""
