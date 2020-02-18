@@ -8,7 +8,8 @@ import scala.collection.mutable.ListBuffer
 object ARM11 extends InstructionSet {
 
   // Particular register set for the instruction.
-  val registerObject: Register = null
+  val registers: ListBuffer[Register] = ListBuffer[Register](
+    R1, R2, R3, R4, R5, R6, R7, R8, R9, R10, R11, R12)
 
   // Return registers that are saved by the function e.g. r4-r11, r13
   def getCalleeSaved: ListBuffer[Register] = ???

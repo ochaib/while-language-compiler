@@ -5,19 +5,17 @@ import asm.instructionset.InstructionSet
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
+sealed trait Register {def registerID: String; }
 class RegisterManager(_instructionSet: InstructionSet) {
 
   // Particular instruction set that RegisterManager conforms to.
   val instructionSet: InstructionSet = _instructionSet
   // List of all registers that are available.
-  var availableRegisters: ListBuffer[Register] = new ListBuffer[Register]
+  var availableRegisters: ListBuffer[Register] = instructionSet.getRegisters
   // Memory stack, tracks available registers in each scope.
   // Can replace with list/listbuffer because scala complains about deprecation.
-  val memoryStack: mutable.Stack[ListBuffer[Register]] = new mutable.Stack[ListBuffer[Register]]
-
-  def initARMRegisters(): Unit = {
-    availableRegisters = Registers.availableARMRegisters
-  }
+  val memoryStack: mutable.Stack[ListBuffer[Register]] =
+    new mutable.Stack[ListBuffer[Register]]
 
   def next(): Register = {
     availableRegisters.remove(0)
@@ -36,7 +34,5 @@ class RegisterManager(_instructionSet: InstructionSet) {
   def restore(): Unit = {
     availableRegisters = memoryStack.pop()
   }
-
-
 
 }
