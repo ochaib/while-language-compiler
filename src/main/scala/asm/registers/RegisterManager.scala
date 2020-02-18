@@ -27,8 +27,10 @@ class RegisterManager(_instructionSet: InstructionSet) {
   }
 
   // Upon entering a new scope (function call) we must save the previous register state.
-  def save(): Unit = {
+  def save(): ListBuffer[Register] = {
     memoryStack.push(availableRegisters)
+    // Need to pass new instructions to the scope once the previous register state is saved.
+    instructionSet.registers
   }
 
   // Upon exiting a scope (function returns/exits) we must restore the outer register state.
