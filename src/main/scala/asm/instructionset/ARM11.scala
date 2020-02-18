@@ -63,9 +63,9 @@ object ARM11 extends InstructionSet {
   def getPC: Register = PC
   // Return the link register.
   def getLR: Register = LR
-  // Return the return registers, r0 or r1.
-  def getReturn: Register = R0 // by convention
-  // Return the argument registers, ro-r3.
+  // Return the return register, r0.
+  def getReturn: Register = R0
+  // Return the argument registers, r0-r3.
   def getArgumentRegisters: ListBuffer[Register] = ListBuffer[Register](
     R0,
     R1,

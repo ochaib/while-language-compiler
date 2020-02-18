@@ -22,7 +22,7 @@ trait InstructionSet {
   def getLR: Register
   // Return the return registers, r0 or r1.
   def getReturn: Register
-  // Return the argument registers, ro-r3.
+  // Return the argument registers, r0-r3.
   def getArgumentRegisters: ListBuffer[Register]
   // Return the variable? registers, possibly not necessary.
   def getVariableRegisters: ListBuffer[Register]
