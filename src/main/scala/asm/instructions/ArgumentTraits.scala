@@ -1,4 +1,4 @@
-package ast.instructions
+package asm.instructions
 
 trait FlexOffset
 trait FlexibleSndOp

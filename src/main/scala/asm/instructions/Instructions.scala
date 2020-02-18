@@ -1,6 +1,6 @@
-package ast.instructions
+package asm.instructions
 
-import ast.registers.Register
+import asm.registers.Register
 
 sealed abstract class Instructions(condition: Condition)
 
