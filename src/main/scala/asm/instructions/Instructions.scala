@@ -2,11 +2,15 @@ package asm.instructions
 
 import asm.registers.Register
 
+// could condition be an Option here instead of having an Any condition?
 sealed abstract class Instruction(condition: Condition)
 
 case class Push(condition: Condition, registers: List[Register])
     extends Instruction(condition)
 case class Pop(condition: Condition, registers: List[Register])
+    extends Instruction(condition)
+
+case class Branch(condition: Condition, label: Label)
     extends Instruction(condition)
 
 // NOTE: a case class can't inherit a case class
