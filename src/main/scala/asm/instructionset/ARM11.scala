@@ -173,16 +173,18 @@ object ARM11 extends InstructionSet {
         s"EOR${print(condition)}${conditionFlagToString(conditionFlag)}" +
           s" ${print(dest)}, ${print(src1)}, ${print(src2)}"
     }
-    case Move(condition, dest, src) =>
-    case Compare(condition, operand1, operand2) =>
-    case Branch(condition, label) =>
-    case BranchLabel(condition, label) =>
+    // MOV{cond}{S} Rd, Operand2
+    case Move(condition, dest, src) => s"MOV${print(condition)} ${print(dest)}, ${print(src)}"
+    // CMP{cond} Rn, Operand2
+    case Compare(condition, operand1, operand2) => s"CMP${print(condition)} ${print(operand1)}, ${print(operand2)}"
+    // B{cond} label
+    case Branch(condition, label) => s"B${print(condition)} ${print(label)}"
+    case BranchLabel(condition, label) => s"B${print(condition)} ${print(label)}"
 
     /*case LabelBranch(label) => label.label + ":"
     case Branch(condition, label) =>
       s"\tBL${print(condition)} " + label.label
     case EndBranch() => s"\t.ltorg"*/
-
 
   }
 
