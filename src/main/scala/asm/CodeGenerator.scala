@@ -1,7 +1,7 @@
 package asm
 
 import asm.instructions._
-import asm.instructionset.InstructionSet
+import asm.instructionset._
 import asm.registers.RegisterManager
 import ast.nodes._
 
