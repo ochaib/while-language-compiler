@@ -13,6 +13,7 @@ case class Pop(condition: Condition, registers: List[Register])
 case class LabelBranch(label: Label) extends Instruction(Anything)
 case class Branch(condition: Condition, label: Label)
     extends Instruction(condition)
+case class EndBranch() extends Instruction(Anything)
 
 // NOTE: a case class can't inherit a case class
 // the workaround is to make them `sealed abstract` so that
