@@ -1,11 +1,14 @@
+from difflib import Differ
+import json
 import os
 import re
 from subprocess import run, PIPE
+import sys
 from termcolor import colored
 from time import time
 from tqdm import tqdm
-import json
 
+differ = Differ()
 error = lambda msg: print(colored(msg, color="white", on_color="on_red"))
 
 if not os.path.exists('testcases'):
@@ -69,12 +72,13 @@ results = {
     'invalid': {
         'semantic': test_many(semantic_error_programs),
         'syntax': test_many(syntax_error_programs)
-    }
+    },
+    'assembled': []
 }
 
 
 ##### TESTS #####
-def every_valid_program_should_compile(results):
+def every_valid_program_should_compile():
     test_func = lambda res: res['valid']
     return {
         "name": "compiles valid programs",
@@ -84,7 +88,7 @@ def every_valid_program_should_compile(results):
     }
     # every valid program should compile successfully
 
-def every_syntax_error_should_fail(results):
+def every_syntax_error_should_fail():
     test_func = lambda res: res['syntax error']
     return {
         "name": "syntax errors don't compile",
@@ -93,7 +97,7 @@ def every_syntax_error_should_fail(results):
         "testable": results['invalid']['syntax']
     }
 
-def every_semantic_error_should_fail(results):
+def every_semantic_error_should_fail():
     test_func = lambda res: res['semantic error']
     return {
         "name": "semantic errors don't compile",
@@ -102,9 +106,84 @@ def every_semantic_error_should_fail(results):
         "testable": results['invalid']['semantic']
     }
 
+def every_valid_program_generates_assembly():
+    def test_func(result):
+        # if x/y/z/prog.wacc is assembled it creates
+        # a file in the root directory called prog.s
+        path = result['file']
+        out_file = path[path.rfind('/')+1:path.rfind('.')] + '.s'
+        if os.path.exists(out_file):
+            result['assembly'] = out_file
+            results['assembled'].append(result)
+            return True
+        return False
+    return {
+        "name": "every valid program generates assembly",
+        "description": "every valid program should compile to an assembly script in the root directory",
+        "test": test_func,
+        "testable": results['valid']
+    }
+
+def generated_assembly_matches_reference():
+    # this relies on a prior test to check which programs are assembled
+    if len(results['assembled']) == 0:
+        run_test(every_valid_program_generates_assembly)
+
+    # and also on the ASM reference tests being generated
+    if not os.path.exists('asm-tests.json'):
+        error("ASM tests have not been generated, running make_asm_tests.py...")
+        os.system('python make_asm_tests.py')
+
+    with open('asm-tests.json') as f:
+        references = json.load(f)
+    diffs = {}
+
+    def test_func(result):
+        if result['file'] not in references:
+            error(result['file'] + ' is missing from asm-tests.json')
+            diffs[result['file']] = 'MISSING TEST'
+            return False
+        reference = references[result['file']]
+        with open(result['assembly']) as f:
+            generated = f.read()
+        if generated != reference:
+            # make diff, we use splitlines to keep the newline
+            generated_lines = generated.splitlines(1)
+            reference_lines = reference.splitlines(1)
+            diffs[result['file']] = ''.join(differ.compare(generated_lines, reference_lines))
+            return False
+        return True
+
+    def handle_failure(result):
+        print(colored(result['file'] + ' did not match reference, diff:', color="red"))
+
+        # get matching diff
+        diff = diffs[result['file']]
+
+        # print out diff
+        print('#'*5)
+        print(diff)
+        print('#'*5)
+
+        # save diff to test log directory
+        diff_out_dir = 'test_logs/' + result['file'][:result['file'].rfind('/')]
+        diff_filename = result['file'].split('/')[-1].replace('.wacc', '.diff')
+        if not os.path.exists(diff_out_dir):
+            os.makedirs(diff_out_dir)
+        with open(f'{diff_out_dir}/{diff_filename}', 'w') as diff_file:
+            diff_file.write(diff)
+
+    return {
+        "name": "generated assembly matches reference",
+        "description": "the generated assembly script from the compiler should match the reference compiler",
+        "test": test_func,
+        "testable": results['assembled'],
+        "failure handler": handle_failure
+    }
+
 ### TEST RUN HELPER ###
-def run_test(make_test_def, results):
-    test_def = make_test_def(results)
+def run_test(make_test_def):
+    test_def = make_test_def()
 
     name = test_def['name']
     description = test_def['description']
@@ -129,6 +208,9 @@ def run_test(make_test_def, results):
     if passed < total:
         error(f'{"-"*6} TEST FAILURES {"-"*6}')
         for failure in failures:
+            if "failure handler" in test_def:
+                test_def["failure handler"](failure)
+                continue
             print(colored('> ' + failure['file'], color='blue'))
             print(colored("Exit status: " + str(failure['compiled'].returncode), color="red"))
 
@@ -138,8 +220,8 @@ def run_test(make_test_def, results):
                 print(failure['compiler output'])
                 print()
 
-            # print out any syntax/semantic errors
-            print(colored('Program Errors:', color='red'))
+            # print out any other errors
+            print(colored('Errors:', color='red'))
             if failure['semantic error']:
                 print(colored('Semantic Error', color="red"))
             if failure['syntax error']:
@@ -148,22 +230,35 @@ def run_test(make_test_def, results):
 
     return passed, total
 
-
 # run in bulk
-def run_tests(*test_defs, results=results):
+def run_tests(*test_defs):
     passed, total = 0, 0
     for test_def in test_defs:
-        p, t = run_test(test_def, results)
+        p, t = run_test(test_def)
         passed += p
         total += t
     return passed, total
 
 # every valid program should compile and invalid program should not compile
-passed, total = run_tests(
-    every_valid_program_should_compile,
-    every_syntax_error_should_fail,
-    every_semantic_error_should_fail
-)
+parse_tests = [
+#    every_valid_program_should_compile,
+#    every_syntax_error_should_fail,
+#    every_semantic_error_should_fail
+]
+
+# compiler should generate correct assembly
+compile_tests = [
+    every_valid_program_generates_assembly,
+    generated_assembly_matches_reference
+]
+
+tests = []
+if '--skip-parse' not in sys.argv:
+    tests.extend(parse_tests)
+if '--skip-compile' not in sys.argv:
+    tests.extend(compile_tests)
+
+passed, total = run_tests(*tests)
 
 coverage = "%.2f" % (passed/total*100)
 print(f'coverage: {coverage}% ({passed}/{total})')
