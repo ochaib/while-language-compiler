@@ -7,7 +7,7 @@ import scala.collection.mutable.ListBuffer
 trait InstructionSet {
 
   // Particular register set for the instruction.
-  val registerObject: Register
+  val registers: ListBuffer[Register]
 
   // Return registers that are saved by the function e.g. r4-r11, r13
   def getCalleeSaved: ListBuffer[Register]
