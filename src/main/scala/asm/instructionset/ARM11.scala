@@ -4,6 +4,26 @@ import asm.instructions.Instruction
 import asm.registers.Register
 import scala.collection.mutable.ListBuffer
 
+sealed trait ARM11Register extends Register
+case object R1 extends ARM11Register {val registerID = "R1"}
+case object R2 extends ARM11Register {val registerID = "R2"}
+case object R3 extends ARM11Register {val registerID = "R3"}
+case object R4 extends ARM11Register {val registerID = "R4"}
+case object R5 extends ARM11Register {val registerID = "R5"}
+case object R6 extends ARM11Register {val registerID = "R6"}
+case object R7 extends ARM11Register {val registerID = "R7"}
+case object R8 extends ARM11Register {val registerID = "R8"}
+case object R9 extends ARM11Register {val registerID = "R9"}
+case object R10 extends ARM11Register {val registerID = "R10"}
+case object R11 extends ARM11Register {val registerID = "R11"}
+case object R12 extends ARM11Register {val registerID = "R12"}
+// Stack pointer (R13)
+case object SP extends ARM11Register {val registerID = "SP"}
+// Load register (R14)
+case object LR extends ARM11Register {val registerID = "LR"}
+// Program counter (R15)
+case object PC extends ARM11Register {val registerID = "PC"}
+
 // TODO: implement
 object ARM11 extends InstructionSet {
 
