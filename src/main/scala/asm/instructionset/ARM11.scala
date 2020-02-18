@@ -97,9 +97,9 @@ object ARM11 extends InstructionSet {
     case Pop(condition, registers) =>
       s"\tPOP${print(condition)} {" + registers.map(_.registerID).mkString(", ") + "}"
 
-    case LabelBranch(label) => "." + label.label + ":"
+    case LabelBranch(label) => label.label + ":"
     case Branch(condition, label) =>
-      s"\tBL${print(condition)} " + "." + label.label
+      s"\tBL${print(condition)} " + label.label
     case EndBranch() => s"\t.ltorg"
 
     // TODO: registers need to be loadable or else this is going to be really messy

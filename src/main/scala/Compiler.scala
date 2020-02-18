@@ -2,7 +2,7 @@ import antlr._
 import asm.CodeGenerator
 import asm.instructions.Instruction
 import asm.instructionset.ARM11
-import ast.nodes.ASTNode
+import ast.nodes.{ASTNode, ProgramNode}
 import ast.visitors.{ASTGenerator, TypeCheckVisitor, Visitor}
 import java.io.{
   IOException,
@@ -58,7 +58,7 @@ object Compiler extends App {
 
     // Build AST
     val visitor: ASTGenerator = new ASTGenerator() // TODO: this should be a singleton
-    val tree: ASTNode = visitor.visit(program)
+    val tree: ProgramNode = visitor.visit(program).asInstanceOf[ProgramNode]
 
     // TODO: add flag to disable semantic analysis as in ref compiler
     // Run semantic analyzer
