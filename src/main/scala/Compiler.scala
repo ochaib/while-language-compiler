@@ -51,12 +51,12 @@ object Compiler extends App {
     }
 
     // Build AST
-    val visitor: ASTGenerator = new ASTGenerator()
+    val visitor: ASTGenerator = new ASTGenerator() // TODO: this should be a singleton
     val tree: ASTNode = visitor.visit(program)
 
     // TODO: add flag to disable semantic analysis as in ref compiler
     // Run semantic analyzer
-    val semanticVisitor: Visitor = new TypeCheckVisitor(tree)
+    val semanticVisitor: Visitor = new TypeCheckVisitor(tree) // TODO: this should be a singleton
     semanticVisitor.visit(tree)
     // Check for syntax errors, exit with 100 if there are, new ones could've appeared here.
     if (SyntaxErrorLog.errorCheck) {
@@ -70,8 +70,7 @@ object Compiler extends App {
     }
 
     // Generate ASM instructions from AST
-    val generator: CodeGenerator = new CodeGenerator()
-    val instructions: IndexedSeq[Instruction] = generator.generate(tree)
+    val instructions: IndexedSeq[Instruction] = CodeGenerator.generate(tree)
 
   } catch {
     case ioerror: IOException => error("File does not exist")
