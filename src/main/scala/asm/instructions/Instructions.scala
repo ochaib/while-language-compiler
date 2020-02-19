@@ -38,7 +38,7 @@ case class LoadDirect private (
   // LDR{cond}{B|Type} Rd, [Rn]
   def this(
       condition: Option[Condition],
-      byteType: Boolean = false,
+      byteType: Boolean,
       _type: WordType,
       dest: Register,
       src: Register
@@ -57,12 +57,12 @@ case class LoadDirect private (
   // LDR{cond}{B|Type} Rd, [Rn, FlexOffset]{!}
   def this(
       condition: Option[Condition],
-      byteType: Boolean = false,
+      byteType: Boolean,
       _type: WordType,
       dest: Register,
       src: Register,
       flexOffset: FlexOffset,
-      registerWriteBack: Boolean = false
+      registerWriteBack: Boolean
   ) =
     this(
       condition,
@@ -78,7 +78,7 @@ case class LoadDirect private (
   // LDR{cond}{B|Type} Rd, label
   def this(
       condition: Option[Condition],
-      byteType: Boolean = false,
+      byteType: Boolean,
       _type: WordType,
       dest: Register,
       label: Label
@@ -97,7 +97,7 @@ case class LoadDirect private (
   // LDR{cond}{B|Type} Rd, [Rn], FlexOffset
   def this(
       condition: Option[Condition],
-      byteType: Boolean = false,
+      byteType: Boolean,
       _type: WordType,
       dest: Register,
       src: Register,
@@ -117,7 +117,7 @@ case class LoadDirect private (
   // LDR{cond}{B|Type} register, =[expr | label-expr]
   def this(
       condition: Option[Condition],
-      byteType: Boolean = false,
+      byteType: Boolean,
       _type: WordType,
       dest: Register,
       loadable: Loadable
@@ -151,7 +151,7 @@ case class Store private (
   // STR{cond}{B} Rd, [Rn]
   def this(
       condition: Option[Condition],
-      byteType: Boolean = false,
+      byteType: Boolean,
       dest: Register,
       src: Register
   ) =
@@ -167,7 +167,7 @@ case class Store private (
   // STR{cond}{B} Rd, [Rn, FlexOffset]{!}
   def this(
       condition: Option[Condition],
-      byteType: Boolean = false,
+      byteType: Boolean,
       dest: Register,
       src: Register,
       flexOffset: FlexOffset,
@@ -185,7 +185,7 @@ case class Store private (
   // STR{cond}{B} Rd, label
   def this(
       condition: Option[Condition],
-      byteType: Boolean = false,
+      byteType: Boolean,
       dest: Register,
       label: Label
   ) =
@@ -201,7 +201,7 @@ case class Store private (
   // STR{cond}{B} Rd, [Rn], FlexOffset
   def this(
       condition: Option[Condition],
-      byteType: Boolean = false,
+      byteType: Boolean,
       dest: Register,
       src: Register,
       flexOffset: FlexOffset
