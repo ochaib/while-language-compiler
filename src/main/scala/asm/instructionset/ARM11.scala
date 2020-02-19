@@ -85,50 +85,112 @@ object ARM11 extends InstructionSet {
   )
 
   // Print the instructions to a string with the instruction set's syntax
-  def print(strings: IndexedSeq[String], instructions: IndexedSeq[Instruction]): String =
+  def print(
+      strings: IndexedSeq[String],
+      instructions: IndexedSeq[Instruction]
+  ): String =
     // TODO print required strings
     ".text\n\n" +
       ".global main\n" +
       instructions.map(print).mkString("\n")
 
-  def registerWBToString(registerWriteBack: Boolean): String = if (registerWriteBack) "!" else ""
+  def registerWBToString(registerWriteBack: Boolean): String =
+    if (registerWriteBack) "!" else ""
 
   def print(instruction: Instruction): String = instruction match {
     // ARM 11 syntax as per ref manual:
 
     // OP{COND} *ARGS
     case Push(condition, registers) =>
-      s"\tPUSH${print(condition)} {" + registers.map(_.registerID).mkString(", ") + "}"
+      s"\tPUSH${print(condition)} {" + registers
+        .map(_.registerID)
+        .mkString(", ") + "}"
     case Pop(condition, registers) =>
-      s"\tPOP${print(condition)} {" + registers.map(_.registerID).mkString(", ") + "}"
+      s"\tPOP${print(condition)} {" + registers
+        .map(_.registerID)
+        .mkString(", ") + "}"
 
     // LDR{cond}{B|Type} Rd, [Rn]
-    case LoadDirect(condition, byteType, Some(_type), dest, Some(src), None, None, None, None) =>
+    case LoadDirect(
+        condition,
+        byteType,
+        Some(_type),
+        dest,
+        Some(src),
+        None,
+        None,
+        None,
+        None
+        ) =>
       s"\tLDR${print(condition)}${byteTypeToString(byteType)}${print(_type)}" +
         s" ${print(dest)}, [${print(src)}]"
 
     // LDR{cond}{B|Type} Rd, [Rn, FlexOffset]{!}
-    case LoadDirect(condition, byteType, Some(_type), dest, Some(src), Some(flexOffset), Some(registerWriteBack), None, None) =>
+    case LoadDirect(
+        condition,
+        byteType,
+        Some(_type),
+        dest,
+        Some(src),
+        Some(flexOffset),
+        Some(registerWriteBack),
+        None,
+        None
+        ) =>
       s"LDR${print(condition)}${byteTypeToString(byteType)}${print(_type)}" +
         s" ${print(dest)}, [${print(src)}, ${print(flexOffset)}]${registerWBToString(registerWriteBack)}"
 
     // LDR{cond}{B|Type} Rd, label
-    case LoadDirect(condition, byteType, Some(_type), dest, None, None, None, None, Some(label)) =>
+    case LoadDirect(
+        condition,
+        byteType,
+        Some(_type),
+        dest,
+        None,
+        None,
+        None,
+        None,
+        Some(label)
+        ) =>
       s"LDR${print(condition)}${byteTypeToString(byteType)}${print(_type)}" +
         s" ${print(dest)}, ${print(label)}"
 
     // LDR{cond}{B|Type} Rd, [Rn], FlexOffset
-    case LoadDirect(condition, byteType, Some(_type), dest, Some(src), Some(flexOffset), None, None, None) =>
+    case LoadDirect(
+        condition,
+        byteType,
+        Some(_type),
+        dest,
+        Some(src),
+        Some(flexOffset),
+        None,
+        None,
+        None
+        ) =>
       s"LDR${print(condition)}${byteTypeToString(byteType)}${print(_type)}" +
         s" ${print(dest)}, [${print(src)}], ${print(flexOffset)}"
 
     // LDR{cond}{B|Type} register, =[expr | label-expr]
-    case LoadDirect(condition, byteType, Some(_type), dest, None, None, None, Some(loadable), None) =>
+    case LoadDirect(
+        condition,
+        byteType,
+        Some(_type),
+        dest,
+        None,
+        None,
+        None,
+        Some(loadable),
+        None
+        ) =>
       s"LDR${print(condition)}${byteTypeToString(byteType)}${print(_type)}" +
         s" ${print(dest)}, =${print(loadable)}"
 
     // Invalid LDR case
-    case LoadDirect(_, _, _, _, _, _, _, _, _) => assert(assertion = false, "print for this LoadDirect configuration is undefined")
+    case LoadDirect(_, _, _, _, _, _, _, _, _) =>
+      assert(
+        assertion = false,
+        "print for this LoadDirect configuration is undefined"
+      )
       ""
 
     // STR{cond}{B} Rd, [Rn]
@@ -137,7 +199,15 @@ object ARM11 extends InstructionSet {
         s" ${print(dest)}, [${print(src)}]"
 
     // STR{cond}{B} Rd, [Rn, FlexOffset]{!}
-    case Store(condition, byteType, dest, Some(src), Some(flexOffset), registerWriteBack, None) =>
+    case Store(
+        condition,
+        byteType,
+        dest,
+        Some(src),
+        Some(flexOffset),
+        registerWriteBack,
+        None
+        ) =>
       s"LDR${print(condition)}${byteTypeToString(byteType)}" +
         s" ${print(dest)}, [${print(src)}, ${print(flexOffset)}]${registerWBToString(registerWriteBack)}"
 
@@ -147,39 +217,55 @@ object ARM11 extends InstructionSet {
         s" ${print(dest)}, ${print(label)}"
 
     // STR{cond}{B} Rd, [Rn], FlexOffset
-    case Store(condition, byteType, dest, Some(src), Some(flexOffset), false, None) =>
+    case Store(
+        condition,
+        byteType,
+        dest,
+        Some(src),
+        Some(flexOffset),
+        false,
+        None
+        ) =>
       s"LDR${print(condition)}${byteTypeToString(byteType)}" +
         s" ${print(dest)}, [${print(src)}], ${print(flexOffset)}"
 
     // Invalid STR case
-    case Store(_, _, _, _, _, _, _) => assert(assertion = false, "print for this Store configuration is undefined")
+    case Store(_, _, _, _, _, _, _) =>
+      assert(
+        assertion = false,
+        "print for this Store configuration is undefined"
+      )
       ""
 
     // op{cond}{S} Rd, Rn, Operand2
-    case process: DataProcess => process match {
-      case Add(condition, conditionFlag, dest, src1, src2) =>
-        s"ADD${print(condition)}${conditionFlagToString(conditionFlag)}" +
-          s" ${print(dest)}, ${print(src1)}, ${print(src2)}"
-      case Subtract(condition, conditionFlag, dest, src1, src2) =>
-        s"SUB${print(condition)}${conditionFlagToString(conditionFlag)}" +
-          s" ${print(dest)}, ${print(src1)}, ${print(src2)}"
-      case And(condition, conditionFlag, dest, src1, src2) =>
-        s"AND${print(condition)}${conditionFlagToString(conditionFlag)}" +
-          s" ${print(dest)}, ${print(src1)}, ${print(src2)}"
-      case Or(condition, conditionFlag, dest, src1, src2) =>
-        s"ORR${print(condition)}${conditionFlagToString(conditionFlag)}" +
-          s" ${print(dest)}, ${print(src1)}, ${print(src2)}"
-      case ExclusiveOr(condition, conditionFlag, dest, src1, src2) =>
-        s"EOR${print(condition)}${conditionFlagToString(conditionFlag)}" +
-          s" ${print(dest)}, ${print(src1)}, ${print(src2)}"
-    }
+    case process: DataProcess =>
+      process match {
+        case Add(condition, conditionFlag, dest, src1, src2) =>
+          s"ADD${print(condition)}${conditionFlagToString(conditionFlag)}" +
+            s" ${print(dest)}, ${print(src1)}, ${print(src2)}"
+        case Subtract(condition, conditionFlag, dest, src1, src2) =>
+          s"SUB${print(condition)}${conditionFlagToString(conditionFlag)}" +
+            s" ${print(dest)}, ${print(src1)}, ${print(src2)}"
+        case And(condition, conditionFlag, dest, src1, src2) =>
+          s"AND${print(condition)}${conditionFlagToString(conditionFlag)}" +
+            s" ${print(dest)}, ${print(src1)}, ${print(src2)}"
+        case Or(condition, conditionFlag, dest, src1, src2) =>
+          s"ORR${print(condition)}${conditionFlagToString(conditionFlag)}" +
+            s" ${print(dest)}, ${print(src1)}, ${print(src2)}"
+        case ExclusiveOr(condition, conditionFlag, dest, src1, src2) =>
+          s"EOR${print(condition)}${conditionFlagToString(conditionFlag)}" +
+            s" ${print(dest)}, ${print(src1)}, ${print(src2)}"
+      }
     // MOV{cond}{S} Rd, Operand2
-    case Move(condition, dest, src) => s"MOV${print(condition)} ${print(dest)}, ${print(src)}"
+    case Move(condition, dest, src) =>
+      s"MOV${print(condition)} ${print(dest)}, ${print(src)}"
     // CMP{cond} Rn, Operand2
-    case Compare(condition, operand1, operand2) => s"CMP${print(condition)} ${print(operand1)}, ${print(operand2)}"
+    case Compare(condition, operand1, operand2) =>
+      s"CMP${print(condition)} ${print(operand1)}, ${print(operand2)}"
     // B{cond} label
     case Branch(condition, label) => s"B${print(condition)} ${print(label)}"
-    case BranchLabel(condition, label) => s"B${print(condition)} ${print(label)}"
+    case BranchLabel(condition, label) =>
+      s"B${print(condition)} ${print(label)}"
 
     /*case LabelBranch(label) => label.label + ":"
     case Branch(condition, label) =>
@@ -189,20 +275,23 @@ object ARM11 extends InstructionSet {
   }
 
   def print(op: FlexibleSndOp): String = op match {
-    case immediate: Immediate => immediate.immediate.toString
+    case immediate: Immediate      => immediate.immediate.toString
     case register: ShiftedRegister => print(register.register)
-    case _ => assert(assertion = false, "print for FlexibleSndOp type is undefined")
+    case _ =>
+      assert(assertion = false, "print for FlexibleSndOp type is undefined")
       ""
   }
 
-  def conditionFlagToString(conditionFlag: Boolean): String = if (conditionFlag) "S" else ""
+  def conditionFlagToString(conditionFlag: Boolean): String =
+    if (conditionFlag) "S" else ""
 
   def byteTypeToString(byteType: Boolean): String = if (byteType) "B" else ""
 
   def print(loadable: Loadable): String = loadable match {
     case immediate: Immediate => immediate.immediate.toString
-    case label: Label => label.label
-    case _ => assert(assertion = false, "print for FlexOffset type is undefined")
+    case label: Label         => label.label
+    case _ =>
+      assert(assertion = false, "print for FlexOffset type is undefined")
       ""
   }
 
@@ -210,7 +299,8 @@ object ARM11 extends InstructionSet {
 
   def print(flexOffset: FlexOffset): String = flexOffset match {
     case immediate: Immediate => immediate.immediate.toString
-    case _ => assert(assertion = false, "print for FlexOffset type is undefined")
+    case _ =>
+      assert(assertion = false, "print for FlexOffset type is undefined")
       ""
   }
   def print(register: Register): String = register match {
@@ -230,23 +320,22 @@ object ARM11 extends InstructionSet {
   def print(condition: Option[Condition]): String =
     if (condition.isDefined) {
       condition.get match {
-        case Equal => "EQ"
-        case NotEqual => "NE"
-        case HigherSame => "HS"
-        case Lower => "LO"
-        case Negative => "MI"
-        case NonNegative => "PL"
-        case Overflow => "VS"
-        case NoOverflow => "VC"
-        case Higher => "HI"
-        case LowerSame => "LS"
+        case Equal        => "EQ"
+        case NotEqual     => "NE"
+        case HigherSame   => "HS"
+        case Lower        => "LO"
+        case Negative     => "MI"
+        case NonNegative  => "PL"
+        case Overflow     => "VS"
+        case NoOverflow   => "VC"
+        case Higher       => "HI"
+        case LowerSame    => "LS"
         case GreaterEqual => "GE"
-        case LessThan => "LT"
-        case GreaterThan => "GT"
-        case LessEqual => "LE"
-        case Anything => "AL"
+        case LessThan     => "LT"
+        case GreaterThan  => "GT"
+        case LessEqual    => "LE"
+        case Anything     => "AL"
       }
     } else ""
-
 
 }

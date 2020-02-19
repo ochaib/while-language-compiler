@@ -74,11 +74,13 @@ object Compiler extends App {
       SemanticErrorLog.printAllErrors()
       System.exit(200)
     }
-/*
+
+    // Use ARM 11 instruction set
+    CodeGenerator.useInstructionSet(ARM11)
     // Generate ASM instructions from AST
-    val instructions: IndexedSeq[Instruction] = CodeGenerator.generate(tree, ARM11)
+    val instructions: IndexedSeq[Instruction] = CodeGenerator.generate(tree)
     // Format using ARM11 syntax
-    val compiled: String = ARM11.print(instructions)
+    val compiled: String = ARM11.print(IndexedSeq[String](), instructions)
     // Appropriately name output file, no prefix because it should go in root directory
     val baseFilename: String = args(0).split("/").last
     val outputFile: String = baseFilename.stripSuffix(".wacc") + ".s"
@@ -86,7 +88,7 @@ object Compiler extends App {
     val writer = new PrintWriter(new File(outputFile))
     writer.write(compiled)
     writer.close
- */
+
   } catch {
     case ioerror: IOException => error("File does not exist")
   }
