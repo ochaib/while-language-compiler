@@ -4,8 +4,6 @@ import asm.registers.Register
 
 sealed abstract class Instruction(condition: Option[Condition])
 
-class Label(val label: String) extends Instruction(None) with Loadable
-
 // Push and Pop
 case class Push(condition: Option[Condition], registers: List[Register])
     extends Instruction(condition)
@@ -258,11 +256,12 @@ case class Compare(
     operand2: FlexibleSndOp
 ) extends Instruction(condition)
 
+case class Label(label: String) extends Instruction(None) with Loadable
+
 case class Branch(condition: Option[Condition], label: Label)
     extends Instruction(condition)
 
 case class BranchLabel(condition: Option[Condition], label: Label)
     extends Instruction(condition)
 
-case class NewBranch(label: Label) extends Instruction(None)
-case class EndBranch() extends Instruction(None)
+case class EndFunction() extends Instruction(None)
