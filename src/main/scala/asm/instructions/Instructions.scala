@@ -1,10 +1,10 @@
 package asm.instructions
 
-import asm.AssemblyLine
 import asm.registers.Register
 
 sealed abstract class Instruction(condition: Option[Condition])
-    extends AssemblyLine
+
+class Label(val label: String) extends Instruction(None) with Loadable
 
 // Push and Pop
 case class Push(condition: Option[Condition], registers: List[Register])
