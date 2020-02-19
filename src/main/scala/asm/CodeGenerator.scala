@@ -32,7 +32,7 @@ object CodeGenerator {
       new NewBranch(mainLabel),
       pushLR,
       // TODO: generate stats
-      new LoadDirect(None, false, new SignedByte, instructionSet.getReturn, new Immediate(0)),
+      new Load(None, new SignedByte, instructionSet.getReturn, new Immediate(0)),
       popPC,
       new EndBranch
     )

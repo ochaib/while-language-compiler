@@ -7,19 +7,16 @@ import asm.registers.Register
 sealed abstract class Instruction(condition: Option[Condition])
     extends AssemblyLine
 
+// Push and Pop
 case class Push(condition: Option[Condition], registers: List[Register])
     extends Instruction(condition)
 case class Pop(condition: Option[Condition], registers: List[Register])
     extends Instruction(condition)
 
-// NOTE: a case class can't inherit a case class
-// the workaround is to make them `sealed abstract` so that
-// these non-leaf classes can't be pattern matched on
-// alternatively, we could turn these into traits
-case class LoadDirect private (
+// Load and Store
+case class Load private (
     condition: Option[Condition],
-    byteType: Boolean,
-    _type: Option[WordType],
+    asmType: Option[ASMType],
     dest: Register,
     src: Option[Register],
     offset: Option[FlexOffset],
@@ -27,26 +24,17 @@ case class LoadDirect private (
     loadable: Option[Loadable],
     label: Option[Label]
 ) extends Instruction(condition) {
-  assert(
-    !(byteType && _type.isDefined),
-    "Can't simultaneously be a byteType and another type"
-  )
-  assert(
-    label.isDefined || src.isDefined,
-    "Either a label or source must be defined"
-  )
+
   // LDR{cond}{B|Type} Rd, [Rn]
   def this(
       condition: Option[Condition],
-      byteType: Boolean,
-      _type: WordType,
+      asmType: ASMType,
       dest: Register,
       src: Register
   ) =
     this(
       condition,
-      byteType,
-      Some(_type),
+      Some(asmType),
       dest,
       Some(src),
       None,
@@ -57,8 +45,7 @@ case class LoadDirect private (
   // LDR{cond}{B|Type} Rd, [Rn, FlexOffset]{!}
   def this(
       condition: Option[Condition],
-      byteType: Boolean,
-      _type: WordType,
+      asmType: ASMType,
       dest: Register,
       src: Register,
       flexOffset: FlexOffset,
@@ -66,8 +53,7 @@ case class LoadDirect private (
   ) =
     this(
       condition,
-      byteType,
-      Some(_type),
+      Some(asmType),
       dest,
       Some(src),
       Some(flexOffset),
@@ -78,15 +64,13 @@ case class LoadDirect private (
   // LDR{cond}{B|Type} Rd, label
   def this(
       condition: Option[Condition],
-      byteType: Boolean,
-      _type: WordType,
+      asmType: WordType,
       dest: Register,
       label: Label
   ) =
     this(
       condition,
-      byteType,
-      Some(_type),
+      Some(asmType),
       dest,
       None,
       None,
@@ -97,16 +81,14 @@ case class LoadDirect private (
   // LDR{cond}{B|Type} Rd, [Rn], FlexOffset
   def this(
       condition: Option[Condition],
-      byteType: Boolean,
-      _type: WordType,
+      asmType: ASMType,
       dest: Register,
       src: Register,
       flexOffset: FlexOffset
   ) =
     this(
       condition,
-      byteType,
-      Some(_type),
+      Some(asmType),
       dest,
       Some(src),
       Some(flexOffset),
@@ -117,15 +99,13 @@ case class LoadDirect private (
   // LDR{cond}{B|Type} register, =[expr | label-expr]
   def this(
       condition: Option[Condition],
-      byteType: Boolean,
-      _type: WordType,
+      asmType: ASMType,
       dest: Register,
       loadable: Loadable
   ) =
     this(
       condition,
-      byteType,
-      Some(_type),
+      Some(asmType),
       dest,
       None,
       None,
@@ -137,7 +117,7 @@ case class LoadDirect private (
 
 case class Store private (
     condition: Option[Condition],
-    byteType: Boolean,
+    asmType: Option[ASMType],
     dest: Register,
     src: Option[Register],
     offset: Option[FlexOffset],
@@ -151,13 +131,13 @@ case class Store private (
   // STR{cond}{B} Rd, [Rn]
   def this(
       condition: Option[Condition],
-      byteType: Boolean,
+      asmType: Option[ASMType],
       dest: Register,
       src: Register
   ) =
     this(
       condition,
-      byteType,
+      asmType,
       dest,
       Some(src),
       None,
@@ -167,7 +147,7 @@ case class Store private (
   // STR{cond}{B} Rd, [Rn, FlexOffset]{!}
   def this(
       condition: Option[Condition],
-      byteType: Boolean,
+      asmType: Option[ASMType],
       dest: Register,
       src: Register,
       flexOffset: FlexOffset,
@@ -175,7 +155,7 @@ case class Store private (
   ) =
     this(
       condition,
-      byteType,
+      asmType,
       dest,
       Some(src),
       Some(flexOffset),
@@ -185,13 +165,13 @@ case class Store private (
   // STR{cond}{B} Rd, label
   def this(
       condition: Option[Condition],
-      byteType: Boolean,
+      asmType: Option[ASMType],
       dest: Register,
       label: Label
   ) =
     this(
       condition,
-      byteType,
+      asmType,
       dest,
       None,
       None,
@@ -201,14 +181,14 @@ case class Store private (
   // STR{cond}{B} Rd, [Rn], FlexOffset
   def this(
       condition: Option[Condition],
-      byteType: Boolean,
+      asmType: Option[ASMType],
       dest: Register,
       src: Register,
       flexOffset: FlexOffset
   ) =
     this(
       condition,
-      byteType,
+      asmType,
       dest,
       Some(src),
       Some(flexOffset),
