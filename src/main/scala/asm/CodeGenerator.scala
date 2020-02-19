@@ -5,13 +5,12 @@ import asm.instructionset._
 import asm.registers.RegisterManager
 import ast.nodes._
 
-
 object CodeGenerator {
 
-  var instructionSet: InstructionSet = null
-  var RM: RegisterManager = null
+  var instructionSet: InstructionSet = _
+  var RM: RegisterManager = _
 
-  def useInstructionSet(_instructionSet: InstructionSet) = {
+  def useInstructionSet(_instructionSet: InstructionSet): Unit = {
     instructionSet = _instructionSet
     RM = new RegisterManager(instructionSet)
   }
@@ -35,7 +34,7 @@ object CodeGenerator {
     val stats: IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
     functions ++ IndexedSeq[Instruction](
-      new NewBranch(new Label("main")),
+      NewBranch(new Label("main")),
       pushLR,
       // TODO: generate stats
       zeroReturn,
@@ -46,7 +45,7 @@ object CodeGenerator {
 
   def generate(func: FuncNode): IndexedSeq[Instruction] = {
     IndexedSeq[Instruction](
-      new NewBranch(new Label(s"f_${func.identNode.ident}")),
+      NewBranch(new Label(s"f_${func.identNode.ident}")),
       pushLR,
       // TODO: generate stats
       popPC,

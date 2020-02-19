@@ -87,7 +87,7 @@ object Compiler extends App {
     // Write our compiled code to the assembly file
     val writer = new PrintWriter(new File(outputFile))
     writer.write(compiled)
-    writer.close
+    writer.close()
 
   } catch {
     case ioerror: IOException => error("File does not exist")
