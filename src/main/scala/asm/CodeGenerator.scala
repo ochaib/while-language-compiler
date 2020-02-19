@@ -16,8 +16,8 @@ object CodeGenerator {
   }
 
   // Common instructions
-  def pushLR: Instruction = new Push(None, List(instructionSet.getLR))
-  def popPC: Instruction = new Pop(None, List(instructionSet.getPC))
+  def pushLR: Instruction = Push(None, List(instructionSet.getLR))
+  def popPC: Instruction = Pop(None, List(instructionSet.getPC))
   def zeroReturn: Instruction = new Load(
     condition = None,
     asmType = new SignedByte,

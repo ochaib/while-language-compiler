@@ -183,7 +183,7 @@ object ARM11 extends InstructionSet {
       ""
 
     // STR{cond}{B} Rd, [Rn]
-    case Store(condition, byteType, dest, Some(src), None, false, None) =>
+    case Store(condition, byteType, dest, Some(src), None, None, None) =>
       s"\tSTR${print(condition)}${byteTypeToString(byteType)} ${print(dest)}, [${print(src)}]"
 
     // STR{cond}{B} Rd, [Rn, FlexOffset]{!}
@@ -197,11 +197,12 @@ object ARM11 extends InstructionSet {
         None
         ) =>
       s"STR${print(condition)}${byteTypeToString(byteType)}" +
-        s" ${print(dest)}, [${print(src)}, ${print(flexOffset)}]${if (registerWriteBack) "!"
+        s" ${print(dest)}, [${print(src)}, ${print(flexOffset)}]" +
+        s"${if (registerWriteBack.isDefined && registerWriteBack.get) "!"
         else ""}"
 
     // STR{cond}{B} Rd, label
-    case Store(condition, byteType, dest, None, None, false, Some(label)) =>
+    case Store(condition, byteType, dest, None, None, None, Some(label)) =>
       s"STR${print(condition)}${byteTypeToString(byteType)}" +
         s" ${print(dest)}, ${print(label)}"
 
@@ -212,7 +213,7 @@ object ARM11 extends InstructionSet {
         dest,
         Some(src),
         Some(flexOffset),
-        false,
+        None,
         None
         ) =>
         s"STR${print(condition)}${byteTypeToString(byteType)} ${print(dest)}, [${print(src)}], ${print(flexOffset)}"

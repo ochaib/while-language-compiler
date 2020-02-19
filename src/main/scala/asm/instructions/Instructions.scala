@@ -3,7 +3,6 @@ package asm.instructions
 import asm.AssemblyLine
 import asm.registers.Register
 
-// could condition be an Option here instead of having an Any condition?
 sealed abstract class Instruction(condition: Option[Condition])
     extends AssemblyLine
 
@@ -13,7 +12,7 @@ case class Push(condition: Option[Condition], registers: List[Register])
 case class Pop(condition: Option[Condition], registers: List[Register])
     extends Instruction(condition)
 
-// Load and Store
+// Load
 case class Load private (
     condition: Option[Condition],
     asmType: Option[ASMType],
@@ -116,13 +115,14 @@ case class Load private (
     )
 }
 
+// Store
 case class Store private (
     condition: Option[Condition],
     byteType: Option[ByteType],
     dest: Register,
     src: Option[Register],
     offset: Option[FlexOffset],
-    registerWriteBack: Boolean, // the "!"
+    registerWriteBack: Option[Boolean], // the "!"
     label: Option[Label]
 ) extends Instruction(condition) {
   assert(
@@ -142,7 +142,7 @@ case class Store private (
       dest,
       Some(src),
       None,
-      registerWriteBack = false,
+      None,
       None
     )
   // STR{cond}{B} Rd, [Rn, FlexOffset]{!}
@@ -160,7 +160,7 @@ case class Store private (
       dest,
       Some(src),
       Some(flexOffset),
-      registerWriteBack,
+      Some(registerWriteBack),
       None
     )
   // STR{cond}{B} Rd, label
@@ -176,7 +176,7 @@ case class Store private (
       dest,
       None,
       None,
-      registerWriteBack = false,
+      None,
       Some(label)
     )
   // STR{cond}{B} Rd, [Rn], FlexOffset
@@ -193,7 +193,7 @@ case class Store private (
       dest,
       Some(src),
       Some(flexOffset),
-      registerWriteBack = false,
+      None,
       None
     )
 }
