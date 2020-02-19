@@ -34,23 +34,23 @@ object CodeGenerator {
     val stats: IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
     functions ++ IndexedSeq[Instruction](
-      NewBranch(new Label("main")),
+      new Label("main"),
       pushLR,
       // TODO: generate stats
       zeroReturn,
       popPC,
-      new EndBranch
+      new EndFunction
     )
   }
 
   def generate(func: FuncNode): IndexedSeq[Instruction] = {
     IndexedSeq[Instruction](
-      NewBranch(new Label(s"f_${func.identNode.ident}")),
+      new Label(s"f_${func.identNode.ident}"),
       pushLR,
       // TODO: generate stats
       popPC,
       popPC,
-      new EndBranch
+      new EndFunction
     )
   }
 

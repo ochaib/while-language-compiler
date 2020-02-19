@@ -251,13 +251,15 @@ object ARM11 extends InstructionSet {
     // CMP{cond} Rn, Operand2
     case Compare(condition, operand1, operand2) =>
       s"CMP${print(condition)} ${print(operand1)}, ${print(operand2)}"
+
+    case Label(s) => s + ":"
+
     // B{cond} label
     case Branch(condition, label) => s"B${print(condition)} ${print(label)}"
     case BranchLabel(condition, label) =>
       s"BL${print(condition)} ${print(label)}"
 
-    case NewBranch(label) => label.label + ":"
-    case EndBranch() => s".ltorg"
+    case EndFunction() => s".ltorg"
 
   }
 
