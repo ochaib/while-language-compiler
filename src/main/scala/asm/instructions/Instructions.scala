@@ -282,3 +282,6 @@ case class Branch(condition: Option[Condition], label: Label)
 
 case class BranchLabel(condition: Option[Condition], label: Label)
     extends Instruction(condition)
+
+case class NewBranch(label: Label) extends Instruction(None)
+case class EndBranch() extends Instruction(None)
