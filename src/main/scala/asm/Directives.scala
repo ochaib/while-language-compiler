@@ -1,8 +1,6 @@
 package asm
 
-trait AssemblyLine
-
-sealed abstract class Directive extends AssemblyLine
+sealed abstract class Directive
 
 case object TextSection extends Directive
 case object DataSection extends Directive

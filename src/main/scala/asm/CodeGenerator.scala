@@ -5,34 +5,39 @@ import asm.instructionset._
 import asm.registers.RegisterManager
 import ast.nodes._
 
-
 object CodeGenerator {
 
-  var instructionSet: InstructionSet = null
-  var RM: RegisterManager = null
+  var instructionSet: InstructionSet = _
+  var RM: RegisterManager = _
 
-  def useInstructionSet(_instructionSet: InstructionSet) = {
+  def useInstructionSet(_instructionSet: InstructionSet): Unit = {
     instructionSet = _instructionSet
     RM = new RegisterManager(instructionSet)
   }
 
-  def pushLR: Instruction = new Push(None, List(instructionSet.getLR))
-  def popPC: Instruction = new Pop(None, List(instructionSet.getPC))
+  // Common instructions
+  def pushLR: Instruction = Push(None, List(instructionSet.getLR))
+  def popPC: Instruction = Pop(None, List(instructionSet.getPC))
+  def zeroReturn: Instruction = new Load(
+    condition = None,
+    asmType = new SignedByte,
+    dest = instructionSet.getReturn,
+    loadable = new Immediate(0),
+    label = None
+  )
 
   def generate(program: ProgramNode): IndexedSeq[Instruction] = {
     // Generated code for functions
-    val functions: IndexedSeq[Instruction] = program.functions.flatMap(generateFunc)
+    val functions: IndexedSeq[Instruction] = program.functions.flatMap(generate)
 
     // Generated code for stats
-    val stats: IndexedSeq[Instruction] = ???
+    val stats: IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
-    val mainLabel: Label = new Label("main")
-
-    functionCode ++ IndexedSeq[Instruction](
-      new BranchLabel(mainLabel),
+    functions ++ IndexedSeq[Instruction](
+      NewBranch(new Label("main")),
       pushLR,
       // TODO: generate stats
-      new LoadDirect(_, instructionSet.getReturn, null, false, null, new Immediate(0)),
+      zeroReturn,
       popPC,
       new EndBranch
     )
@@ -40,7 +45,7 @@ object CodeGenerator {
 
   def generate(func: FuncNode): IndexedSeq[Instruction] = {
     IndexedSeq[Instruction](
-      new LabelBranch(new Label(s"f_${func.identNode.ident}")),
+      NewBranch(new Label(s"f_${func.identNode.ident}")),
       pushLR,
       // TODO: generate stats
       popPC,
