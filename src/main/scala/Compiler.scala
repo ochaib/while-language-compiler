@@ -80,7 +80,7 @@ object Compiler extends App {
     // Generate ASM instructions from AST
     val instructions: IndexedSeq[Instruction] = CodeGenerator.generate(tree)
     // Format using ARM11 syntax
-    val compiled: String = ARM11.print(IndexedSeq[String](), instructions)
+    val compiled: String = ARM11.print(instructions)
     // Appropriately name output file, no prefix because it should go in root directory
     val baseFilename: String = args(0).split("/").last
     val outputFile: String = baseFilename.stripSuffix(".wacc") + ".s"
