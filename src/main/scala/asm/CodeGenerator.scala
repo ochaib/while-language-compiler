@@ -16,8 +16,16 @@ object CodeGenerator {
     RM = new RegisterManager(instructionSet)
   }
 
+  // Common instructions
   def pushLR: Instruction = new Push(None, List(instructionSet.getLR))
   def popPC: Instruction = new Pop(None, List(instructionSet.getPC))
+  def zeroReturn: Instruction = new Load(
+    condition = None,
+    asmType = new SignedByte,
+    dest = instructionSet.getReturn,
+    loadable = new Immediate(0),
+    label = None
+  )
 
   def generate(program: ProgramNode): IndexedSeq[Instruction] = {
     // Generated code for functions
@@ -26,13 +34,11 @@ object CodeGenerator {
     // Generated code for stats
     val stats: IndexedSeq[Instruction] = ???
 
-    val mainLabel: Label = new Label("main")
-
     functions ++ IndexedSeq[Instruction](
-      new NewBranch(mainLabel),
+      new NewBranch(new Label("main")),
       pushLR,
       // TODO: generate stats
-      new Load(None, new SignedByte, instructionSet.getReturn, new Immediate(0)),
+      zeroReturn,
       popPC,
       new EndBranch
     )

@@ -101,7 +101,8 @@ case class Load private (
       condition: Option[Condition],
       asmType: ASMType,
       dest: Register,
-      loadable: Loadable
+      loadable: Loadable,
+      label: Option[Label]
   ) =
     this(
       condition,
@@ -111,7 +112,7 @@ case class Load private (
       None,
       None,
       Some(loadable),
-      None
+      label
     )
 }
 
