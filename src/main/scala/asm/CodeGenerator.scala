@@ -44,7 +44,6 @@ object CodeGenerator {
       pushLR,
       // TODO: generate stats
       popPC,
-      popPC,
       new EndBranch
     )
   }
