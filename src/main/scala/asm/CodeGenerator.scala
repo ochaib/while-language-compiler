@@ -21,18 +21,18 @@ object CodeGenerator {
 
   def generate(program: ProgramNode): IndexedSeq[Instruction] = {
     // Generated code for functions
-    val functions: IndexedSeq[Instruction] = program.functions.flatMap(generateFunc)
+    val functions: IndexedSeq[Instruction] = program.functions.flatMap(generate)
 
     // Generated code for stats
     val stats: IndexedSeq[Instruction] = ???
 
     val mainLabel: Label = new Label("main")
 
-    functionCode ++ IndexedSeq[Instruction](
-      new BranchLabel(mainLabel),
+    functions ++ IndexedSeq[Instruction](
+      new NewBranch(mainLabel),
       pushLR,
       // TODO: generate stats
-      new LoadDirect(_, instructionSet.getReturn, null, false, null, new Immediate(0)),
+      new LoadDirect(None, false, new SignedByte, instructionSet.getReturn, new Immediate(0)),
       popPC,
       new EndBranch
     )
@@ -40,7 +40,7 @@ object CodeGenerator {
 
   def generate(func: FuncNode): IndexedSeq[Instruction] = {
     IndexedSeq[Instruction](
-      new LabelBranch(new Label(s"f_${func.identNode.ident}")),
+      new NewBranch(new Label(s"f_${func.identNode.ident}")),
       pushLR,
       // TODO: generate stats
       popPC,
