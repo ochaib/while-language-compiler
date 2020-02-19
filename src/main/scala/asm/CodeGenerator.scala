@@ -32,7 +32,7 @@ object CodeGenerator {
     val functions: IndexedSeq[Instruction] = program.functions.flatMap(generate)
 
     // Generated code for stats
-    val stats: IndexedSeq[Instruction] = ???
+    val stats: IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
     functions ++ IndexedSeq[Instruction](
       new NewBranch(new Label("main")),

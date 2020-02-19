@@ -98,12 +98,12 @@ object ARM11 extends InstructionSet {
 
     // OP{COND} *ARGS
     case Push(condition, registers) =>
-      s"\tPUSH${print(condition)} {" + registers
+      s"PUSH${print(condition)} {" + registers
         .map(_.registerID)
         .mkString(", ") + "}"
 
     case Pop(condition, registers) =>
-      s"\tPOP${print(condition)} {" + registers
+      s"POP${print(condition)} {" + registers
         .map(_.registerID)
         .mkString(", ") + "}"
 
@@ -118,7 +118,7 @@ object ARM11 extends InstructionSet {
         None,
         None
         ) =>
-      s"\tLDR${print(condition)}${print(asmType)} ${print(dest)}, [${print(src)}]"
+      s"LDR${print(condition)}${print(asmType)} ${print(dest)}, [${print(src)}]"
 
     // LDR{cond}{B|Type} Rd, [Rn, FlexOffset]{!}
     case Load(
@@ -253,12 +253,10 @@ object ARM11 extends InstructionSet {
     // B{cond} label
     case Branch(condition, label) => s"B${print(condition)} ${print(label)}"
     case BranchLabel(condition, label) =>
-      s"B${print(condition)} ${print(label)}"
+      s"BL${print(condition)} ${print(label)}"
 
-    /*case LabelBranch(label) => label.label + ":"
-    case Branch(condition, label) =>
-      s"\tBL${print(condition)} " + label.label
-    case EndBranch() => s"\t.ltorg"*/
+    case NewBranch(label) => label.label + ":"
+    case EndBranch() => s".ltorg"
 
   }
 
