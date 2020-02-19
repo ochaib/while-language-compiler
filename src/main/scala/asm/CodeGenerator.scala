@@ -8,34 +8,43 @@ import ast.nodes._
 
 object CodeGenerator {
 
-  def generate(program: ProgramNode, instructionSet: InstructionSet): IndexedSeq[Instruction] = {
-    val RM: RegisterManager = new RegisterManager(instructionSet)
+  var instructionSet: InstructionSet = null
+  var RM: RegisterManager = null
 
-    // Final sequence of instructions generated for printing.
-    val generatedInstructions: IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+  def useInstructionSet(_instructionSet: InstructionSet) = {
+    instructionSet = _instructionSet
+    RM = new RegisterManager(instructionSet)
+  }
 
-    // Traverse list of funcNodes associated with programNode and generate code for them.
-    val functionCode: IndexedSeq[Instruction] = program.functions.flatMap(generateFunc(_, instructionSet, RM))
+  def pushLR: Instruction = new Push(None, List(instructionSet.getLR))
+  def popPC: Instruction = new Pop(None, List(instructionSet.getPC))
+
+  def generate(program: ProgramNode): IndexedSeq[Instruction] = {
+    // Generated code for functions
+    val functions: IndexedSeq[Instruction] = program.functions.flatMap(generateFunc)
+
+    // Generated code for stats
+    val stats: IndexedSeq[Instruction] = ???
 
     val mainLabel: Label = new Label("main")
 
-    generatedInstructions ++ functionCode ++ IndexedSeq[Instruction](
+    functionCode ++ IndexedSeq[Instruction](
       new BranchLabel(mainLabel),
-      Push(_, List(instructionSet.getLR)),
+      pushLR,
       // TODO: generate stats
       new LoadDirect(_, instructionSet.getReturn, null, false, null, new Immediate(0)),
-      Pop(Anything, List(instructionSet.getPC)),
+      popPC,
       new EndBranch
     )
   }
 
-  def generateFunc(func: FuncNode, instructionSet: InstructionSet, RM: RegisterManager) = {
+  def generate(func: FuncNode): IndexedSeq[Instruction] = {
     IndexedSeq[Instruction](
       new LabelBranch(new Label(s"f_${func.identNode.ident}")),
-      new Push(Anything, List(instructionSet.getLR)),
+      pushLR,
       // TODO: generate stats
-      new Pop(Anything, List(instructionSet.getPC)),
-      new Pop(Anything, List(instructionSet.getPC)),
+      popPC,
+      popPC,
       new EndBranch
     )
   }
