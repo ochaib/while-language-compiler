@@ -2,7 +2,6 @@ package asm.instructionset
 
 import asm.instructions._
 import asm.registers.Register
-import com.sun.jdi.ByteType
 
 import scala.collection.mutable.ListBuffer
 
@@ -86,16 +85,13 @@ object ARM11 extends InstructionSet {
 
   // Print the instructions to a string with the instruction set's syntax
   def print(
-      strings: IndexedSeq[String],
-      instructions: IndexedSeq[Instruction]
+      instructions: IndexedSeq[Instruction],
+      strings: IndexedSeq[String] = IndexedSeq[String]()
   ): String =
     // TODO print required strings
     ".text\n\n" +
       ".global main\n" +
       instructions.map(print).mkString("\n")
-
-  def registerWBToString(registerWriteBack: Boolean): String =
-    if (registerWriteBack) "!" else ""
 
   def print(instruction: Instruction): String = instruction match {
     // ARM 11 syntax as per ref manual:
@@ -105,16 +101,16 @@ object ARM11 extends InstructionSet {
       s"\tPUSH${print(condition)} {" + registers
         .map(_.registerID)
         .mkString(", ") + "}"
+
     case Pop(condition, registers) =>
       s"\tPOP${print(condition)} {" + registers
         .map(_.registerID)
         .mkString(", ") + "}"
 
     // LDR{cond}{B|Type} Rd, [Rn]
-    case LoadDirect(
+    case Load(
         condition,
-        byteType,
-        Some(_type),
+        Some(asmType),
         dest,
         Some(src),
         None,
@@ -122,14 +118,12 @@ object ARM11 extends InstructionSet {
         None,
         None
         ) =>
-      s"\tLDR${print(condition)}${byteTypeToString(byteType)}${print(_type)}" +
-        s" ${print(dest)}, [${print(src)}]"
+      s"\tLDR${print(condition)}${print(asmType)} ${print(dest)}, [${print(src)}]"
 
     // LDR{cond}{B|Type} Rd, [Rn, FlexOffset]{!}
-    case LoadDirect(
+    case Load(
         condition,
-        byteType,
-        Some(_type),
+        Some(asmType),
         dest,
         Some(src),
         Some(flexOffset),
@@ -137,14 +131,14 @@ object ARM11 extends InstructionSet {
         None,
         None
         ) =>
-      s"LDR${print(condition)}${byteTypeToString(byteType)}${print(_type)}" +
-        s" ${print(dest)}, [${print(src)}, ${print(flexOffset)}]${registerWBToString(registerWriteBack)}"
+      s"LDR${print(condition)}${print(asmType)}" +
+        s" ${print(dest)}, [${print(src)}, ${print(flexOffset)}]${if (registerWriteBack) "!"
+        else ""}"
 
     // LDR{cond}{B|Type} Rd, label
-    case LoadDirect(
+    case Load(
         condition,
-        byteType,
-        Some(_type),
+        Some(asmType),
         dest,
         None,
         None,
@@ -152,14 +146,12 @@ object ARM11 extends InstructionSet {
         None,
         Some(label)
         ) =>
-      s"LDR${print(condition)}${byteTypeToString(byteType)}${print(_type)}" +
-        s" ${print(dest)}, ${print(label)}"
+      s"LDR${print(condition)}${print(asmType)} ${print(dest)}, ${print(label)}"
 
     // LDR{cond}{B|Type} Rd, [Rn], FlexOffset
-    case LoadDirect(
+    case Load(
         condition,
-        byteType,
-        Some(_type),
+        Some(asmType),
         dest,
         Some(src),
         Some(flexOffset),
@@ -167,14 +159,12 @@ object ARM11 extends InstructionSet {
         None,
         None
         ) =>
-      s"LDR${print(condition)}${byteTypeToString(byteType)}${print(_type)}" +
-        s" ${print(dest)}, [${print(src)}], ${print(flexOffset)}"
+      s"LDR${print(condition)}${print(asmType)} ${print(dest)}, [${print(src)}], ${print(flexOffset)}"
 
     // LDR{cond}{B|Type} register, =[expr | label-expr]
-    case LoadDirect(
+    case Load(
         condition,
-        byteType,
-        Some(_type),
+        Some(asmType),
         dest,
         None,
         None,
@@ -182,11 +172,10 @@ object ARM11 extends InstructionSet {
         Some(loadable),
         None
         ) =>
-      s"LDR${print(condition)}${byteTypeToString(byteType)}${print(_type)}" +
-        s" ${print(dest)}, =${print(loadable)}"
+      s"LDR${print(condition)}${print(asmType)} ${print(dest)}, =${print(loadable)}"
 
     // Invalid LDR case
-    case LoadDirect(_, _, _, _, _, _, _, _, _) =>
+    case Load(_, _, _, _, _, _, _, _) =>
       assert(
         assertion = false,
         "print for this LoadDirect configuration is undefined"
@@ -195,8 +184,7 @@ object ARM11 extends InstructionSet {
 
     // STR{cond}{B} Rd, [Rn]
     case Store(condition, byteType, dest, Some(src), None, false, None) =>
-      s"\tLDR${print(condition)}${byteTypeToString(byteType)}" +
-        s" ${print(dest)}, [${print(src)}]"
+      s"\tSTR${print(condition)}${byteTypeToString(byteType)} ${print(dest)}, [${print(src)}]"
 
     // STR{cond}{B} Rd, [Rn, FlexOffset]{!}
     case Store(
@@ -208,12 +196,13 @@ object ARM11 extends InstructionSet {
         registerWriteBack,
         None
         ) =>
-      s"LDR${print(condition)}${byteTypeToString(byteType)}" +
-        s" ${print(dest)}, [${print(src)}, ${print(flexOffset)}]${registerWBToString(registerWriteBack)}"
+      s"STR${print(condition)}${byteTypeToString(byteType)}" +
+        s" ${print(dest)}, [${print(src)}, ${print(flexOffset)}]${if (registerWriteBack) "!"
+        else ""}"
 
     // STR{cond}{B} Rd, label
     case Store(condition, byteType, dest, None, None, false, Some(label)) =>
-      s"LDR${print(condition)}${byteTypeToString(byteType)}" +
+      s"STR${print(condition)}${byteTypeToString(byteType)}" +
         s" ${print(dest)}, ${print(label)}"
 
     // STR{cond}{B} Rd, [Rn], FlexOffset
@@ -226,8 +215,7 @@ object ARM11 extends InstructionSet {
         false,
         None
         ) =>
-      s"LDR${print(condition)}${byteTypeToString(byteType)}" +
-        s" ${print(dest)}, [${print(src)}], ${print(flexOffset)}"
+        s"STR${print(condition)}${byteTypeToString(byteType)} ${print(dest)}, [${print(src)}], ${print(flexOffset)}"
 
     // Invalid STR case
     case Store(_, _, _, _, _, _, _) =>
@@ -285,7 +273,10 @@ object ARM11 extends InstructionSet {
   def conditionFlagToString(conditionFlag: Boolean): String =
     if (conditionFlag) "S" else ""
 
-  def byteTypeToString(byteType: Boolean): String = if (byteType) "B" else ""
+  def byteTypeToString(byteType: Option[ByteType]): String = byteType match {
+    case Some(_) => "B"
+    case None    => ""
+  }
 
   def print(loadable: Loadable): String = loadable match {
     case immediate: Immediate => immediate.immediate.toString
@@ -310,8 +301,9 @@ object ARM11 extends InstructionSet {
       ""
   }
 
-  def print(_type: WordType): String = _type match {
-    case byte: SignedByte => "SB"
+  def print(asmType: ASMType): String = asmType match {
+    case _: ByteType   => "B"
+    case _: SignedByte => "SB"
     case _ =>
       assert(assertion = false, "print for word type is undefined")
       ""

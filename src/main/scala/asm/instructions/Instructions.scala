@@ -118,7 +118,7 @@ case class Load private (
 
 case class Store private (
     condition: Option[Condition],
-    asmType: Option[ASMType],
+    byteType: Option[ByteType],
     dest: Register,
     src: Option[Register],
     offset: Option[FlexOffset],
@@ -132,13 +132,13 @@ case class Store private (
   // STR{cond}{B} Rd, [Rn]
   def this(
       condition: Option[Condition],
-      asmType: Option[ASMType],
+      byteType: Option[ByteType],
       dest: Register,
       src: Register
   ) =
     this(
       condition,
-      asmType,
+      byteType,
       dest,
       Some(src),
       None,
@@ -148,7 +148,7 @@ case class Store private (
   // STR{cond}{B} Rd, [Rn, FlexOffset]{!}
   def this(
       condition: Option[Condition],
-      asmType: Option[ASMType],
+      byteType: Option[ByteType],
       dest: Register,
       src: Register,
       flexOffset: FlexOffset,
@@ -156,7 +156,7 @@ case class Store private (
   ) =
     this(
       condition,
-      asmType,
+      byteType,
       dest,
       Some(src),
       Some(flexOffset),
@@ -166,13 +166,13 @@ case class Store private (
   // STR{cond}{B} Rd, label
   def this(
       condition: Option[Condition],
-      asmType: Option[ASMType],
+      byteType: Option[ByteType],
       dest: Register,
       label: Label
   ) =
     this(
       condition,
-      asmType,
+      byteType,
       dest,
       None,
       None,
@@ -182,14 +182,14 @@ case class Store private (
   // STR{cond}{B} Rd, [Rn], FlexOffset
   def this(
       condition: Option[Condition],
-      asmType: Option[ASMType],
+      byteType: Option[ByteType],
       dest: Register,
       src: Register,
       flexOffset: FlexOffset
   ) =
     this(
       condition,
-      asmType,
+      byteType,
       dest,
       Some(src),
       Some(flexOffset),
