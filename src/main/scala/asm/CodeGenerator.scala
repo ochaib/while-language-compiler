@@ -111,9 +111,16 @@ object CodeGenerator {
       case Bool_literNode(_, bool)
                   => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
                      RM.nextVariableRegister(), new Immediate(if (bool) 1 else 0)))
-      case Char_literNode(_, char) => IndexedSeq[Instruction]()
-      case Str_literNode(_, str) => IndexedSeq[Instruction]()
-      case Pair_literNode(_) => IndexedSeq[Instruction]()
+      case Char_literNode(_, char)
+                  => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
+                     RM.nextVariableRegister(), new Immediate(char)))
+      case Str_literNode(_, str)
+                  => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
+                     RM.nextVariableRegister(), Label(str)))
+      // May replace with zeroReturn.
+      case Pair_literNode(_)
+                  => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
+                     RM.nextVariableRegister(), new Immediate(0)))
       case ident: IdentNode => IndexedSeq[Instruction]()
       case arrayElem: ArrayElemNode => IndexedSeq[Instruction]()
       case unaryOperation: UnaryOperationNode => generateUnary(unaryOperation)
