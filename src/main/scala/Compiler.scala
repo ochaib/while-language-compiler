@@ -2,7 +2,7 @@ import antlr._
 import asm.CodeGenerator
 import asm.instructions.Instruction
 import asm.instructionset.ARM11
-import ast.nodes.ASTNode
+import ast.nodes.{ASTNode, ProgramNode}
 import ast.visitors.{ASTGenerator, TypeCheckVisitor, Visitor}
 import java.io.{
   IOException,
@@ -58,7 +58,7 @@ object Compiler extends App {
 
     // Build AST
     val visitor: ASTGenerator = new ASTGenerator() // TODO: this should be a singleton
-    val tree: ASTNode = visitor.visit(program)
+    val tree: ProgramNode = visitor.visit(program).asInstanceOf[ProgramNode]
 
     // TODO: add flag to disable semantic analysis as in ref compiler
     // Run semantic analyzer
@@ -75,17 +75,23 @@ object Compiler extends App {
       System.exit(200)
     }
 
+    // Use ARM 11 instruction set
+    console.info("Using ARM 11 instruction set.")
+    CodeGenerator.useInstructionSet(ARM11)
     // Generate ASM instructions from AST
-    val instructions: IndexedSeq[Instruction] = CodeGenerator.generate(tree, ARM11)
+    console.log("Compiling...")
+    val instructions: IndexedSeq[Instruction] = CodeGenerator.generateProgram(tree)
     // Format using ARM11 syntax
     val compiled: String = ARM11.print(instructions)
     // Appropriately name output file, no prefix because it should go in root directory
     val baseFilename: String = args(0).split("/").last
     val outputFile: String = baseFilename.stripSuffix(".wacc") + ".s"
+    console.info("Writing assembly to " + outputFile)
     // Write our compiled code to the assembly file
     val writer = new PrintWriter(new File(outputFile))
     writer.write(compiled)
-    writer.close
+    writer.close()
+    console.info("Compilation finished successfully.")
   } catch {
     case ioerror: IOException => error("File does not exist")
   }
