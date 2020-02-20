@@ -81,7 +81,6 @@ object CodeGenerator {
       case begin: BeginNode => generateBegin(begin)
       case SequenceNode(_, statOne, statTwo) => generateStatement(statOne) ++ generateStatement(statTwo)
     }
-
   }
 
   def generateDeclaration(declaration: DeclarationNode): IndexedSeq[Instruction] = ???
@@ -94,13 +93,20 @@ object CodeGenerator {
 
   def generateReturn(expr: ExprNode): IndexedSeq[Instruction] = ???
 
-  def generateExit(expr: ExprNode): IndexedSeq[Instruction] = ???
+  def generateExit(expr: ExprNode): IndexedSeq[Instruction] = {
+    // Must generate the instructions necessary for the exit code,
+    // then branch to exit.
+    generateExpression(expr) :+ BranchLabel(None, Label("exit"))
+  }
 
   def generateIf(ifNode: IfNode): IndexedSeq[Instruction] = ???
 
-  def generateWhile(whileNode: WhileNode): scala.IndexedSeq[_root_.asm.instructions.Instruction] = ???
+  def generateWhile(whileNode: WhileNode): IndexedSeq[Instruction] = ???
 
-  def generateBegin(begin: BeginNode): scala.IndexedSeq[_root_.asm.instructions.Instruction] = ???
+  def generateBegin(begin: BeginNode): IndexedSeq[Instruction] = ???
+
+  def generateExpression(expr: ExprNode): IndexedSeq[Instruction] = ???
+
 
 }
 
