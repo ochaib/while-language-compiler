@@ -105,9 +105,12 @@ object CodeGenerator {
 
   def generateExpression(expr: ExprNode): IndexedSeq[Instruction] = {
     expr match {
-      case Int_literNode(_, str) => IndexedSeq[Instruction](zeroReturn)
-//        IndexedSeq[Instruction](new Load(None, Some(new SignedByte), RM.next(), new Immediate(str.toInt)))
-      case Bool_literNode(_, bool) => IndexedSeq[Instruction]()
+      case Int_literNode(_, str)
+                  => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
+                     RM.nextVariableRegister(), new Immediate(str.toInt)))
+      case Bool_literNode(_, bool)
+                  => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
+                     RM.nextVariableRegister(), new Immediate(if (bool) 1 else 0)))
       case Char_literNode(_, char) => IndexedSeq[Instruction]()
       case Str_literNode(_, str) => IndexedSeq[Instruction]()
       case Pair_literNode(_) => IndexedSeq[Instruction]()
@@ -122,6 +125,7 @@ object CodeGenerator {
     unaryOperation match {
       // More must be done for these according to the reference compiler.
       case LogicalNotNode(_, expr) => generateExpression(expr)
+      // Negate is not currently adding sign to the immediate to be loaded.
       case NegateNode(_, expr)     => generateExpression(expr)
       case LenNode(_, expr) => generateExpression(expr)
       // Finished implementation as nothing else must be done.
