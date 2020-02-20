@@ -96,20 +96,19 @@ case class Load private (
   // LDR{cond}{B|Type} register, =[expr | label-expr]
   def this(
       condition: Option[Condition],
-      asmType: ASMType,
+      asmType: Option[ASMType],
       dest: Register,
-      loadable: Loadable,
-      label: Option[Label]
+      loadable: Loadable
   ) =
     this(
       condition,
-      Some(asmType),
+      asmType,
       dest,
       None,
       None,
       None,
       Some(loadable),
-      label
+      None
     )
 }
 

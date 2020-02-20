@@ -24,10 +24,9 @@ object CodeGenerator {
   def popPC: Instruction = Pop(None, List(instructionSet.getPC))
   def zeroReturn: Instruction = new Load(
     condition = None,
-    asmType = new SignedByte,
+    asmType = Some(new SignedByte),
     dest = instructionSet.getReturn,
-    loadable = new Immediate(0),
-    label = None
+    loadable = new Immediate(0)
   )
 
   def generateProgram(program: ProgramNode): IndexedSeq[Instruction] = {
@@ -107,14 +106,15 @@ object CodeGenerator {
 
   def generateExpression(expr: ExprNode): IndexedSeq[Instruction] = {
     expr match {
-      case Int_literNode(_, str) => IndexedSeq[Instruction]()
+      case Int_literNode(_, str) =>
+        IndexedSeq[Instruction](new Load(None, Some(new SignedByte), RM.next(), new Immediate(str.toInt)))
       case Bool_literNode(_, bool) => IndexedSeq[Instruction]()
       case Char_literNode(_, char) => IndexedSeq[Instruction]()
       case Str_literNode(_, str) => IndexedSeq[Instruction]()
       case Pair_literNode(_) => IndexedSeq[Instruction]()
       case ident: IdentNode => IndexedSeq[Instruction]()
       case arrayElem: ArrayElemNode => IndexedSeq[Instruction]()
-      case unaryOper: UnaryOperationNode => IndexedSeq[Instruction]()
+      case unaryOperation: UnaryOperationNode => IndexedSeq[Instruction]()
       case binaryOperation: BinaryOperationNode => IndexedSeq[Instruction]()
     }
   }
