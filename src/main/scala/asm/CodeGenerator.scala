@@ -105,7 +105,19 @@ object CodeGenerator {
 
   def generateBegin(begin: BeginNode): IndexedSeq[Instruction] = ???
 
-  def generateExpression(expr: ExprNode): IndexedSeq[Instruction] = ???
+  def generateExpression(expr: ExprNode): IndexedSeq[Instruction] = {
+    expr match {
+      case Int_literNode(_, str) => IndexedSeq[Instruction]()
+      case Bool_literNode(_, bool) => IndexedSeq[Instruction]()
+      case Char_literNode(_, char) => IndexedSeq[Instruction]()
+      case Str_literNode(_, str) => IndexedSeq[Instruction]()
+      case Pair_literNode(_) => IndexedSeq[Instruction]()
+      case ident: IdentNode => IndexedSeq[Instruction]()
+      case arrayElem: ArrayElemNode => IndexedSeq[Instruction]()
+      case unaryOper: UnaryOperationNode => IndexedSeq[Instruction]()
+      case binaryOperation: BinaryOperationNode => IndexedSeq[Instruction]()
+    }
+  }
 
 
 }
