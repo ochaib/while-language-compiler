@@ -261,7 +261,7 @@ case class Label(label: String) extends Instruction(None) with Loadable
 case class Branch(condition: Option[Condition], label: Label)
     extends Instruction(condition)
 
-case class BranchLabel(condition: Option[Condition], label: Label)
+case class BranchLink(condition: Option[Condition], label: Label)
     extends Instruction(condition)
 
 case class EndFunction() extends Instruction(None)

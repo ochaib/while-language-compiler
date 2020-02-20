@@ -96,7 +96,7 @@ object CodeGenerator {
   def generateExit(expr: ExprNode): IndexedSeq[Instruction] = {
     // Must generate the instructions necessary for the exit code,
     // then branch to exit.
-    generateExpression(expr) :+ BranchLabel(None, Label("exit"))
+    generateExpression(expr) :+ BranchLink(None, Label("exit"))
   }
 
   def generateIf(ifNode: IfNode): IndexedSeq[Instruction] = ???
