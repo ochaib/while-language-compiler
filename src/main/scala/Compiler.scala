@@ -76,19 +76,22 @@ object Compiler extends App {
     }
 
     // Use ARM 11 instruction set
+    console.info("Using ARM 11 instruction set.")
     CodeGenerator.useInstructionSet(ARM11)
     // Generate ASM instructions from AST
+    console.log("Compiling...")
     val instructions: IndexedSeq[Instruction] = CodeGenerator.generateProgram(tree)
     // Format using ARM11 syntax
     val compiled: String = ARM11.print(instructions)
     // Appropriately name output file, no prefix because it should go in root directory
     val baseFilename: String = args(0).split("/").last
     val outputFile: String = baseFilename.stripSuffix(".wacc") + ".s"
+    console.info("Writing assembly to " + outputFile)
     // Write our compiled code to the assembly file
     val writer = new PrintWriter(new File(outputFile))
     writer.write(compiled)
     writer.close()
-
+    console.info("Compilation finished successfully.")
   } catch {
     case ioerror: IOException => error("File does not exist")
   }
