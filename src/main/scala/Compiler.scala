@@ -78,7 +78,7 @@ object Compiler extends App {
     // Use ARM 11 instruction set
     CodeGenerator.useInstructionSet(ARM11)
     // Generate ASM instructions from AST
-    val instructions: IndexedSeq[Instruction] = CodeGenerator.generate(tree)
+    val instructions: IndexedSeq[Instruction] = CodeGenerator.generateProgram(tree)
     // Format using ARM11 syntax
     val compiled: String = ARM11.print(instructions)
     // Appropriately name output file, no prefix because it should go in root directory
