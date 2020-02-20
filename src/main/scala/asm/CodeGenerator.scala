@@ -37,12 +37,11 @@ object CodeGenerator {
     val functions: IndexedSeq[Instruction] = program.functions.flatMap(generateFunction)
 
     // Generated code for stats
-    val stats: IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+    val stats: IndexedSeq[Instruction] = generateStatement(program.stat)
 
     generatedInstructions ++ functions ++ IndexedSeq[Instruction](
       Label("main"),
-      pushLR,
-      // TODO: generate stats
+      pushLR) ++ stats ++ IndexedSeq[Instruction](
       zeroReturn,
       popPC,
       new EndFunction
@@ -106,18 +105,32 @@ object CodeGenerator {
 
   def generateExpression(expr: ExprNode): IndexedSeq[Instruction] = {
     expr match {
-      case Int_literNode(_, str) =>
-        IndexedSeq[Instruction](new Load(None, Some(new SignedByte), RM.next(), new Immediate(str.toInt)))
+      case Int_literNode(_, str) => IndexedSeq[Instruction](zeroReturn)
+//        IndexedSeq[Instruction](new Load(None, Some(new SignedByte), RM.next(), new Immediate(str.toInt)))
       case Bool_literNode(_, bool) => IndexedSeq[Instruction]()
       case Char_literNode(_, char) => IndexedSeq[Instruction]()
       case Str_literNode(_, str) => IndexedSeq[Instruction]()
       case Pair_literNode(_) => IndexedSeq[Instruction]()
       case ident: IdentNode => IndexedSeq[Instruction]()
       case arrayElem: ArrayElemNode => IndexedSeq[Instruction]()
-      case unaryOperation: UnaryOperationNode => IndexedSeq[Instruction]()
+      case unaryOperation: UnaryOperationNode => generateUnary(unaryOperation)
       case binaryOperation: BinaryOperationNode => IndexedSeq[Instruction]()
     }
   }
+
+  def generateUnary(unaryOperation: UnaryOperationNode): IndexedSeq[Instruction] = {
+    unaryOperation match {
+      // More must be done for these according to the reference compiler.
+      case LogicalNotNode(_, expr) => generateExpression(expr)
+      case NegateNode(_, expr)     => generateExpression(expr)
+      case LenNode(_, expr) => generateExpression(expr)
+      // Finished implementation as nothing else must be done.
+      case OrdNode(_, expr) => generateExpression(expr)
+      case ChrNode(_, expr) => generateExpression(expr)
+    }
+  }
+
+
 
 
 }
