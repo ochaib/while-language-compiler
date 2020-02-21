@@ -27,14 +27,27 @@ class RegisterManager(_instructionSet: InstructionSet) {
     availableRegisters.remove(0)
   }
 
+  def peek(): Register = {
+    availableRegisters.head
+  }
+
   def nextArgumentRegister(): Register = {
     argumentRegisters.remove(0)
+  }
+
+  def peekArgumentRegister(): Register = {
+    argumentRegisters.head
   }
 
   def nextVariableRegister(): Register = {
     variableRegisters.remove(0)
   }
 
+  def peekVariableRegister(): Register = {
+    variableRegisters.head
+  }
+
+  // Free's are not adding registers back in initial order.
   def free(register: Register): Unit = {
     availableRegisters += register
   }

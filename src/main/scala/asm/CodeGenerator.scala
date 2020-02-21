@@ -95,7 +95,7 @@ object CodeGenerator {
 
   def generateIdent(ident: IdentNode): IndexedSeq[Instruction] = {
     IndexedSeq[Instruction](
-      new Store(None, Some(new ByteType), RM.nextVariableRegister(), instructionSet.getSP)
+      new Store(None, Some(new ByteType), RM.peekVariableRegister(), instructionSet.getSP)
     )
   }
 
@@ -126,12 +126,19 @@ object CodeGenerator {
       new Load(None, Some(new SignedByte), instructionSet.getReturn, new Immediate(8)),
       BranchLink(None, Label("malloc")),
       Move(None, varReg1, new ShiftedRegister(instructionSet.getReturn))
-    ) ++ arrayLiteral.exprNodes.flatMap(generateExpression)
+    )
+
+    val generatedExpressions: IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+
+    arrayLiteral.exprNodes.foreach(expr => generatedExpressions
+      ++ generateExpression(expr) :+
+      new Store(None, Some(new ByteType), instructionSet.getReturn, RM.peekVariableRegister(),
+        new Immediate(4)))
 
     val varReg2 = RM.nextVariableRegister()
 
     // However above once expression in arrayLiteral is generated we must store it.
-    val postExprInstructions = IndexedSeq[Instruction](
+    val postExprInstructions = generatedExpressions ++ IndexedSeq[Instruction](
       // Store number of elements in array in next available variable register.
       // Temporary hardcode below.
       new Load(None, Some(new SignedByte), varReg2, new Immediate(1)),
@@ -156,7 +163,7 @@ object CodeGenerator {
     // then branch to exit.
     // Need next available register to move into r0, temporary fix below.
     // TODO: Implement following code better.
-    val regUsedByGenExp: Register = RM.nextVariableRegister()
+    val regUsedByGenExp: Register = RM.peekVariableRegister()
     // So that it can actually be used by generateExpression.
     RM.freeVariableRegister(regUsedByGenExp)
     generateExpression(expr) ++ IndexedSeq[Instruction](
@@ -174,21 +181,21 @@ object CodeGenerator {
     expr match {
       case Int_literNode(_, str)
                   => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
-                     RM.nextVariableRegister(), new Immediate(str.toInt)))
+                     RM.peekVariableRegister(), new Immediate(str.toInt)))
       case Bool_literNode(_, bool)
-                  => IndexedSeq[Instruction](Move(None, RM.nextVariableRegister(),
+                  => IndexedSeq[Instruction](Move(None, RM.peekVariableRegister(),
                      new Immediate(if (bool) 1 else 0)))
       case Char_literNode(_, char)
-                  => IndexedSeq[Instruction](Move(None, RM.nextVariableRegister(),
+                  => IndexedSeq[Instruction](Move(None, RM.peekVariableRegister(),
                      new ImmediateChar(char)))
       // Need to produce message instead of Label(str).
       case Str_literNode(_, str)
                   => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
-                     RM.nextVariableRegister(), Label(str)))
+                     RM.peekVariableRegister(), Label(str)))
       // May replace with zeroReturn.
       case Pair_literNode(_)
                   => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
-                     RM.nextVariableRegister(), new Immediate(0)))
+                     RM.peekVariableRegister(), new Immediate(0)))
       case ident: IdentNode => generateIdent(ident)
       case arrayElem: ArrayElemNode => generateArrayElem(arrayElem)
       case unaryOperation: UnaryOperationNode => generateUnary(unaryOperation)
