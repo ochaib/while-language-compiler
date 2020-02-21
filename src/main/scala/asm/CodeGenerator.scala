@@ -4,7 +4,7 @@ import java.sql.Statement
 
 import asm.instructions._
 import asm.instructionset._
-import asm.registers.RegisterManager
+import asm.registers.{Register, RegisterManager}
 import ast.nodes._
 
 import scala.collection.immutable.Stream.Empty
@@ -67,6 +67,7 @@ object CodeGenerator {
       case assign: AssignmentNode => generateAssignment(assign)
       case ReadNode(_, lhs) => generateRead(lhs)
       case FreeNode(_, expr) => generateFree(expr)
+      // Possibly do more for return and exit, moving used register into r0 (return reg)?
       case ReturnNode(_, expr) => generateReturn(expr)
       case ExitNode(_, expr) => generateExit(expr)
 
@@ -94,7 +95,14 @@ object CodeGenerator {
   def generateExit(expr: ExprNode): IndexedSeq[Instruction] = {
     // Must generate the instructions necessary for the exit code,
     // then branch to exit.
-    generateExpression(expr) :+ BranchLink(None, Label("exit"))
+    // Need next available register to move into r0, temporary fix below.
+    // TODO: Implement following code better.
+    val regUsedByGenExp: Register = RM.nextVariableRegister()
+    // So that it can actually be used by generateExpression.
+    RM.free(regUsedByGenExp)
+    generateExpression(expr) ++ IndexedSeq[Instruction](
+      Move(None, instructionSet.getReturn, new ShiftedRegister(regUsedByGenExp)),
+      BranchLink(None, Label("exit")))
   }
 
   def generateIf(ifNode: IfNode): IndexedSeq[Instruction] = ???
@@ -133,7 +141,7 @@ object CodeGenerator {
       // More must be done for these according to the reference compiler.
       case LogicalNotNode(_, expr) => generateExpression(expr)
       // Negate is not currently adding sign to the immediate to be loaded.
-      case NegateNode(_, expr)     => generateExpression(expr)
+      case NegateNode(_, expr) => generateExpression(expr)
       case LenNode(_, expr) => generateExpression(expr)
       // Finished implementation as nothing else must be done.
       case OrdNode(_, expr) => generateExpression(expr)

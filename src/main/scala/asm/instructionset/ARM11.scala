@@ -89,8 +89,7 @@ object ARM11 extends InstructionSet {
       strings: IndexedSeq[String] = IndexedSeq[String]()
   ): String =
     // TODO print required strings
-    ".text\n\n" +
-      ".global main\n" +
+    ".text\n\n" + ".global main\n" +
       instructions.map(print).mkString("\n")
 
   def print(instruction: Instruction): String = instruction match {
