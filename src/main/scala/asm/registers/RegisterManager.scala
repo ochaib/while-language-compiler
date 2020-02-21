@@ -49,15 +49,15 @@ class RegisterManager(_instructionSet: InstructionSet) {
 
   // Free's are not adding registers back in initial order.
   def free(register: Register): Unit = {
-    register +: availableRegisters
+    availableRegisters.prepend(register)
   }
 
   def freeArgumentRegister(register: Register): Unit = {
-    register +: argumentRegisters
+    argumentRegisters.prepend(register)
   }
 
   def freeVariableRegister(register: Register): Unit = {
-    register +: variableRegisters
+    variableRegisters.prepend(register)
   }
 
   // Upon entering a new scope (function call) we must save the previous register state.
