@@ -80,7 +80,27 @@ object CodeGenerator {
 
   def generateDeclaration(declaration: DeclarationNode): IndexedSeq[Instruction] = ???
 
-  def generateAssignment(assignment: AssignmentNode): IndexedSeq[Instruction] = ???
+  def generateAssignment(assignment: AssignmentNode): IndexedSeq[Instruction] = {
+    generateAssignLHS(assignment.lhs) ++ generateAssignRHS(assignment.rhs)
+  }
+
+  def generateAssignLHS(lhs: AssignLHSNode): IndexedSeq[Instruction] = {
+    lhs match {
+      case ident: IdentNode => IndexedSeq[Instruction]()
+      case arrayElem: ArrayElemNode => IndexedSeq[Instruction]()
+      case pairElem: PairElemNode => IndexedSeq[Instruction]()
+      case call: CallNode => IndexedSeq[Instruction]()
+    }
+  }
+
+  def generateAssignRHS(rhs: AssignRHSNode): IndexedSeq[Instruction] = {
+    rhs match {
+      case expr: ExprNode => generateExpression(expr)
+      case arrayLiteral: ArrayLiteralNode => IndexedSeq[Instruction]()
+      case newPair: NewPairNode => IndexedSeq[Instruction]()
+      case pairElem: PairElemNode => IndexedSeq[Instruction]()
+    }
+  }
 
   def generateRead(lhs: AssignLHSNode): IndexedSeq[Instruction] = ???
 
