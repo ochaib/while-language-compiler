@@ -132,7 +132,7 @@ object CodeGenerator {
       case ident: IdentNode => IndexedSeq[Instruction]()
       case arrayElem: ArrayElemNode => IndexedSeq[Instruction]()
       case unaryOperation: UnaryOperationNode => generateUnary(unaryOperation)
-      case binaryOperation: BinaryOperationNode => IndexedSeq[Instruction]()
+      case binaryOperation: BinaryOperationNode => generateBinary(binaryOperation)
     }
   }
 
@@ -149,6 +149,25 @@ object CodeGenerator {
     }
   }
 
+  def generateBinary(binaryOperation: BinaryOperationNode): IndexedSeq[Instruction] = {
+
+    binaryOperation match {
+      case MultiplyNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
+      case DivideNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
+      case ModNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
+      case PlusNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
+      case MinusNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
+      case GreaterThanNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
+      case GreaterEqualNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
+      case LessThanNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
+      case LessEqualNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
+      case EqualToNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
+      case NotEqualNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
+      case LogicalAndNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
+      case LogicalOrNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
+    }
+
+  }
 
 
 
