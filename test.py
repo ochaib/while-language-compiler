@@ -28,7 +28,7 @@ semantic_error_programs = set(
 syntax_error_programs = invalid_programs ^ semantic_error_programs
 
 # Compile Program using our compiler
-compile_program = lambda prog: run(["./compile", prog], stdout=PIPE, stderr=PIPE)
+compile_program = lambda prog: run(["./compile", prog, "--batch"], stdout=PIPE, stderr=PIPE)
 # Clean out any ANSI escape sequences in stdout
 # they take format \x1B[<code>m where code is [0-9;]* e.g. \x1B[99;33;44;14m etc
 clean_stdout = lambda stdout: re.sub(r'\x1B\[[0-9;]*m', '', stdout)
