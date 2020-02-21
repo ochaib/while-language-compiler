@@ -1,13 +1,9 @@
 package asm
 
-import java.sql.Statement
-
 import asm.instructions._
 import asm.instructionset._
 import asm.registers.{Register, RegisterManager}
 import ast.nodes._
-
-import scala.collection.immutable.Stream.Empty
 
 object CodeGenerator {
 
@@ -59,7 +55,6 @@ object CodeGenerator {
   }
 
   def generateStatement(statement: StatNode): IndexedSeq[Instruction] = {
-
     statement match {
       // Create/return empty instruction list for skip node.
       case _: SkipNode => IndexedSeq[Instruction]()
@@ -82,15 +77,52 @@ object CodeGenerator {
     }
   }
 
-  def generateDeclaration(declaration: DeclarationNode): IndexedSeq[Instruction] = ???
+  def generateDeclaration(declaration: DeclarationNode): IndexedSeq[Instruction] = {
+    generateAssignRHS(declaration.rhs) ++ generateIdent(declaration.ident)
+  }
 
-  def generateAssignment(assignment: AssignmentNode): IndexedSeq[Instruction] = ???
+  def generateAssignment(assignment: AssignmentNode): IndexedSeq[Instruction] = {
+    generateAssignRHS(assignment.rhs) ++ generateAssignLHS(assignment.lhs)
+  }
 
-  def generateRead(lhs: AssignLHSNode): IndexedSeq[Instruction] = ???
+  def generateAssignLHS(lhs: AssignLHSNode): IndexedSeq[Instruction] = {
+    lhs match {
+      case ident: IdentNode => generateIdent(ident)
+      case arrayElem: ArrayElemNode => generateArrayElem(arrayElem)
+      case pairElem: PairElemNode => generatePairElem(pairElem)
+    }
+  }
 
-  def generateFree(expr: ExprNode): IndexedSeq[Instruction] = ???
+  def generateIdent(ident: IdentNode): IndexedSeq[Instruction] = {
+    IndexedSeq[Instruction](
+      new Store(None, Some(new ByteType), RM.nextVariableRegister(), instructionSet.getSP))
+  }
 
-  def generateReturn(expr: ExprNode): IndexedSeq[Instruction] = ???
+  def generateArrayElem(arrayElem: ArrayElemNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+
+  def generatePairElem(pairElem: PairElemNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+
+  def generateCall(call: CallNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+
+  def generateAssignRHS(rhs: AssignRHSNode): IndexedSeq[Instruction] = {
+    rhs match {
+      case expr: ExprNode => generateExpression(expr)
+      case arrayLiteral: ArrayLiteralNode => generateArrayLiteral(arrayLiteral)
+      case newPair: NewPairNode => generateNewPair(newPair)
+      case pairElem: PairElemNode => generatePairElem(pairElem)
+      case call: CallNode => generateCall(call)
+    }
+  }
+
+  def generateArrayLiteral(arrayLiteral: ArrayLiteralNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+
+  def generateNewPair(newPair: NewPairNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+
+  def generateRead(lhs: AssignLHSNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+
+  def generateFree(expr: ExprNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+
+  def generateReturn(expr: ExprNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
   def generateExit(expr: ExprNode): IndexedSeq[Instruction] = {
     // Must generate the instructions necessary for the exit code,
@@ -105,11 +137,11 @@ object CodeGenerator {
       BranchLink(None, Label("exit")))
   }
 
-  def generateIf(ifNode: IfNode): IndexedSeq[Instruction] = ???
+  def generateIf(ifNode: IfNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
-  def generateWhile(whileNode: WhileNode): IndexedSeq[Instruction] = ???
+  def generateWhile(whileNode: WhileNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
-  def generateBegin(begin: BeginNode): IndexedSeq[Instruction] = ???
+  def generateBegin(begin: BeginNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
   def generateExpression(expr: ExprNode): IndexedSeq[Instruction] = {
     expr match {
@@ -117,11 +149,11 @@ object CodeGenerator {
                   => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
                      RM.nextVariableRegister(), new Immediate(str.toInt)))
       case Bool_literNode(_, bool)
-                  => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
-                     RM.nextVariableRegister(), new Immediate(if (bool) 1 else 0)))
+                  => IndexedSeq[Instruction](Move(None, RM.nextVariableRegister(),
+                     new Immediate(if (bool) 1 else 0)))
       case Char_literNode(_, char)
-                  => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
-                     RM.nextVariableRegister(), new Immediate(char)))
+                  => IndexedSeq[Instruction](Move(None, RM.nextVariableRegister(),
+                     new ImmediateChar(char)))
       case Str_literNode(_, str)
                   => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
                      RM.nextVariableRegister(), Label(str)))
@@ -129,10 +161,10 @@ object CodeGenerator {
       case Pair_literNode(_)
                   => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
                      RM.nextVariableRegister(), new Immediate(0)))
-      case ident: IdentNode => IndexedSeq[Instruction]()
-      case arrayElem: ArrayElemNode => IndexedSeq[Instruction]()
+      case ident: IdentNode => generateIdent(ident)
+      case arrayElem: ArrayElemNode => generateArrayElem(arrayElem)
       case unaryOperation: UnaryOperationNode => generateUnary(unaryOperation)
-      case binaryOperation: BinaryOperationNode => IndexedSeq[Instruction]()
+      case binaryOperation: BinaryOperationNode => generateBinary(binaryOperation)
     }
   }
 
@@ -149,8 +181,23 @@ object CodeGenerator {
     }
   }
 
-
-
+  def generateBinary(binaryOperation: BinaryOperationNode): IndexedSeq[Instruction] = {
+    binaryOperation match {
+      case MultiplyNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
+      case DivideNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
+      case ModNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
+      case PlusNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
+      case MinusNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
+      case GreaterThanNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
+      case GreaterEqualNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
+      case LessThanNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
+      case LessEqualNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
+      case EqualToNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
+      case NotEqualNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
+      case LogicalAndNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
+      case LogicalOrNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
+    }
+  }
 
 }
 
