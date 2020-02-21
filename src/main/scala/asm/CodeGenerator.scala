@@ -86,12 +86,20 @@ object CodeGenerator {
 
   def generateAssignLHS(lhs: AssignLHSNode): IndexedSeq[Instruction] = {
     lhs match {
-      case ident: IdentNode => IndexedSeq[Instruction]()
-      case arrayElem: ArrayElemNode => IndexedSeq[Instruction]()
-      case pairElem: PairElemNode => IndexedSeq[Instruction]()
-      case call: CallNode => IndexedSeq[Instruction]()
+      case ident: IdentNode => generateIdent(ident)
+      case arrayElem: ArrayElemNode => generateArrayElem(arrayElem)
+      case pairElem: PairElemNode => generatePairElem(pairElem)
+      case call: CallNode => generateCall(call)
     }
   }
+
+  def generateIdent(ident: IdentNode): IndexedSeq[Instruction] = ???
+
+  def generateArrayElem(arrayElem: ArrayElemNode): IndexedSeq[Instruction] = ???
+
+  def generatePairElem(pairElem: PairElemNode): IndexedSeq[Instruction] = ???
+
+  def generateCall(call: CallNode): IndexedSeq[Instruction] = ???
 
   def generateAssignRHS(rhs: AssignRHSNode): IndexedSeq[Instruction] = {
     rhs match {
