@@ -8,19 +8,19 @@ import util.{ColoredConsole => console}
 abstract class ExprNode(token: Token) extends ASTNode(token) with AssignRHSNode {
 
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = this match {
-    case _: Int_literNode => new IntTypeNode(null).getType(topST, ST)
-    case _: Bool_literNode => new BoolTypeNode(null).getType(topST, ST)
-    case _: Char_literNode => new CharTypeNode(null).getType(topST, ST)
-    case _: Str_literNode => new StringTypeNode(null).getType(topST, ST)
+    case _: Int_literNode => IntTypeNode(null).getType(topST, ST)
+    case _: Bool_literNode => BoolTypeNode(null).getType(topST, ST)
+    case _: Char_literNode => CharTypeNode(null).getType(topST, ST)
+    case _: Str_literNode => StringTypeNode(null).getType(topST, ST)
     case _ => assert(assertion = false, "No initType function provided")
       null
   }
 
   override def initKey: String = this match {
-    case _: Int_literNode => new IntTypeNode(null).getKey
-    case _: Bool_literNode => new BoolTypeNode(null).getKey
-    case _: Char_literNode => new CharTypeNode(null).getKey
-    case _: Str_literNode => new StringTypeNode(null).getKey
+    case _: Int_literNode => IntTypeNode(null).getKey
+    case _: Bool_literNode => BoolTypeNode(null).getKey
+    case _: Char_literNode => CharTypeNode(null).getKey
+    case _: Str_literNode => StringTypeNode(null).getKey
     case _ => assert(assertion = false, "No initKey function provided")
       null
   }
