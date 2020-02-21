@@ -150,7 +150,6 @@ object CodeGenerator {
   }
 
   def generateBinary(binaryOperation: BinaryOperationNode): IndexedSeq[Instruction] = {
-
     binaryOperation match {
       case MultiplyNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
       case DivideNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
@@ -166,10 +165,7 @@ object CodeGenerator {
       case LogicalAndNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
       case LogicalOrNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
     }
-
   }
-
-
 
 }
 
