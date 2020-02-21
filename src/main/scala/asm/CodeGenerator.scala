@@ -90,7 +90,6 @@ object CodeGenerator {
       case ident: IdentNode => generateIdent(ident)
       case arrayElem: ArrayElemNode => generateArrayElem(arrayElem)
       case pairElem: PairElemNode => generatePairElem(pairElem)
-      case call: CallNode => generateCall(call)
     }
   }
 
@@ -111,6 +110,7 @@ object CodeGenerator {
       case arrayLiteral: ArrayLiteralNode => generateArrayLiteral(arrayLiteral)
       case newPair: NewPairNode => generateNewPair(newPair)
       case pairElem: PairElemNode => generatePairElem(pairElem)
+      case call: CallNode => generateCall(call)
     }
   }
 
