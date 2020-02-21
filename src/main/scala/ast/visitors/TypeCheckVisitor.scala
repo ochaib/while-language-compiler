@@ -19,7 +19,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
     case ProgramNode(token: Token, functions, stat) => visitProgram(token, functions, stat)
 
     case FuncNode(token: Token, funcType, identNode, paramList: Option[ParamListNode], stat: StatNode) =>
-      visitFunction(token, funcType, identNode, paramList, stat)
+      visitFunctionBody(token, funcType, identNode, paramList, stat)
 
     case ParamListNode(token: Token, paramNodeList) => for (paramNode <- paramNodeList) visit(paramNode)
 
@@ -309,7 +309,17 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
   // Visitor Refactor Helpers:
   def visitProgram(token: Token, functions: IndexedSeq[FuncNode], stat: StatNode): Unit = {
+    var validFunctions: IndexedSeq[FuncNode] = IndexedSeq()
     for (functionNode <- functions) {
+      functionNode match {
+        case FuncNode(token: Token, funcType, identNode, paramList: Option[ParamListNode], stat: StatNode) =>
+          if(functionDeclarationIsValid(token, funcType, identNode, paramList, stat)) {
+            validFunctions = validFunctions :+ functionNode
+          }
+        case _ => assert(false, "Undefined FuncNode constructor")
+      }
+    }
+    for (functionNode <- validFunctions) {
       if (!functionReturnsOrExits(functionNode.stat)) {
         // Add to syntax error log.
         SyntaxErrorLog.add(s"Function ${functionNode.identNode.getKey} does not return or exit")
@@ -319,34 +329,43 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
     symbolTableCreatorWrapper(_ => visit(stat))
   }
 
-  def visitFunction(token: Token, funcType: TypeNode, identNode: IdentNode, paramList: Option[ParamListNode], stat: StatNode): Unit = {
+  def functionDeclarationIsValid(token: Token, funcType: TypeNode, identNode: IdentNode, paramList: Option[ParamListNode], stat: StatNode): Boolean = {
     visit(funcType)
     var functionIdentifier: FUNCTION = null
     // check identNode is already defined
-    if (currentSymbolTable.lookupFun(identNode.getKey).isDefined)
+    if (currentSymbolTable.lookupFun(identNode.getKey).isDefined) {
       SemanticErrorLog.add(s"${getPos(token)} tried to define function: " +
         s"${identNode.getKey} but it was already declared.")
+      false
+    }
     else {
-      // Save the func return type for current scope
-      var saveFuncReturnType: TYPE = currentFuncReturnType
-      // Set new func return type for new scope
-      currentFuncReturnType = funcType.getType(topSymbolTable, currentSymbolTable)
       functionIdentifier = new FUNCTION(identNode.getKey, funcType.getType(topSymbolTable, currentSymbolTable),
         paramTypes = null)
       currentSymbolTable.add(identNode.getKey, functionIdentifier)
-
-      symbolTableCreatorWrapper(_ => {
-        // Missing: link symbol table to function?
-        if (paramList.isDefined) {
-          // implicitly adds identifiers to the symbol table
-          functionIdentifier.paramTypes = paramList.get.getIdentifierList(topSymbolTable, currentSymbolTable)
-          visit(paramList.get)
-        }
-        visit(stat)
-      })
-      // Restore func return type of scope
-      currentFuncReturnType = saveFuncReturnType
+      true
     }
+  }
+
+  def visitFunctionBody(token: Token, funcType: TypeNode, identNode: IdentNode, paramList: Option[ParamListNode], stat: StatNode): Unit = {
+    // The body should only be visited if the identity has been checked already
+    assert(currentSymbolTable.lookupFun(identNode.getKey).isDefined, "Function has not been added to the symbol table yet")
+    var functionIdentifier: FUNCTION = currentSymbolTable.lookupFun(identNode.getKey).get
+    // Save the func return type for current scope
+    var saveFuncReturnType: TYPE = currentFuncReturnType
+    // Set new func return type for new scope
+    currentFuncReturnType = funcType.getType(topSymbolTable, currentSymbolTable)
+
+    symbolTableCreatorWrapper(_ => {
+      // Missing: link symbol table to function?
+      if (paramList.isDefined) {
+        // implicitly adds identifiers to the symbol table
+        functionIdentifier.paramTypes = paramList.get.getIdentifierList(topSymbolTable, currentSymbolTable)
+        visit(paramList.get)
+      }
+      visit(stat)
+    })
+    // Restore func return type of scope
+    currentFuncReturnType = saveFuncReturnType
   }
 
   def visitParamNode(token: Token, paramType: TypeNode, identNode: IdentNode): Unit = {
