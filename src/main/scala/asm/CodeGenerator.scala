@@ -118,7 +118,6 @@ object CodeGenerator {
 
   def generateNewPair(newPair: NewPairNode): IndexedSeq[Instruction] = ???
 
-
   def generateRead(lhs: AssignLHSNode): IndexedSeq[Instruction] = ???
 
   def generateFree(expr: ExprNode): IndexedSeq[Instruction] = ???
@@ -162,8 +161,8 @@ object CodeGenerator {
       case Pair_literNode(_)
                   => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
                      RM.nextVariableRegister(), new Immediate(0)))
-      case ident: IdentNode => IndexedSeq[Instruction]()
-      case arrayElem: ArrayElemNode => IndexedSeq[Instruction]()
+      case ident: IdentNode => generateIdent(ident)
+      case arrayElem: ArrayElemNode => generateArrayElem(arrayElem)
       case unaryOperation: UnaryOperationNode => generateUnary(unaryOperation)
       case binaryOperation: BinaryOperationNode => generateBinary(binaryOperation)
     }
