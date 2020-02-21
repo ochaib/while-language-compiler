@@ -128,12 +128,11 @@ object CodeGenerator {
       Move(None, varReg1, new ShiftedRegister(instructionSet.getReturn))
     )
 
-    val generatedExpressions: IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+    var generatedExpressions: IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
     arrayLiteral.exprNodes.foreach(expr => generatedExpressions
-      ++ generateExpression(expr) :+
-      new Store(None, Some(new ByteType), instructionSet.getReturn, RM.peekVariableRegister(),
-        new Immediate(4)))
+      ++= generateExpression(expr) :+
+      new Store(None, Some(new ByteType), RM.peekVariableRegister(), varReg1, new Immediate(4)))
 
     val varReg2 = RM.nextVariableRegister()
 
