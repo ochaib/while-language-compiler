@@ -99,11 +99,11 @@ object CodeGenerator {
       new Store(None, Some(new ByteType), RM.nextVariableRegister(), instructionSet.getSP))
   }
 
-  def generateArrayElem(arrayElem: ArrayElemNode): IndexedSeq[Instruction] = ???
+  def generateArrayElem(arrayElem: ArrayElemNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
-  def generatePairElem(pairElem: PairElemNode): IndexedSeq[Instruction] = ???
+  def generatePairElem(pairElem: PairElemNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
-  def generateCall(call: CallNode): IndexedSeq[Instruction] = ???
+  def generateCall(call: CallNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
   def generateAssignRHS(rhs: AssignRHSNode): IndexedSeq[Instruction] = {
     rhs match {
@@ -114,15 +114,15 @@ object CodeGenerator {
     }
   }
 
-  def generateArrayLiteral(arrayLiteral: ArrayLiteralNode): IndexedSeq[Instruction] = ???
+  def generateArrayLiteral(arrayLiteral: ArrayLiteralNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
-  def generateNewPair(newPair: NewPairNode): IndexedSeq[Instruction] = ???
+  def generateNewPair(newPair: NewPairNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
-  def generateRead(lhs: AssignLHSNode): IndexedSeq[Instruction] = ???
+  def generateRead(lhs: AssignLHSNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
-  def generateFree(expr: ExprNode): IndexedSeq[Instruction] = ???
+  def generateFree(expr: ExprNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
-  def generateReturn(expr: ExprNode): IndexedSeq[Instruction] = ???
+  def generateReturn(expr: ExprNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
   def generateExit(expr: ExprNode): IndexedSeq[Instruction] = {
     // Must generate the instructions necessary for the exit code,
@@ -137,11 +137,11 @@ object CodeGenerator {
       BranchLink(None, Label("exit")))
   }
 
-  def generateIf(ifNode: IfNode): IndexedSeq[Instruction] = ???
+  def generateIf(ifNode: IfNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
-  def generateWhile(whileNode: WhileNode): IndexedSeq[Instruction] = ???
+  def generateWhile(whileNode: WhileNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
-  def generateBegin(begin: BeginNode): IndexedSeq[Instruction] = ???
+  def generateBegin(begin: BeginNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
   def generateExpression(expr: ExprNode): IndexedSeq[Instruction] = {
     expr match {
