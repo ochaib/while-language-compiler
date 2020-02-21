@@ -131,7 +131,7 @@ object ARM11 extends InstructionSet {
         None
         ) =>
       s"LDR${print(condition)}${print(asmType)}" +
-        s" ${print(dest)}, [${print(src)}, ${print(flexOffset)}]${if (registerWriteBack) "!"
+        s" ${print(dest)}, [${print(src)}, #${print(flexOffset)}]${if (registerWriteBack) "!"
         else ""}"
 
     // LDR{cond}{B|Type} Rd, label
@@ -158,7 +158,7 @@ object ARM11 extends InstructionSet {
         None,
         None
         ) =>
-      s"LDR${print(condition)}${print(asmType)} ${print(dest)}, [${print(src)}], ${print(flexOffset)}"
+      s"LDR${print(condition)}${print(asmType)} ${print(dest)}, [${print(src)}], #${print(flexOffset)}"
 
     // LDR{cond}{B|Type} register, =[expr | label-expr]
     case Load(
@@ -196,7 +196,7 @@ object ARM11 extends InstructionSet {
         None
         ) =>
       s"STR${print(condition)}${byteTypeToString(byteType)}" +
-        s" ${print(dest)}, [${print(src)}, ${print(flexOffset)}]" +
+        s" ${print(dest)}, [${print(src)}, #${print(flexOffset)}]" +
         s"${if (registerWriteBack.isDefined && registerWriteBack.get) "!"
         else ""}"
 
@@ -215,7 +215,7 @@ object ARM11 extends InstructionSet {
         None,
         None
         ) =>
-        s"STR${print(condition)}${byteTypeToString(byteType)} ${print(dest)}, [${print(src)}], ${print(flexOffset)}"
+        s"STR${print(condition)}${byteTypeToString(byteType)} ${print(dest)}, [${print(src)}], #${print(flexOffset)}"
 
     // Invalid STR case
     case Store(_, _, _, _, _, _, _) =>
