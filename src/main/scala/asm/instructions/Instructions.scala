@@ -203,6 +203,7 @@ sealed abstract class DataProcess(
     src1: Register,
     src2: FlexibleSndOp
 ) extends Instruction(condition)
+
 case class Add(
     condition: Option[Condition],
     conditionFlag: Boolean,

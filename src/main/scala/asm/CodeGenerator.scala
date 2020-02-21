@@ -55,7 +55,6 @@ object CodeGenerator {
   }
 
   def generateStatement(statement: StatNode): IndexedSeq[Instruction] = {
-
     statement match {
       // Create/return empty instruction list for skip node.
       case _: SkipNode => IndexedSeq[Instruction]()
@@ -78,10 +77,12 @@ object CodeGenerator {
     }
   }
 
-  def generateDeclaration(declaration: DeclarationNode): IndexedSeq[Instruction] = ???
+  def generateDeclaration(declaration: DeclarationNode): IndexedSeq[Instruction] = {
+    generateAssignRHS(declaration.rhs) ++ generateIdent(declaration.ident)
+  }
 
   def generateAssignment(assignment: AssignmentNode): IndexedSeq[Instruction] = {
-    generateAssignLHS(assignment.lhs) ++ generateAssignRHS(assignment.rhs)
+    generateAssignRHS(assignment.rhs) ++ generateAssignLHS(assignment.lhs)
   }
 
   def generateAssignLHS(lhs: AssignLHSNode): IndexedSeq[Instruction] = {
@@ -93,7 +94,10 @@ object CodeGenerator {
     }
   }
 
-  def generateIdent(ident: IdentNode): IndexedSeq[Instruction] = ???
+  def generateIdent(ident: IdentNode): IndexedSeq[Instruction] = {
+    IndexedSeq[Instruction](
+      new Store(None, Some(new ByteType), RM.nextVariableRegister(), instructionSet.getSP))
+  }
 
   def generateArrayElem(arrayElem: ArrayElemNode): IndexedSeq[Instruction] = ???
 
@@ -146,8 +150,8 @@ object CodeGenerator {
                   => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
                      RM.nextVariableRegister(), new Immediate(str.toInt)))
       case Bool_literNode(_, bool)
-                  => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
-                     RM.nextVariableRegister(), new Immediate(if (bool) 1 else 0)))
+                  => IndexedSeq[Instruction](Move(None, RM.nextVariableRegister(),
+                     new Immediate(if (bool) 1 else 0)))
       case Char_literNode(_, char)
                   => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
                      RM.nextVariableRegister(), new Immediate(char)))

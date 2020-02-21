@@ -183,7 +183,7 @@ object ARM11 extends InstructionSet {
 
     // STR{cond}{B} Rd, [Rn]
     case Store(condition, byteType, dest, Some(src), None, None, None) =>
-      s"\tSTR${print(condition)}${byteTypeToString(byteType)} ${print(dest)}, [${print(src)}]"
+      s"STR${print(condition)}${byteTypeToString(byteType)} ${print(dest)}, [${print(src)}]"
 
     // STR{cond}{B} Rd, [Rn, FlexOffset]{!}
     case Store(
@@ -233,7 +233,7 @@ object ARM11 extends InstructionSet {
             s" ${print(dest)}, ${print(src1)}, ${print(src2)}"
         case Subtract(condition, conditionFlag, dest, src1, src2) =>
           s"SUB${print(condition)}${conditionFlagToString(conditionFlag)}" +
-            s" ${print(dest)}, ${print(src1)}, ${print(src2)}"
+            s" ${print(dest)}, ${print(src1)}, #${print(src2)}"
         case And(condition, conditionFlag, dest, src1, src2) =>
           s"AND${print(condition)}${conditionFlagToString(conditionFlag)}" +
             s" ${print(dest)}, ${print(src1)}, ${print(src2)}"
@@ -246,7 +246,7 @@ object ARM11 extends InstructionSet {
       }
     // MOV{cond}{S} Rd, Operand2
     case Move(condition, dest, src) =>
-      s"MOV${print(condition)} ${print(dest)}, ${print(src)}"
+      s"MOV${print(condition)} ${print(dest)}, #${print(src)}"
     // CMP{cond} Rn, Operand2
     case Compare(condition, operand1, operand2) =>
       s"CMP${print(condition)} ${print(operand1)}, ${print(operand2)}"
