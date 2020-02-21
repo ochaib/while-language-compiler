@@ -104,11 +104,16 @@ object CodeGenerator {
   def generateAssignRHS(rhs: AssignRHSNode): IndexedSeq[Instruction] = {
     rhs match {
       case expr: ExprNode => generateExpression(expr)
-      case arrayLiteral: ArrayLiteralNode => IndexedSeq[Instruction]()
-      case newPair: NewPairNode => IndexedSeq[Instruction]()
-      case pairElem: PairElemNode => IndexedSeq[Instruction]()
+      case arrayLiteral: ArrayLiteralNode => generateArrayLiteral(arrayLiteral)
+      case newPair: NewPairNode => generateNewPair(newPair)
+      case pairElem: PairElemNode => generatePairElem(pairElem)
     }
   }
+
+  def generateArrayLiteral(arrayLiteral: ArrayLiteralNode): IndexedSeq[Instruction] = ???
+
+  def generateNewPair(newPair: NewPairNode): IndexedSeq[Instruction] = ???
+
 
   def generateRead(lhs: AssignLHSNode): IndexedSeq[Instruction] = ???
 
