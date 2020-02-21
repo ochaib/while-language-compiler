@@ -95,10 +95,14 @@ object CodeGenerator {
 
   def generateIdent(ident: IdentNode): IndexedSeq[Instruction] = {
     IndexedSeq[Instruction](
-      new Store(None, Some(new ByteType), RM.nextVariableRegister(), instructionSet.getSP))
+      new Store(None, Some(new ByteType), RM.nextVariableRegister(), instructionSet.getSP)
+    )
   }
 
-  def generateArrayElem(arrayElem: ArrayElemNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+  def generateArrayElem(arrayElem: ArrayElemNode): IndexedSeq[Instruction] = {
+    generateIdent(arrayElem.identNode) ++
+      arrayElem.exprNodes.flatMap(generateExpression) ++ IndexedSeq[Instruction]()
+  }
 
   def generatePairElem(pairElem: PairElemNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
@@ -114,7 +118,30 @@ object CodeGenerator {
     }
   }
 
-  def generateArrayLiteral(arrayLiteral: ArrayLiteralNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+  def generateArrayLiteral(arrayLiteral: ArrayLiteralNode): IndexedSeq[Instruction] = {
+    val varReg1 = RM.nextVariableRegister()
+
+    // Need to load size of array into r0, this is a temporary hardcode below.
+    val preExprInstructions = IndexedSeq[Instruction](
+      new Load(None, Some(new SignedByte), instructionSet.getReturn, new Immediate(8)),
+      BranchLink(None, Label("malloc")),
+      Move(None, varReg1, new ShiftedRegister(instructionSet.getReturn))
+    ) ++ arrayLiteral.exprNodes.flatMap(generateExpression)
+
+    val varReg2 = RM.nextVariableRegister()
+
+    // However above once expression in arrayLiteral is generated we must store it.
+    val postExprInstructions = IndexedSeq[Instruction](
+      // Store number of elements in array in next available variable register.
+      // Temporary hardcode below.
+      new Load(None, Some(new SignedByte), varReg2, new Immediate(1)),
+      new Store(None, Some(new ByteType), varReg2, varReg1)
+    )
+    // Since we are done with varReg1 above we can free it back to available registers.
+    RM.freeVariableRegister(varReg1)
+
+    preExprInstructions ++ postExprInstructions
+  }
 
   def generateNewPair(newPair: NewPairNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
@@ -131,7 +158,7 @@ object CodeGenerator {
     // TODO: Implement following code better.
     val regUsedByGenExp: Register = RM.nextVariableRegister()
     // So that it can actually be used by generateExpression.
-    RM.free(regUsedByGenExp)
+    RM.freeVariableRegister(regUsedByGenExp)
     generateExpression(expr) ++ IndexedSeq[Instruction](
       Move(None, instructionSet.getReturn, new ShiftedRegister(regUsedByGenExp)),
       BranchLink(None, Label("exit")))
@@ -154,6 +181,7 @@ object CodeGenerator {
       case Char_literNode(_, char)
                   => IndexedSeq[Instruction](Move(None, RM.nextVariableRegister(),
                      new ImmediateChar(char)))
+      // Need to produce message instead of Label(str).
       case Str_literNode(_, str)
                   => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
                      RM.nextVariableRegister(), Label(str)))

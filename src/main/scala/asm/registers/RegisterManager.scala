@@ -10,9 +10,14 @@ class RegisterManager(_instructionSet: InstructionSet) {
 
   // Particular instruction set that RegisterManager conforms to.
   val instructionSet: InstructionSet = _instructionSet
+
+  // Test.
+  var argumentRegisters: ListBuffer[Register] = instructionSet.getArgumentRegisters
+  var variableRegisters: ListBuffer[Register] = instructionSet.getVariableRegisters
+
   // List of all registers that are available to use.
-  var availableRegisters: ListBuffer[Register] =
-    instructionSet.getArgumentRegisters ++ instructionSet.getVariableRegisters
+  var availableRegisters: ListBuffer[Register] = argumentRegisters ++ variableRegisters
+
   // Memory stack, tracks available registers in each scope.
   // Can replace with list/listbuffer because scala complains about deprecation.
   val memoryStack: mutable.Stack[ListBuffer[Register]] =
@@ -23,15 +28,23 @@ class RegisterManager(_instructionSet: InstructionSet) {
   }
 
   def nextArgumentRegister(): Register = {
-    instructionSet.getArgumentRegisters.remove(0)
+    argumentRegisters.remove(0)
   }
 
   def nextVariableRegister(): Register = {
-    instructionSet.getVariableRegisters.remove(0)
+    variableRegisters.remove(0)
   }
 
   def free(register: Register): Unit = {
     availableRegisters += register
+  }
+
+  def freeArgumentRegister(register: Register): Unit = {
+    argumentRegisters += register
+  }
+
+  def freeVariableRegister(register: Register): Unit = {
+    variableRegisters += register
   }
 
   // Upon entering a new scope (function call) we must save the previous register state.
