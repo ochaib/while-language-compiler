@@ -4,7 +4,7 @@ import java.sql.Statement
 
 import asm.instructions._
 import asm.instructionset._
-import asm.registers.RegisterManager
+import asm.registers.{Register, RegisterManager}
 import ast.nodes._
 
 import scala.collection.immutable.Stream.Empty
@@ -37,12 +37,11 @@ object CodeGenerator {
     val functions: IndexedSeq[Instruction] = program.functions.flatMap(generateFunction)
 
     // Generated code for stats
-    val stats: IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+    val stats: IndexedSeq[Instruction] = generateStatement(program.stat)
 
     generatedInstructions ++ functions ++ IndexedSeq[Instruction](
       Label("main"),
-      pushLR,
-      // TODO: generate stats
+      pushLR) ++ stats ++ IndexedSeq[Instruction](
       zeroReturn,
       popPC,
       new EndFunction
@@ -68,6 +67,7 @@ object CodeGenerator {
       case assign: AssignmentNode => generateAssignment(assign)
       case ReadNode(_, lhs) => generateRead(lhs)
       case FreeNode(_, expr) => generateFree(expr)
+      // Possibly do more for return and exit, moving used register into r0 (return reg)?
       case ReturnNode(_, expr) => generateReturn(expr)
       case ExitNode(_, expr) => generateExit(expr)
 
@@ -95,7 +95,14 @@ object CodeGenerator {
   def generateExit(expr: ExprNode): IndexedSeq[Instruction] = {
     // Must generate the instructions necessary for the exit code,
     // then branch to exit.
-    generateExpression(expr) :+ BranchLink(None, Label("exit"))
+    // Need next available register to move into r0, temporary fix below.
+    // TODO: Implement following code better.
+    val regUsedByGenExp: Register = RM.nextVariableRegister()
+    // So that it can actually be used by generateExpression.
+    RM.free(regUsedByGenExp)
+    generateExpression(expr) ++ IndexedSeq[Instruction](
+      Move(None, instructionSet.getReturn, new ShiftedRegister(regUsedByGenExp)),
+      BranchLink(None, Label("exit")))
   }
 
   def generateIf(ifNode: IfNode): IndexedSeq[Instruction] = ???
@@ -106,18 +113,43 @@ object CodeGenerator {
 
   def generateExpression(expr: ExprNode): IndexedSeq[Instruction] = {
     expr match {
-      case Int_literNode(_, str) =>
-        IndexedSeq[Instruction](new Load(None, Some(new SignedByte), RM.next(), new Immediate(str.toInt)))
-      case Bool_literNode(_, bool) => IndexedSeq[Instruction]()
-      case Char_literNode(_, char) => IndexedSeq[Instruction]()
-      case Str_literNode(_, str) => IndexedSeq[Instruction]()
-      case Pair_literNode(_) => IndexedSeq[Instruction]()
+      case Int_literNode(_, str)
+                  => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
+                     RM.nextVariableRegister(), new Immediate(str.toInt)))
+      case Bool_literNode(_, bool)
+                  => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
+                     RM.nextVariableRegister(), new Immediate(if (bool) 1 else 0)))
+      case Char_literNode(_, char)
+                  => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
+                     RM.nextVariableRegister(), new Immediate(char)))
+      case Str_literNode(_, str)
+                  => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
+                     RM.nextVariableRegister(), Label(str)))
+      // May replace with zeroReturn.
+      case Pair_literNode(_)
+                  => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
+                     RM.nextVariableRegister(), new Immediate(0)))
       case ident: IdentNode => IndexedSeq[Instruction]()
       case arrayElem: ArrayElemNode => IndexedSeq[Instruction]()
-      case unaryOperation: UnaryOperationNode => IndexedSeq[Instruction]()
+      case unaryOperation: UnaryOperationNode => generateUnary(unaryOperation)
       case binaryOperation: BinaryOperationNode => IndexedSeq[Instruction]()
     }
   }
+
+  def generateUnary(unaryOperation: UnaryOperationNode): IndexedSeq[Instruction] = {
+    unaryOperation match {
+      // More must be done for these according to the reference compiler.
+      case LogicalNotNode(_, expr) => generateExpression(expr)
+      // Negate is not currently adding sign to the immediate to be loaded.
+      case NegateNode(_, expr) => generateExpression(expr)
+      case LenNode(_, expr) => generateExpression(expr)
+      // Finished implementation as nothing else must be done.
+      case OrdNode(_, expr) => generateExpression(expr)
+      case ChrNode(_, expr) => generateExpression(expr)
+    }
+  }
+
+
 
 
 }

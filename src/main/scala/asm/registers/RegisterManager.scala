@@ -22,6 +22,14 @@ class RegisterManager(_instructionSet: InstructionSet) {
     availableRegisters.remove(0)
   }
 
+  def nextArgumentRegister(): Register = {
+    instructionSet.getArgumentRegisters.remove(0)
+  }
+
+  def nextVariableRegister(): Register = {
+    instructionSet.getVariableRegisters.remove(0)
+  }
+
   def free(register: Register): Unit = {
     availableRegisters += register
   }
