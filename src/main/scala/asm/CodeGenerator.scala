@@ -1,13 +1,9 @@
 package asm
 
-import java.sql.Statement
-
 import asm.instructions._
 import asm.instructionset._
 import asm.registers.{Register, RegisterManager}
 import ast.nodes._
-
-import scala.collection.immutable.Stream.Empty
 
 object CodeGenerator {
 
