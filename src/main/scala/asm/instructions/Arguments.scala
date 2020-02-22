@@ -7,6 +7,8 @@ trait FlexibleSndOp
 trait Loadable
 
 class Immediate(val immediate: Int) extends Loadable with FlexibleSndOp with FlexOffset
+class ImmediateChar(val immediate: Char) extends Loadable with FlexibleSndOp with FlexOffset
+class ImmediateString(val immediate: String) extends Loadable with FlexibleSndOp with FlexOffset
 class ShiftedRegister(val register: Register /* Unimplemented ARM fields */) extends FlexibleSndOp
 
 sealed abstract class ASMType

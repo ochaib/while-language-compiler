@@ -183,7 +183,7 @@ object ARM11 extends InstructionSet {
 
     // STR{cond}{B} Rd, [Rn]
     case Store(condition, byteType, dest, Some(src), None, None, None) =>
-      s"\tSTR${print(condition)}${byteTypeToString(byteType)} ${print(dest)}, [${print(src)}]"
+      s"STR${print(condition)}${byteTypeToString(byteType)} ${print(dest)}, [${print(src)}]"
 
     // STR{cond}{B} Rd, [Rn, FlexOffset]{!}
     case Store(
@@ -233,7 +233,7 @@ object ARM11 extends InstructionSet {
             s" ${print(dest)}, ${print(src1)}, ${print(src2)}"
         case Subtract(condition, conditionFlag, dest, src1, src2) =>
           s"SUB${print(condition)}${conditionFlagToString(conditionFlag)}" +
-            s" ${print(dest)}, ${print(src1)}, ${print(src2)}"
+            s" ${print(dest)}, ${print(src1)}, #${print(src2)}"
         case And(condition, conditionFlag, dest, src1, src2) =>
           s"AND${print(condition)}${conditionFlagToString(conditionFlag)}" +
             s" ${print(dest)}, ${print(src1)}, ${print(src2)}"
@@ -246,7 +246,13 @@ object ARM11 extends InstructionSet {
       }
     // MOV{cond}{S} Rd, Operand2
     case Move(condition, dest, src) =>
-      s"MOV${print(condition)} ${print(dest)}, ${print(src)}"
+      src match {
+        case imm: Immediate => s"MOV${print(condition)} ${print(dest)}, #${print(src)}"
+        case immChr: ImmediateChar => s"MOV${print(condition)} ${print(dest)}, #'${print(src)}'"
+//        case immStr: ImmediateString => s"MOV${print(condition)} ${print(dest)}, #'${print(src)}'"
+        case _:ShiftedRegister =>  s"MOV${print(condition)} ${print(dest)}, ${print(src)}"
+      }
+
     // CMP{cond} Rn, Operand2
     case Compare(condition, operand1, operand2) =>
       s"CMP${print(condition)} ${print(operand1)}, ${print(operand2)}"
@@ -262,9 +268,16 @@ object ARM11 extends InstructionSet {
 
   }
 
+//  def moveImmediatePrinter(condition: Option[Condition], dest: Register, src: FlexibleSndOp, imm: Immediate): String = {
+//    imm.immediate match {
+//      case _:Int => s"MOV${print(condition)} ${print(dest)}, #${print(src)}"
+//    }
+//  }
+
   def print(op: FlexibleSndOp): String = op match {
-    case immediate: Immediate      => immediate.immediate.toString
-    case register: ShiftedRegister => print(register.register)
+    case immediate: Immediate        => immediate.immediate.toString
+    case immediateChr: ImmediateChar => immediateChr.immediate.toString
+    case register: ShiftedRegister   => print(register.register)
     case _ =>
       assert(assertion = false, "print for FlexibleSndOp type is undefined")
       ""
@@ -279,8 +292,9 @@ object ARM11 extends InstructionSet {
   }
 
   def print(loadable: Loadable): String = loadable match {
-    case immediate: Immediate => immediate.immediate.toString
-    case label: Label         => label.label
+    case immediate: Immediate        => immediate.immediate.toString
+    case immediateChr: ImmediateChar => immediateChr.immediate.toString
+    case label: Label                => label.label
     case _ =>
       assert(assertion = false, "print for FlexOffset type is undefined")
       ""
@@ -289,7 +303,8 @@ object ARM11 extends InstructionSet {
   def print(label: Label): String = label.label
 
   def print(flexOffset: FlexOffset): String = flexOffset match {
-    case immediate: Immediate => immediate.immediate.toString
+    case immediate: Immediate        => immediate.immediate.toString
+    case immediateChr: ImmediateChar => immediateChr.immediate.toString
     case _ =>
       assert(assertion = false, "print for FlexOffset type is undefined")
       ""
