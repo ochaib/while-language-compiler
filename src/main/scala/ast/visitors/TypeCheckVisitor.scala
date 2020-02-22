@@ -455,7 +455,9 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
     val exprType = expr.getType(topSymbolTable, currentSymbolTable)
     if (currentFuncReturnType == null) {
       SemanticErrorLog.add(s"${getPos(token)} trying to global return on ${expr.toString}")
-    } else if (exprType != null && exprType != currentFuncReturnType) {
+    } else if (exprType != null && (! (exprType == currentFuncReturnType ||
+      currentFuncReturnType.isInstanceOf[PAIR] && exprType == GENERAL_PAIR ||
+      currentFuncReturnType.isInstanceOf[ARRAY] && exprType == GENERAL_ARRAY))) {
       SemanticErrorLog.add(s"${getPos(token)} expected return " +
         s"type ${currentFuncReturnType.getKey} but got ${exprType.getKey}.")
     }
