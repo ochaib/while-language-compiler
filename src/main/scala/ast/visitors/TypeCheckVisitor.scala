@@ -23,7 +23,11 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
 
     case ParamListNode(token: Token, paramNodeList) => for (paramNode <- paramNodeList) visit(paramNode)
 
-    case ParamNode(token: Token, paramType, identNode) => visitParamNode(token, paramType, identNode)
+    case ParamNode(token: Token, paramType, identNode) =>
+      // Add the parameter identifierr in
+      val paramIdentifier: PARAM = new PARAM(identNode.getKey, paramType.getType(topSymbolTable, currentSymbolTable))
+      currentSymbolTable.add(identNode.getKey, paramIdentifier)
+      visitParamNode(token, paramType, identNode)
 
     case statNode: StatNode => statNode match {
 
@@ -341,6 +345,10 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
     else {
       functionIdentifier = new FUNCTION(identNode.getKey, funcType.getType(topSymbolTable, currentSymbolTable),
         paramTypes = null)
+      // Add parameter types if they exist
+      if (paramList.isDefined) {
+        functionIdentifier.paramTypes = paramList.get.getIdentifierList(topSymbolTable, currentSymbolTable)
+      }
       currentSymbolTable.add(identNode.getKey, functionIdentifier)
       true
     }
@@ -359,7 +367,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
       // Missing: link symbol table to function?
       if (paramList.isDefined) {
         // implicitly adds identifiers to the symbol table
-        functionIdentifier.paramTypes = paramList.get.getIdentifierList(topSymbolTable, currentSymbolTable)
+//        functionIdentifier.paramTypes = paramList.get.getIdentifierList(topSymbolTable, currentSymbolTable)
         visit(paramList.get)
       }
       visit(stat)
