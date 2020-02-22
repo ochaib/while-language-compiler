@@ -56,7 +56,7 @@ case class ParamNode(token: Token, paramType: TypeNode, identNode: IdentNode) ex
       null
     } else {
       val paramIdentifier: PARAM = new PARAM(identNode.getKey, paramType.getType(topST, ST))
-      ST.add(identNode.getKey, paramIdentifier)
+      // ST.add(identNode.getKey, paramIdentifier)
       paramIdentifier._type
     }
   }
