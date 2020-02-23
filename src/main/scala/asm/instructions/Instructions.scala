@@ -220,6 +220,15 @@ case class Subtract(
     src2: FlexibleSndOp
 ) extends DataProcess(condition, conditionFlag, dest, src1, src2)
 
+class SMull(
+    condition: Option[Condition],
+    conditionFlag: Boolean,
+    dest1: Register,
+    dest2: Register,
+    src1: Register,
+    src2: Register
+)
+
 case class And(
     condition: Option[Condition],
     conditionFlag: Boolean,
