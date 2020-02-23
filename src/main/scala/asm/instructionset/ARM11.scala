@@ -230,7 +230,7 @@ object ARM11 extends InstructionSet {
       process match {
         case Add(condition, conditionFlag, dest, src1, src2) =>
           s"ADD${print(condition)}${conditionFlagToString(conditionFlag)}" +
-            s" ${print(dest)}, ${print(src1)}, ${print(src2)}"
+            s" ${print(dest)}, ${print(src1)}, #${print(src2)}"
         case Subtract(condition, conditionFlag, dest, src1, src2) =>
           s"SUB${print(condition)}${conditionFlagToString(conditionFlag)}" +
             s" ${print(dest)}, ${print(src1)}, #${print(src2)}"
