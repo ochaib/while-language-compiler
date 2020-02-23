@@ -244,12 +244,17 @@ object ARM11 extends InstructionSet {
           s"EOR${print(condition)}${conditionFlagToString(conditionFlag)}" +
             s" ${print(dest)}, ${print(src1)}, ${print(src2)}"
       }
+
+    // SMULL{S}{cond} RdLo, RdHi, Rn, Rm
+    case SMull(condition, conditionFlag, dest1, dest2, src1, src2) =>
+      s"SMULL${print(condition)}${conditionFlagToString(conditionFlag)}" +
+        s" ${print(dest1)}, ${print(dest2)}, ${print(src1)}, ${print(src2)}"
+
     // MOV{cond}{S} Rd, Operand2
     case Move(condition, dest, src) =>
       src match {
         case imm: Immediate => s"MOV${print(condition)} ${print(dest)}, #${print(src)}"
         case immChr: ImmediateChar => s"MOV${print(condition)} ${print(dest)}, #'${print(src)}'"
-//        case immStr: ImmediateString => s"MOV${print(condition)} ${print(dest)}, #'${print(src)}'"
         case _:ShiftedRegister =>  s"MOV${print(condition)} ${print(dest)}, ${print(src)}"
       }
 
@@ -267,12 +272,6 @@ object ARM11 extends InstructionSet {
     case EndFunction() => s".ltorg"
 
   }
-
-//  def moveImmediatePrinter(condition: Option[Condition], dest: Register, src: FlexibleSndOp, imm: Immediate): String = {
-//    imm.immediate match {
-//      case _:Int => s"MOV${print(condition)} ${print(dest)}, #${print(src)}"
-//    }
-//  }
 
   def print(op: FlexibleSndOp): String = op match {
     case immediate: Immediate        => immediate.immediate.toString
