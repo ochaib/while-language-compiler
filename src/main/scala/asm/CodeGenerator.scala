@@ -253,8 +253,16 @@ object CodeGenerator {
           Compare(None, varReg1, new ShiftedRegister(varReg2)),
           Move(Some(LessEqual), varReg1, new Immediate(1)),
           Move(Some(GreaterThan), varReg1, new Immediate(0)))
-      case EqualToNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
-      case NotEqualNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
+      case EqualToNode(_, argOne, argTwo) =>
+        IndexedSeq[Instruction](
+          Compare(None, varReg1, new ShiftedRegister(varReg2)),
+          Move(Some(Equal), varReg1, new Immediate(1)),
+          Move(Some(NotEqual), varReg1, new Immediate(0)))
+      case NotEqualNode(_, argOne, argTwo) =>
+        IndexedSeq[Instruction](
+          Compare(None, varReg1, new ShiftedRegister(varReg2)),
+          Move(Some(NotEqual), varReg1, new Immediate(1)),
+          Move(Some(Equal), varReg1, new Immediate(0)))
 
       case LogicalAndNode(_, argOne, argTwo) =>
         IndexedSeq[Instruction](And(None, conditionFlag = false, varReg1,
