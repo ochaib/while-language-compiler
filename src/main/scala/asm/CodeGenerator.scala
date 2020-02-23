@@ -221,7 +221,9 @@ object CodeGenerator {
     RM.freeVariableRegister(varReg1)
 
     binaryOperation match {
-      case MultiplyNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
+      case MultiplyNode(_, argOne, argTwo) =>
+        IndexedSeq[Instruction](SMull(None, conditionFlag = false, varReg1,
+                                      varReg2, varReg1, varReg2))
       case DivideNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
       case ModNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
       case PlusNode(_, argOne, argTwo) =>
