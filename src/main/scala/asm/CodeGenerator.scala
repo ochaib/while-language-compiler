@@ -222,52 +222,63 @@ object CodeGenerator {
 
     binaryOperation match {
       case MultiplyNode(_, argOne, argTwo) =>
+        generateExpression(argTwo) ++ generateExpression(argOne) ++
         IndexedSeq[Instruction](SMull(None, conditionFlag = false, varReg1,
                                       varReg2, varReg1, varReg2))
       case DivideNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
       case ModNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
       case PlusNode(_, argOne, argTwo) =>
+        generateExpression(argTwo) ++ generateExpression(argOne) ++
         IndexedSeq[Instruction](Add(None, conditionFlag = false, varReg1,
                                     varReg1, new ShiftedRegister(varReg2)))
       case MinusNode(_, argOne, argTwo) =>
+        generateExpression(argTwo) ++ generateExpression(argOne) ++
         IndexedSeq[Instruction](Subtract(None, conditionFlag = false, varReg1,
                                          varReg1, new ShiftedRegister(varReg2)))
 
       case GreaterThanNode(_, argOne, argTwo) =>
+        generateExpression(argTwo) ++ generateExpression(argOne) ++
         IndexedSeq[Instruction](
           Compare(None, varReg1, new ShiftedRegister(varReg2)),
           Move(Some(GreaterThan), varReg1, new Immediate(1)),
           Move(Some(LessEqual), varReg1, new Immediate(0)))
       case GreaterEqualNode(_, argOne, argTwo) =>
+        generateExpression(argTwo) ++ generateExpression(argOne) ++
         IndexedSeq[Instruction](
           Compare(None, varReg1, new ShiftedRegister(varReg2)),
           Move(Some(GreaterEqual), varReg1, new Immediate(1)),
           Move(Some(LessThan), varReg1, new Immediate(0)))
       case LessThanNode(_, argOne, argTwo) =>
+        generateExpression(argTwo) ++ generateExpression(argOne) ++
         IndexedSeq[Instruction](
           Compare(None, varReg1, new ShiftedRegister(varReg2)),
           Move(Some(LessThan), varReg1, new Immediate(1)),
           Move(Some(GreaterEqual), varReg1, new Immediate(0)))
       case LessEqualNode(_, argOne, argTwo) =>
+        generateExpression(argTwo) ++ generateExpression(argOne) ++
         IndexedSeq[Instruction](
           Compare(None, varReg1, new ShiftedRegister(varReg2)),
           Move(Some(LessEqual), varReg1, new Immediate(1)),
           Move(Some(GreaterThan), varReg1, new Immediate(0)))
       case EqualToNode(_, argOne, argTwo) =>
+        generateExpression(argTwo) ++ generateExpression(argOne) ++
         IndexedSeq[Instruction](
           Compare(None, varReg1, new ShiftedRegister(varReg2)),
           Move(Some(Equal), varReg1, new Immediate(1)),
           Move(Some(NotEqual), varReg1, new Immediate(0)))
       case NotEqualNode(_, argOne, argTwo) =>
+        generateExpression(argTwo) ++ generateExpression(argOne) ++
         IndexedSeq[Instruction](
           Compare(None, varReg1, new ShiftedRegister(varReg2)),
           Move(Some(NotEqual), varReg1, new Immediate(1)),
           Move(Some(Equal), varReg1, new Immediate(0)))
 
       case LogicalAndNode(_, argOne, argTwo) =>
+        generateExpression(argTwo) ++ generateExpression(argOne) ++
         IndexedSeq[Instruction](And(None, conditionFlag = false, varReg1,
                                     varReg1, new ShiftedRegister(varReg2)))
       case LogicalOrNode(_, argOne, argTwo) =>
+        generateExpression(argTwo) ++ generateExpression(argOne) ++
         IndexedSeq[Instruction](Or(None, conditionFlag = false, varReg1,
                                    varReg1, new ShiftedRegister(varReg2)))
     }
