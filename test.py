@@ -207,13 +207,20 @@ def every_valid_program_generates_assembly(compiled):
 def generated_assembly_has_same_output(compiled):
     log("[TEST] All generated assembly files should run the same as the ones made by the reference compiler.")
     passed = 0
+
+    # Use test.cfg as configuration for which tests should be run
+    with open('test.cfg') as f:
+        should_assemble = [line for line in f.readlines() if line.startswith('testcases/')]
+
     # Create list of assembly files
     can_assemble = []
     for fn, proc in compiled["valid"].items():
         asm_fn = fn[fn.rfind('/')+1:fn.rfind('.')] + '.s'
         exe_fn = asm_fn[:-len('.s')]
         if os.path.exists(f'assembly/{asm_fn}'):
-            can_assemble.append((fn, f'assembly/{asm_fn}', f'assembly/{exe_fn}'))
+            if fn in should_assemble:
+                can_assemble.append((fn, f'assembly/{asm_fn}', f'assembly/{exe_fn}'))
+            else: log("SKIPPED {fn}: not in config")
         else:
             error(f"FAILED {fn}: MISSING {asm_fn} so can't assemble")
     # Assemble them in parallel
