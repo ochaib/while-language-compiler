@@ -274,7 +274,13 @@ object ARM11 extends InstructionSet {
 
   }
 
-  def print(immediate: Immediate): String = s"#${immediate.toString}"
+  def print(immediate: Immediate): String = {
+    if (immediate.immediate_int.isDefined) {
+      s"${immediate.toString}"
+    } else {
+      s"'${immediate.toString}'"
+    }
+  }
 
   def print(op: FlexibleSndOp): String = op match {
     case immediate: Immediate        => print(immediate)
