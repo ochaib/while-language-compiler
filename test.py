@@ -38,7 +38,7 @@ compile_program = lambda prog: Popen(["./compile", prog + " --batch"], stdout=PI
 # Assembled a single file
 assemble_file = lambda asm_fn, exe_fn: Popen([
     "arm-linux-gnueabi-gcc",
-    f"-o {exe_fn}",
+    f"-o{exe_fn}",
     "-mcpu=arm1176jzf-s",
     "-mtune=arm1176jzf-s",
     asm_fn
