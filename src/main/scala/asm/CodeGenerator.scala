@@ -100,6 +100,8 @@ object CodeGenerator {
   }
 
   def generateIdent(ident: IdentNode): IndexedSeq[Instruction] = {
+    // Need to retrieve actual size for ident from symbol table.
+
     IndexedSeq[Instruction](
       new Store(None, Some(new ByteType), RM.peekVariableRegister(), instructionSet.getSP)
     )
@@ -155,7 +157,22 @@ object CodeGenerator {
     preExprInstructions ++ postExprInstructions
   }
 
-  def generateNewPair(newPair: NewPairNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+  def generateNewPair(newPair: NewPairNode): IndexedSeq[Instruction] = {
+    val varReg1 = RM.nextVariableRegister()
+
+    val preExprInstructions: IndexedSeq[Instruction] = IndexedSeq[Instruction](
+      new Load(None, Some(new SignedByte), instructionSet.getReturn, new Immediate(8)),
+      BranchLink(None, Label("malloc")),
+      Move(None, varReg1, new ShiftedRegister(instructionSet.getReturn))
+    )
+
+    generateExpression(newPair.fstElem)
+
+
+    RM.freeVariableRegister(varReg1)
+
+    preExprInstructions
+  }
 
   def generateRead(lhs: AssignLHSNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 

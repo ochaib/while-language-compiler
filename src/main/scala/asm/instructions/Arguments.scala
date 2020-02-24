@@ -11,7 +11,7 @@ class Immediate private(val immediate_int: Option[Int], val immediate_char: Opti
   def this(immediate_char: Char) = this(None, Some(immediate_char))
   override def toString: String = {
     assert(immediate_int.isDefined || immediate_char.isDefined, "Immediate must have a value")
-    if (immediate_char.isDefined) return immediate_char.get.toString
+    if (immediate_char.isDefined) return s"'${immediate_char.get.toString}'"
     if (immediate_int.isDefined) return immediate_int.get.toString
     throw new NoSuchFieldError
   }
