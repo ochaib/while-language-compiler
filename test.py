@@ -230,8 +230,8 @@ def generated_assembly_has_same_output(compiled):
             error(f"FAILED {fn}: Executable exited with {proc.returncode} but was expecting {proc_ref.returncode}")
         elif proc.stdout != proc_ref.stdout:
             # Diff the output
-            proc_output = proc.stdout.decode('utf-8')
-            proc_ref_output = proc_ref.stdout.decode('utf-8')
+            proc_output = proc.stdout.read().decode('utf-8')
+            proc_ref_output = proc_ref.stdout.read().decode('utf-8')
             diff = ''.join(
                 differ.compare(
                     proc_output.splitlines(1),
