@@ -117,10 +117,12 @@ def emulate_batch(exe_fns):
             emulating.append((fn, emulate_ARM(exe_fn), emulate_ARM(ref_exe_fn)))
         for _, p, p_ref in emulating:
             p.wait()
+            p.output = p.stdout.read().decode('utf-8')
             p.stdout.close()
             p.stderr.close()
             p.kill()
             p_ref.wait()
+            p_ref.output = p.stdout.read().decode('utf-8')
             p_ref.stdout.close()
             p_ref.stderr.close()
             p_ref.kill()
@@ -230,12 +232,10 @@ def generated_assembly_has_same_output(compiled):
             error(f"FAILED {fn}: Executable exited with {proc.returncode} but was expecting {proc_ref.returncode}")
         elif proc.stdout != proc_ref.stdout:
             # Diff the output
-            proc_output = proc.stdout.read().decode('utf-8')
-            proc_ref_output = proc_ref.stdout.read().decode('utf-8')
             diff = ''.join(
                 differ.compare(
-                    proc_output.splitlines(1),
-                    proc_ref_output.splitlines(1)
+                    proc.output.splitlines(1),
+                    proc_ref.output.splitlines(1)
                 )
             )
             diff_fn = fn[fn.rfind('/')+1:fn.rfind('.')] + '.diff'
