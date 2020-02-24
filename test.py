@@ -4,7 +4,8 @@ from subprocess import Popen, PIPE
 from termcolor import colored
 from time import time
 from tqdm import tqdm
-MAX_POOL_SIZE=40 # 
+MAX_POOL_SIZE=40 # be careful
+EMU_MAX_POOL_SIZE=20 # be EVEN MORE careful
 
 # Collect testcases
 def get_testcases():
@@ -61,7 +62,10 @@ def compile_batch(testcases):
         compiling = []
         for testcase in testcases[i:i+MAX_POOL_SIZE]:
             compiling.append((testcase, compile_program(testcase)))
-        for _, p in compiling: p.wait()
+        for _, p in compiling:
+            p.wait()
+            p.stdout.close()
+            p.kill()
         compiled.extend(compiling)
     return {t: p for t, p in compiled}
 def compile_all(testcases):
@@ -88,7 +92,10 @@ def assemble_batch(asm_exe_fns):
         assembling = []
         for fn, asm_fn, exe_fn in asm_exe_fns[i:i+MAX_POOL_SIZE]:
             assembling.append((fn, assemble_file(asm_fn, exe_fn)))
-        for _, p in assembling: p.wait()
+        for _, p in assembling:
+            p.wait()
+            p.stdout.close()
+            p.kill()
         assembled.extend(assembling)
     t = time() - t
     print(f"Assembly took {t}s")
@@ -101,12 +108,15 @@ def emulate_batch(exe_fns):
     emulated = []
     # we start several processes at a time
     # if you run too many at once the docker container crashes
-    print(f"> Emulating in batches of {MAX_POOL_SIZE}")
-    for i in tqdm(range(0, len(exe_fns), MAX_POOL_SIZE)):
+    print(f"> Emulating in batches of {EMU_MAX_POOL_SIZE}")
+    for i in tqdm(range(0, len(exe_fns), EMU_MAX_POOL_SIZE)):
         emulating = []
         for fn, exe_fn, ref_exe_fn in exe_fns[i:i+MAX_POOL_SIZE]:
             emulating.append((fn, emulate_ARM(exe_fn), emulate_ARM(ref_exe_fn)))
-        for _, p in emulating: p.wait()
+        for _, p in emulating:
+            p.wait()
+            p.stdout.close()
+            p.kill()
         emulated.extend(emulating)
     t = time() - t
     print(f"Emulation took {t}s")
