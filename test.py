@@ -1,169 +1,137 @@
 import os
-import re
-from subprocess import run, PIPE
+from subprocess import Popen, PIPE
 from termcolor import colored
 from time import time
 from tqdm import tqdm
-import json
+MAX_POOL_SIZE=20
 
-error = lambda msg: print(colored(msg, color="white", on_color="on_red"))
+# Collect testcases
+def get_testcases():
+    if not os.path.exists('testcases'):
+        error("Could not find testcases directory, please run from project root")
+        exit(-1)
 
-if not os.path.exists('testcases'):
-    error("Could not find testcases directory, please run from project root")
-    exit(-1)
+    programs = set(
+        f'{dir}/{file}'
+            for dir, _, files in os.walk('testcases')
+                for file in files
+                    if file.endswith('.wacc')
+    )
 
-programs = set(
-    f'{dir}/{file}'
-        for dir, _, files in os.walk('testcases')
-            for file in files
-                if file.endswith('.wacc')
-)
-
-valid_programs = set(program for program in programs if program.startswith('testcases/valid/'))
-invalid_programs = programs ^ valid_programs
-semantic_error_programs = set(
-    program for program in invalid_programs
-        if program.startswith('testcases/invalid/semanticErr')
-)
-syntax_error_programs = invalid_programs ^ semantic_error_programs
-
-# Compile Program using our compiler
-compile_program = lambda prog: run(["./compile", prog, "--batch"], stdout=PIPE, stderr=PIPE)
-# Clean out any ANSI escape sequences in stdout
-# they take format \x1B[<code>m where code is [0-9;]* e.g. \x1B[99;33;44;14m etc
-clean_stdout = lambda stdout: re.sub(r'\x1B\[[0-9;]*m', '', stdout)
-# Check for status as per spec:
-# Valid = exit code 0, Syntax Error = exit code 100, Semantic Error = exit code 200
-check_validity = lambda proc: proc.returncode == 0
-check_syntax_error = lambda proc: proc.returncode == 100
-check_semantic_error = lambda proc: proc.returncode == 200
-check_compiler_error = lambda proc: proc.returncode == 1
-
-def test(prog):
-    compiled = compile_program(prog)
-
-    output = compiled.stdout.decode('utf-8')
-    output = clean_stdout(output)
-
-    compiler_errors = compiled.stderr.decode('utf-8')
-    compiler_errors = clean_stdout(compiler_errors)
-
+    valid_programs = set(program for program in programs if program.startswith('testcases/valid/'))
+    invalid_programs = programs ^ valid_programs
+    semantic_error_programs = set(
+        program for program in invalid_programs
+            if program.startswith('testcases/invalid/semanticErr')
+    )
+    syntax_error_programs = invalid_programs ^ semantic_error_programs
     return {
-        'file': prog,
-        'compiled': compiled,
-        # Parsed output
-        'output': output,
-        'compiler output': compiler_errors,
-        # Check status
-        'valid': check_validity(compiled),
-        'syntax error': check_syntax_error(compiled),
-        'semantic error': check_semantic_error(compiled),
-        'compiler error': check_compiler_error(compiled)
+        "valid": valid_programs,
+        "semantic": semantic_error_programs,
+        "syntax": syntax_error_programs
     }
 
-# using generator for lazy eval
-test_many = lambda progs: (test(prog) for prog in progs)
+# Run our compiler on a program
+# Runs in batch mode, so our assembly files will be under `assembly/`
+compile_program = lambda prog: Popen(["./compile", prog + " --batch"], stdout=PIPE, stderr=PIPE)
 
-results = {
-    'valid': test_many(valid_programs),
-    'invalid': {
-        'semantic': test_many(semantic_error_programs),
-        'syntax': test_many(syntax_error_programs)
-    }
-}
-
-
-##### TESTS #####
-def every_valid_program_should_compile(results):
-    test_func = lambda res: res['valid']
-    return {
-        "name": "compiles valid programs",
-        "description": "every valid program should compile successfully (i.e. with exit status 0)",
-        "test": test_func,
-        "testable": results['valid']
-    }
-    # every valid program should compile successfully
-
-def every_syntax_error_should_fail(results):
-    test_func = lambda res: res['syntax error']
-    return {
-        "name": "syntax errors don't compile",
-        "description": "every invalid program due to a syntax error should exit 100 to indicate a syntax error",
-        "test": test_func,
-        "testable": results['invalid']['syntax']
-    }
-
-def every_semantic_error_should_fail(results):
-    test_func = lambda res: res['semantic error']
-    return {
-        "name": "semantic errors don't compile",
-        "description": "every invalid program due to a semantic error should exit 200 to indicate a semantic error",
-        "test": test_func,
-        "testable": results['invalid']['semantic']
-    }
-
-### TEST RUN HELPER ###
-def run_test(make_test_def, results):
-    test_def = make_test_def(results)
-
-    name = test_def['name']
-    description = test_def['description']
-    print(colored(f'{"-"*9} {name} {"-"*9}', color="magenta"))
-    print(colored(f'Description: {description}', color="magenta"))
-
-    # when we exhaust the generator it will eval, so we time this as test time
+# Compilation
+def compile_batch(testcases):
+    testcases = list(testcases) # we need to chunk it, must be a list
+    compiled = []
+    # we start several processes at a time
+    # if you run too many at once the docker container crashes
+    print(f"> Compilation in batches of {MAX_POOL_SIZE}")
+    for i in tqdm(range(0, len(testcases), MAX_POOL_SIZE)):
+        compiling = []
+        for testcase in testcases[i:i+MAX_POOL_SIZE]:
+            compiling.append((testcase, compile_program(testcase)))
+        for _, p in compiling: p.wait()
+        compiled.extend(compiling)
+    return {t: p for t, p in compiled}
+def compile_all(testcases):
+    print("Compiling valid programs:")
     t = time()
-    # exhaust the generator to compile
-    test_def['testable'] = [testcase for testcase in tqdm(test_def['testable'])]
-    # for each testcase in the test definition, run the test func
-    # if the test func returns false that indicates a failure
-    failures = [testcase for testcase in tqdm(test_def['testable']) if not test_def['test'](testcase)]
+    testcases["valid"] = compile_batch(testcases["valid"])
+    print("Compiling semantic programs:")
+    testcases["semantic"] = compile_batch(testcases["semantic"])
+    print("Compiling syntax programs")
+    testcases["syntax"] = compile_batch(testcases["syntax"])
     t = time() - t
-    print(colored(f'Took {t}ms', color="yellow"))
+    print("Full compilation took {t}s")
+    return testcases
 
-    total = len(test_def['testable'])
-    passed = total - len(failures)
-    print(f'Passed {passed}/{total}')
-
-    # print out any failures
-    if passed < total:
-        error(f'{"-"*6} TEST FAILURES {"-"*6}')
-        for failure in failures:
-            print(colored('> ' + failure['file'], color='blue'))
-            print(colored("Exit status: " + str(failure['compiled'].returncode), color="red"))
-
-            # print out any errors in compilation
-            if failure['compiler error']:
-                print(colored('Compiler Errors:', color='red'))
-                print(failure['compiler output'])
-                print()
-
-            # print out any syntax/semantic errors
-            print(colored('Program Errors:', color='red'))
-            if failure['semantic error']:
-                print(colored('Semantic Error', color="red"))
-            if failure['syntax error']:
-                print(colored('Syntax Error', color="red"))
-            print(failure['output'])
-
-    return passed, total
-
-
-# run in bulk
-def run_tests(*test_defs, results=results):
-    passed, total = 0, 0
-    for test_def in test_defs:
-        p, t = run_test(test_def, results)
+# Helper function to run tests
+# each test should return a tuple (passed, total tested)
+def get_coverage(*tests):
+    testcases = get_testcases()
+    compiled = compile_all(testcases)
+    passed, total = (0, 0)
+    for test in tests:
+        print('-'*10)
+        p, t = test(compiled)
         passed += p
         total += t
+    return (passed, total)
+
+
+# Quick message
+log = lambda msg: print(colored(msg, color="yellow"))
+error = lambda msg: print(colored(msg, color="red"))
+
+# Check for status as per spec:
+# Valid = exit code 0, Syntax Error = exit code 100, Semantic Error = exit code 200
+check_valid = lambda proc: proc.returncode == 0
+check_syntax = lambda proc: proc.returncode == 100
+check_semantic = lambda proc: proc.returncode == 200
+
+def every_valid_program_should_compile(compiled):
+    log("[TEST] All valid programs should compile")
+    passed = 0
+    for (fn, proc) in compiled["valid"].items():
+        if check_valid(proc): passed += 1
+        else: error(f"FAILED {fn}: {proc.returncode}")
+    total = len(compiled["valid"])
+    print(f"Passed {passed}/{total}")
     return passed, total
 
-# every valid program should compile and invalid program should not compile
-passed, total = run_tests(
+def every_syntax_error_should_fail(compiled):
+    log("[TEST] All programs with syntax errors should fail to compile with a syntax error return code")
+    passed = 0
+    for (fn, proc) in compiled["syntax"].items():
+        if check_syntax(proc): passed += 1
+        else: error(f"FAILED {fn}: {proc.returncode}")
+    total = len(compiled["syntax"])
+    print(f"Passed {passed}/{total}")
+    return passed, total
+
+def every_semantic_error_should_fail(compiled):
+    log("[TEST] All programs with semantic errors should fail to compile with a semantic error return code")
+    passed = 0
+    for (fn, proc) in compiled["semantic"].items():
+        if check_semantic(proc): passed += 1
+        else: error(f"FAILED {fn}: {proc.returncode}")
+    total = len(compiled["semantic"])
+    print(f"Passed {passed}/{total}")
+    return passed, total
+
+def every_valid_program_generates_assembly(compiled):
+    log("[TEST] All valid programs should generate assembly files when compiled")
+    passed = 0
+    for (fn, proc) in compiled["valid"].items():
+        asm_fn = fn[fn.rfind('/')+1:fn.rfind('.')] + '.s'
+        if os.path.exists(f'assembly/{asm_fn}'): passed += 1
+        else: error(f"FAILED {fn}: MISSING {asm_fn}")
+    total = len(compiled["valid"])
+    print(f"Passed {passed}/{total}")
+    return passed, total
+
+passed, total = get_coverage(
     every_valid_program_should_compile,
     every_syntax_error_should_fail,
-    every_semantic_error_should_fail
+    every_semantic_error_should_fail,
+    every_valid_program_generates_assembly
 )
-
 coverage = "%.2f" % (passed/total*100)
+print('-'*10)
 print(f'coverage: {coverage}% ({passed}/{total})')
