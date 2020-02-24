@@ -5,7 +5,7 @@ from termcolor import colored
 from time import time
 from tqdm import tqdm
 MAX_POOL_SIZE=40 # be careful
-EMU_MAX_POOL_SIZE=20 # be EVEN MORE careful
+EMU_MAX_POOL_SIZE=5 # be EVEN MORE careful
 
 # Collect testcases
 def get_testcases():
@@ -130,7 +130,6 @@ def emulate_batch(exe_fns):
             out, _ = p_ref.communicate()
             p_ref.output = out.decode('utf-8')
             p_ref.stdout.close()
-            p_ref.stderr.close()
             p_ref.stdin.close()
             p_ref.kill()
 
