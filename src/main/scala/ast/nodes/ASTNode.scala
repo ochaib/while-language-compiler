@@ -55,8 +55,8 @@ case class ParamNode(token: Token, paramType: TypeNode, identNode: IdentNode) ex
       SemanticErrorLog.add(s"${getPos(token)} ${identNode.getKey} has already been declared")
       null
     } else {
-      val paramIdentifier: PARAM = new PARAM(identNode.getKey, paramType.getType(topST, ST).asInstanceOf[TYPE])
-      ST.add(identNode.getKey, paramIdentifier)
+      val paramIdentifier: PARAM = new PARAM(identNode.getKey, paramType.getType(topST, ST))
+      // ST.add(identNode.getKey, paramIdentifier)
       paramIdentifier._type
     }
   }
@@ -223,7 +223,7 @@ case class SndNode(token: Token, expression: ExprNode) extends PairElemNode(toke
 }
 
 case class IdentNode(token: Token, ident: String) extends ExprNode(token) with AssignLHSNode {
-  var typeKey: String = null
+  var typeKey: String = _
   def getTypeKey: String = typeKey
 
   override def initKey: String = ident
@@ -257,7 +257,7 @@ case class IdentNode(token: Token, ident: String) extends ExprNode(token) with A
 }
 
 case class ArrayElemNode(token: Token, identNode: IdentNode, exprNodes: IndexedSeq[ExprNode]) extends ExprNode(token) with AssignLHSNode {
-  var innerMostKey: String = null
+  var innerMostKey: String = _
   override def initKey: String = {
     assert(innerMostKey != null, "Type of array elem node has to be initialised before a key can be found.")
     innerMostKey
