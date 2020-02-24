@@ -224,7 +224,7 @@ def generated_assembly_has_same_output(compiled):
     emulated = emulate_batch(can_emulate)
     # Compare to reference
     differ = Differ()
-    for fn, proc, proc_ref in emulated.items():
+    for fn, (proc, proc_ref) in emulated.items():
         # Return code should match
         if proc.returncode != proc_ref.returncode:
             error(f"FAILED {fn}: Executable exited with {proc.returncode} but was expecting {proc_ref.returncode}")
