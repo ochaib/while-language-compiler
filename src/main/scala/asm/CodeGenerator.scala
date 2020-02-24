@@ -153,7 +153,7 @@ object CodeGenerator {
                      new Immediate(if (bool) 1 else 0)))
       case Char_literNode(_, char)
                   => IndexedSeq[Instruction](Move(None, RM.nextVariableRegister(),
-                     new ImmediateChar(char)))
+                     new Immediate(char)))
       case Str_literNode(_, str)
                   => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
                      RM.nextVariableRegister(), Label(str)))
