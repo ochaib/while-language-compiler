@@ -113,10 +113,13 @@ def emulate_batch(exe_fns):
         emulating = []
         for fn, exe_fn, ref_exe_fn in exe_fns[i:i+MAX_POOL_SIZE]:
             emulating.append((fn, emulate_ARM(exe_fn), emulate_ARM(ref_exe_fn)))
-        for _, p in emulating:
+        for _, p, p_ref in emulating:
             p.wait()
             p.stdout.close()
             p.kill()
+            p_ref.wait()
+            p_ref.stdout.close()
+            p_ref.kill()
         emulated.extend(emulating)
     t = time() - t
     print(f"Emulation took {t}s")
