@@ -1,6 +1,6 @@
 from difflib import Differ
 import os
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, STDOUT
 from termcolor import colored
 from time import time
 from tqdm import tqdm
@@ -47,13 +47,9 @@ assemble_file = lambda asm_fn, exe_fn: Popen([
 # Emulate an ARM executable
 emulate_ARM = lambda exe: Popen([
     'qemu-arm',
-    '-L', '/usr/arm-linux/gnueabi/',
-    '-serial', 'stdio', # important: doesn't go to stdout/err otherwise
-    '-display', 'none', # important: sometimes is not auto detected
-    '-nographic' # " "
-    'console=ttyS0', # qemu needs like 10 parameters to redirect to stdout
+    '-L', '/usr/arm-linux-gnueabi/',
     exe
-], stdout=PIPE, stderr=PIPE)
+], stdin=PIPE, stdout=PIPE, stderr=STDOUT)
 
 # Compilation
 def compile_batch(testcases):
@@ -120,17 +116,26 @@ def emulate_batch(exe_fns):
         for fn, exe_fn, ref_exe_fn in exe_fns[i:i+MAX_POOL_SIZE]:
             emulating.append((fn, emulate_ARM(exe_fn), emulate_ARM(ref_exe_fn)))
         for _, p, p_ref in emulating:
-            p.wait()
-            out, _ = p.communicate()
-            p.output = out.decode('utf-8')
-            p.stdout.close()
-            p.stderr.close()
-            p.kill()
+            try:
+                out, _ = p.communicate(timeout=10) # can add input here for IO tests
+                p.output = out.decode('utf-8')
+                p.stdout.close()
+                p.stderr.close()
+                p.stdin.close()
+                p.kill()
+            except TimeoutError:
+                p.output = "TIMEOUT"
+                p.stdout.close()
+                p.stderr.close()
+                p.stdin.close()
+                p.kill()
             out, _ = p_ref.communicate()
             p_ref.output = out.decode('utf-8')
             p_ref.stdout.close()
             p_ref.stderr.close()
+            p_ref.stdin.close()
             p_ref.kill()
+
         emulated.extend(emulating)
     t = time() - t
     print(f"Emulation took {t}s")
