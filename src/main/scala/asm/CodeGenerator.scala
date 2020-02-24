@@ -4,6 +4,7 @@ import asm.instructions._
 import asm.instructionset._
 import asm.registers.{Register, RegisterManager}
 import ast.nodes._
+import ast.symboltable.SymbolTable
 
 object CodeGenerator {
 
@@ -199,6 +200,33 @@ object CodeGenerator {
     }
   }
 
+  class SymbolTableManager(private val topLevelTable: SymbolTable) {
+    private var currentScopeParent: SymbolTable = topLevelTable
+    private var currentScopeIndex: Int = -1
+    private var indexStack: List[Int] = List[Int]()
+    // Returns the next scope under the current scope level
+    def nextScope(): SymbolTable = {
+      assert(topLevelTable.children.length < currentScopeIndex + 1, s"Cannot go to next scope.")
+      currentScopeIndex += 1
+      currentScopeParent.children.apply(currentScopeIndex)
+    }
+    // Enters the current scope
+    def enterScope(): Unit = {
+      assert(!currentScopeParent.children.isDefinedAt(currentScopeIndex))
+      currentScopeParent = currentScopeParent.children.apply(currentScopeIndex)
+      // Push
+      indexStack = currentScopeIndex :: indexStack
+      currentScopeIndex = -1
+    }
+    // Leaves the current scope
+    def leaveScope(): Unit = {
+      assert(indexStack.nonEmpty, "Scope is at the top level already")
+      currentScopeParent = currentScopeParent.encSymbolTable
+      // Pop
+      currentScopeIndex = indexStack.head
+      indexStack = indexStack.tail
+    }
+  }
 }
 
 
