@@ -75,7 +75,8 @@ def get_coverage(*tests):
     return (passed, total)
 
 
-# Quick error message
+# Quick message
+log = lambda msg: print(colored(msg, color="yellow"))
 error = lambda msg: print(colored(msg, color="red"))
 
 # Check for status as per spec:
@@ -85,33 +86,45 @@ check_syntax = lambda proc: proc.returncode == 100
 check_semantic = lambda proc: proc.returncode == 200
 
 def every_valid_program_should_compile(compiled):
+    log("[TEST] All valid programs should compile")
     passed = 0
     for (fn, proc) in compiled["valid"].items():
         if check_valid(proc): passed += 1
         else: error(f"FAILED {fn}: {proc.returncode}")
-    return passed, len(compiled["valid"])
+    total = len(compiled["valid"])
+    print(f"Passed {passed}/{total}")
+    return passed, total
 
 def every_syntax_error_should_fail(compiled):
+    log("[TEST] All programs with syntax errors should fail to compile with a syntax error return code")
     passed = 0
     for (fn, proc) in compiled["syntax"].items():
         if check_syntax(proc): passed += 1
         else: error(f"FAILED {fn}: {proc.returncode}")
-    return passed, len(compiled["syntax"])
+    total = len(compiled["syntax"])
+    print(f"Passed {passed}/{total}")
+    return passed, total
 
 def every_semantic_error_should_fail(compiled):
+    log("[TEST] All programs with semantic errors should fail to compile with a semantic error return code")
     passed = 0
     for (fn, proc) in compiled["semantic"].items():
         if check_semantic(proc): passed += 1
         else: error(f"FAILED {fn}: {proc.returncode}")
-    return passed, len(compiled["semantic"])
+    total = len(compiled["semantic"])
+    print(f"Passed {passed}/{total}")
+    return passed, total
 
 def every_valid_program_generates_assembly(compiled):
+    log("[TEST] All valid programs should generate assembly files when compiled")
     passed = 0
     for (fn, proc) in compiled["valid"].items():
         asm_fn = fn[fn.rfind('/')+1:fn.rfind('.')] + '.s'
         if os.path.exists(f'assembly/{asm_fn}'): passed += 1
-        else: error(f"FAILED {fn}: {proc.returncode}")
-    return passed, len(compiled["valid"])
+        else: error(f"FAILED {fn}: MISSING {asm_fn}")
+    total = len(compiled["valid"])
+    print(f"Passed {passed}/{total}")
+    return passed, total
 
 passed, total = get_coverage(
     every_valid_program_should_compile,
