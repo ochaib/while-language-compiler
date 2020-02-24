@@ -8,12 +8,17 @@ import ast.symboltable.SymbolTable
 
 object CodeGenerator {
 
+  var symbolTableManager: SymbolTableManager = _
   var instructionSet: InstructionSet = _
   var RM: RegisterManager = _
 
   def useInstructionSet(_instructionSet: InstructionSet): Unit = {
     instructionSet = _instructionSet
     RM = new RegisterManager(instructionSet)
+  }
+
+  def useTopSymbolTable(symbolTable: SymbolTable): Unit = {
+    symbolTableManager = SymbolTableManager(symbolTable)
   }
 
   // Common instructions
@@ -200,7 +205,7 @@ object CodeGenerator {
     }
   }
 
-  class SymbolTableManager(private val topLevelTable: SymbolTable) {
+  case class SymbolTableManager(private val topLevelTable: SymbolTable) {
     private var currentScopeParent: SymbolTable = topLevelTable
     private var currentScopeIndex: Int = -1
     private var indexStack: List[Int] = List[Int]()
