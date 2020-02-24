@@ -123,8 +123,8 @@ def emulate_batch(exe_fns):
                 p.stderr.close()
                 p.stdin.close()
                 p.kill()
-            except TimeoutError:
-                p.output = "TIMEOUT"
+            except:
+                p.output = "TIMEOUT/ERROR"
                 p.stdout.close()
                 p.stderr.close()
                 p.stdin.close()
@@ -225,7 +225,7 @@ def generated_assembly_has_same_output(compiled):
     can_emulate = []
     for fn, proc in assembled.items():
         ref_exe_fn = fn[:fn.rfind('.')]
-        exe_fn = ref_exe_fn[ref_exe_fn.rfind('/'):]
+        exe_fn = ref_exe_fn[ref_exe_fn.rfind('/')+1:]
         if proc.returncode != 0:
             error(f"FAILED {fn}: GCC exited with {proc.returncode}")
         elif not os.path.exists(ref_exe_fn):
