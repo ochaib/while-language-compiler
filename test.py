@@ -5,7 +5,7 @@ from termcolor import colored
 from time import time
 from tqdm import tqdm
 MAX_POOL_SIZE=40 # be careful
-EMU_MAX_POOL_SIZE=20 # be EVEN MORE careful
+EMU_MAX_POOL_SIZE=5 # be EVEN MORE careful
 
 # Collect testcases
 def get_testcases():
@@ -65,6 +65,7 @@ def compile_batch(testcases):
         for _, p in compiling:
             p.wait()
             p.stdout.close()
+            p.stderr.close()
             p.kill()
         compiled.extend(compiling)
     return {t: p for t, p in compiled}
@@ -95,6 +96,7 @@ def assemble_batch(asm_exe_fns):
         for _, p in assembling:
             p.wait()
             p.stdout.close()
+            p.stderr.close()
             p.kill()
         assembled.extend(assembling)
     t = time() - t
@@ -116,9 +118,11 @@ def emulate_batch(exe_fns):
         for _, p, p_ref in emulating:
             p.wait()
             p.stdout.close()
+            p.stderr.close()
             p.kill()
             p_ref.wait()
             p_ref.stdout.close()
+            p_ref.stderr.close()
             p_ref.kill()
         emulated.extend(emulating)
     t = time() - t
