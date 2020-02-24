@@ -231,7 +231,7 @@ def generated_assembly_has_same_output(compiled):
         # Return code should match
         if proc.returncode != proc_ref.returncode:
             error(f"FAILED {fn}: Executable exited with {proc.returncode} but was expecting {proc_ref.returncode}")
-        elif proc.stdout != proc_ref.stdout:
+        elif proc.output != proc_ref.output:
             # Diff the output
             diff = ''.join(
                 differ.compare(
