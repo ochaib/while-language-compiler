@@ -94,6 +94,8 @@ object CodeGenerator {
   }
 
   def generateIdent(ident: IdentNode): IndexedSeq[Instruction] = {
+    // Need to retrieve actual size for ident from symbol table.
+
     IndexedSeq[Instruction](
       new Store(None, Some(new ByteType), RM.peekVariableRegister(), instructionSet.getSP)
     )
