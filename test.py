@@ -1,8 +1,5 @@
 import os
-import json
-import re
 from subprocess import Popen, PIPE
-import sys
 from termcolor import colored
 from time import time
 from tqdm import tqdm
@@ -36,7 +33,7 @@ def get_testcases():
 
 # Run our compiler on a program
 # Runs in batch mode, so our assembly files will be under `assembly/`
-compile_program = lambda prog: Popen(["./compile", prog, "--batch"], stdout=PIPE, stderr=PIPE)
+compile_program = lambda prog: Popen(["./compile", prog + " --batch"], stdout=PIPE, stderr=PIPE)
 
 # Compilation
 def compile_batch(testcases):
@@ -54,11 +51,14 @@ def compile_batch(testcases):
     return {t: p for t, p in compiled}
 def compile_all(testcases):
     print("Compiling valid programs:")
+    t = time()
     testcases["valid"] = compile_batch(testcases["valid"])
     print("Compiling semantic programs:")
     testcases["semantic"] = compile_batch(testcases["semantic"])
     print("Compiling syntax programs")
     testcases["syntax"] = compile_batch(testcases["syntax"])
+    t = time() - t
+    print("Full compilation took {t}s")
     return testcases
 
 # Helper function to run tests
