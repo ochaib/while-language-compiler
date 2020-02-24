@@ -1,3 +1,4 @@
+from difflib import Differ
 import os
 from subprocess import Popen, PIPE
 from termcolor import colored
@@ -34,6 +35,20 @@ def get_testcases():
 # Run our compiler on a program
 # Runs in batch mode, so our assembly files will be under `assembly/`
 compile_program = lambda prog: Popen(["./compile", prog + " --batch"], stdout=PIPE, stderr=PIPE)
+# Assembled a single file
+assemble_file = lambda asm_fn, exe_fn: Popen([
+    "arm-linux-gnueabi-gcc",
+    f"-o {exe_fn}",
+    "-mcpu=arm1176jzf-s",
+    "-mtune=arm1176jzf-s",
+    asm_fn
+])
+# Emulate an ARM executable
+emulate_ARM = lambda exe: Popen([
+    'qemu-arm',
+    '-L /usr/arm-linux/gnueabi/',
+    exe
+])
 
 # Compilation
 def compile_batch(testcases):
@@ -58,8 +73,45 @@ def compile_all(testcases):
     print("Compiling syntax programs")
     testcases["syntax"] = compile_batch(testcases["syntax"])
     t = time() - t
-    print("Full compilation took {t}s")
+    print(f"Full compilation took {t}s")
     return testcases
+# Assembly
+# Input should be a list of tuples (fn, asm_fn, exe_fn)
+def assemble_batch(asm_exe_fns):
+    print("Assembling assembly files:")
+    t = time()
+    assembled = []
+    # we start several processes at a time
+    # if you run too many at once the docker container crashes
+    print(f"> Assembling in batches of {MAX_POOL_SIZE}")
+    for i in tqdm(range(0, len(asm_exe_fns), MAX_POOL_SIZE)):
+        assembling = []
+        for fn, asm_fn, exe_fn in asm_exe_fns[i:i+MAX_POOL_SIZE]:
+            assembling.append((fn, assemble_file(asm_fn, exe_fn)))
+        for _, p in assembling: p.wait()
+        assembled.extend(assembling)
+    t = time() - t
+    print(f"Assembly took {t}s")
+    return {f: p for f, p in assembled}
+# Emulator
+# Input should be a list of tuples (fn, exe_fn, ref_exe_fn)
+def emulate_batch(exe_fns):
+    print("Emulating executables:")
+    t = time()
+    emulated = []
+    # we start several processes at a time
+    # if you run too many at once the docker container crashes
+    print(f"> Emulating in batches of {MAX_POOL_SIZE}")
+    for i in tqdm(range(0, len(exe_fns), MAX_POOL_SIZE)):
+        emulating = []
+        for fn, exe_fn, ref_exe_fn in exe_fns[i:i+MAX_POOL_SIZE]:
+            assembling.append((fn, emulate_ARM(exe_fn), emulate_ARM(ref_exe_fn)))
+        for _, p in emulating: p.wait()
+        emulated.extend(emulating)
+    t = time() - t
+    print(f"Emulation took {t}s")
+    return {f: (p, p_ref) for f, p, p_ref in emulated}
+
 
 # Helper function to run tests
 # each test should return a tuple (passed, total tested)
@@ -88,7 +140,7 @@ check_semantic = lambda proc: proc.returncode == 200
 def every_valid_program_should_compile(compiled):
     log("[TEST] All valid programs should compile")
     passed = 0
-    for (fn, proc) in compiled["valid"].items():
+    for fn, proc in compiled["valid"].items():
         if check_valid(proc): passed += 1
         else: error(f"FAILED {fn}: {proc.returncode}")
     total = len(compiled["valid"])
@@ -98,7 +150,7 @@ def every_valid_program_should_compile(compiled):
 def every_syntax_error_should_fail(compiled):
     log("[TEST] All programs with syntax errors should fail to compile with a syntax error return code")
     passed = 0
-    for (fn, proc) in compiled["syntax"].items():
+    for fn, proc in compiled["syntax"].items():
         if check_syntax(proc): passed += 1
         else: error(f"FAILED {fn}: {proc.returncode}")
     total = len(compiled["syntax"])
@@ -108,7 +160,7 @@ def every_syntax_error_should_fail(compiled):
 def every_semantic_error_should_fail(compiled):
     log("[TEST] All programs with semantic errors should fail to compile with a semantic error return code")
     passed = 0
-    for (fn, proc) in compiled["semantic"].items():
+    for fn, proc in compiled["semantic"].items():
         if check_semantic(proc): passed += 1
         else: error(f"FAILED {fn}: {proc.returncode}")
     total = len(compiled["semantic"])
@@ -118,10 +170,62 @@ def every_semantic_error_should_fail(compiled):
 def every_valid_program_generates_assembly(compiled):
     log("[TEST] All valid programs should generate assembly files when compiled")
     passed = 0
-    for (fn, proc) in compiled["valid"].items():
+    for fn, proc in compiled["valid"].items():
         asm_fn = fn[fn.rfind('/')+1:fn.rfind('.')] + '.s'
         if os.path.exists(f'assembly/{asm_fn}'): passed += 1
         else: error(f"FAILED {fn}: MISSING {asm_fn}")
+    total = len(compiled["valid"])
+    print(f"Passed {passed}/{total}")
+    return passed, total
+
+def generated_assembly_has_same_output(compiled):
+    log("[TEST] All generated assembly files should run the same as the ones made by the reference compiler.")
+    passed = 0
+    # Create list of assembly files
+    can_assemble = []
+    for fn, proc in compiled["valid"].items():
+        asm_fn = fn[fn.rfind('/')+1:fn.rfind('.')] + '.s'
+        exe_fn = asm_fn[:-len('.s')]
+        if os.path.exists(f'assembly/{asm_fn}'):
+            can_assemble.append((fn, f'assembly/{asm_fn}', f'assembly/{exe_fn}'))
+        else:
+            error(f"FAILED {fn}: MISSING {asm_fn} so can't assemble")
+    # Assemble them in parallel
+    assembled = assemble_batch(can_assemble)
+    # Create list of executable files
+    can_emulate = []
+    for fn, proc in assembled.items():
+        ref_exe_fn = fn[:fn.rfind('.')]
+        exe_fn = ref_exe_fn[ref_exe_fn.rfind('/'):]
+        if proc.returncode != 0:
+            error(f"FAILED {fn}: GCC exited with {proc.returncode}")
+        elif not os.path.exists(ref_exe_fn):
+            error(f"FAILED {fn}: No matching executable to use as reference")
+        else:
+            can_emulate.append((fn, f'assembly/{exe_fn}', ref_exe_fn))
+    # Emulate them in parallel
+    emulated = emulate_batch(can_emulate)
+    # Compare to reference
+    differ = Differ()
+    for fn, proc, proc_ref in emulated.items():
+        # Return code should match
+        if proc.returncode != proc_ref.returncode:
+            error(f"FAILED {fn}: Executable exited with {proc.returncode} but was expecting {proc_ref.returncode}")
+        elif proc.stdout != proc_ref.stdout:
+            # Diff the output
+            proc_output = proc.stdout.decode('utf-8')
+            proc_ref_output = proc_ref.stdout.decode('utf-8')
+            diff = ''.join(
+                differ.compare(
+                    proc_output.splitlines(1),
+                    proc_ref_output.splitlines(1)
+                )
+            )
+            diff_fn = fn[fn.rfind('/')+1:fn.rfind('.')] + '.diff'
+            with open(f'test_logs/{diff_fn}', 'w') as f:
+                f.write(diff)
+            error(f"FAILED {fn}: Output did not match, stored diff in test_logs/{diff_fn}")
+        else: passed += 1
     total = len(compiled["valid"])
     print(f"Passed {passed}/{total}")
     return passed, total
