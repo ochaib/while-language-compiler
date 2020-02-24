@@ -1,6 +1,7 @@
 import json
 import os
 import re
+from tqdm import tqdm
 
 # get the ASM output from reference compiler if we don't already have it
 if not os.path.exists('referenceASM.txt'):
@@ -27,10 +28,14 @@ clean_assembled = lambda assembled: '\n'.join([
     for line in assembled.strip().split('\n')
 ])
 
-programs = {
-    get_filename(result): clean_assembled(get_assembled(result))
-    for result in results
-}
+def assemble(result):
+    asm = clean_assembled(get_assembled(result))
+    asm_fn = get_filename(result)[:-len('.wacc')] + '.s'
+    exe_fn = asm_fn[:-len('.s')]
+    with open(asm_fn, 'w') as f:
+        f.write(asm)
+    os.system(f'arm-linux-gnueabi-gcc -o {exe_fn} -mcpu=arm1176jzf-s -mtune=arm1176jzf-s {asm_fn}')
+    return exe_fn
 
-with open('asm-tests.json', 'w') as f:
-    json.dump(programs, f)
+for result in tqdm(results):
+    assemble(result)
