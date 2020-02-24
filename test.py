@@ -210,7 +210,7 @@ def generated_assembly_has_same_output(compiled):
 
     # Use test.cfg as configuration for which tests should be run
     with open('test.cfg') as f:
-        should_assemble = [line for line in f.readlines() if line.startswith('testcases/')]
+        should_assemble = [line.strip() for line in f.readlines() if line.startswith('testcases/')]
 
     # Create list of assembly files
     can_assemble = []
@@ -220,7 +220,7 @@ def generated_assembly_has_same_output(compiled):
         if os.path.exists(f'assembly/{asm_fn}'):
             if fn in should_assemble:
                 can_assemble.append((fn, f'assembly/{asm_fn}', f'assembly/{exe_fn}'))
-            else: log("SKIPPED {fn}: not in config")
+            else: log(f"SKIPPED {fn}: not in config")
         else:
             error(f"FAILED {fn}: MISSING {asm_fn} so can't assemble")
     # Assemble them in parallel
