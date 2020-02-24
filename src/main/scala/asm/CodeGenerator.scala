@@ -4,15 +4,21 @@ import asm.instructions._
 import asm.instructionset._
 import asm.registers.{Register, RegisterManager}
 import ast.nodes._
+import ast.symboltable.SymbolTable
 
 object CodeGenerator {
 
+  var symbolTableManager: SymbolTableManager = _
   var instructionSet: InstructionSet = _
   var RM: RegisterManager = _
 
   def useInstructionSet(_instructionSet: InstructionSet): Unit = {
     instructionSet = _instructionSet
     RM = new RegisterManager(instructionSet)
+  }
+
+  def useTopSymbolTable(symbolTable: SymbolTable): Unit = {
+    symbolTableManager = SymbolTableManager(symbolTable)
   }
 
   // Common instructions
@@ -202,9 +208,8 @@ object CodeGenerator {
                   => IndexedSeq[Instruction](Move(None, RM.peekVariableRegister(),
                      new Immediate(if (bool) 1 else 0)))
       case Char_literNode(_, char)
-                  => IndexedSeq[Instruction](Move(None, RM.peekVariableRegister(),
+                  => IndexedSeq[Instruction](Move(None, RM.nextVariableRegister(),
                      new Immediate(char)))
-      // Need to produce message instead of Label(str).
       case Str_literNode(_, str)
                   => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
                      RM.peekVariableRegister(), Label(str)))
@@ -301,6 +306,33 @@ object CodeGenerator {
     }
   }
 
+  case class SymbolTableManager(private val topLevelTable: SymbolTable) {
+    private var currentScopeParent: SymbolTable = topLevelTable
+    private var currentScopeIndex: Int = -1
+    private var indexStack: List[Int] = List[Int]()
+    // Returns the next scope under the current scope level
+    def nextScope(): SymbolTable = {
+      assert(topLevelTable.children.length < currentScopeIndex + 1, s"Cannot go to next scope.")
+      currentScopeIndex += 1
+      currentScopeParent.children.apply(currentScopeIndex)
+    }
+    // Enters the current scope
+    def enterScope(): Unit = {
+      assert(!currentScopeParent.children.isDefinedAt(currentScopeIndex))
+      currentScopeParent = currentScopeParent.children.apply(currentScopeIndex)
+      // Push
+      indexStack = currentScopeIndex :: indexStack
+      currentScopeIndex = -1
+    }
+    // Leaves the current scope
+    def leaveScope(): Unit = {
+      assert(indexStack.nonEmpty, "Scope is at the top level already")
+      currentScopeParent = currentScopeParent.encSymbolTable
+      // Pop
+      currentScopeIndex = indexStack.head
+      indexStack = indexStack.tail
+    }
+  }
 }
 
 

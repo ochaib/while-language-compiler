@@ -4,18 +4,11 @@ import asm.instructions.Instruction
 import asm.instructionset.ARM11
 import ast.nodes.{ASTNode, ProgramNode}
 import ast.visitors.{ASTGenerator, TypeCheckVisitor, Visitor}
-import java.io.{IOException, PrintWriter, File}
-import org.antlr.v4.runtime.{
-  CharStream => ANTLRCharStream,
-  CharStreams => ANTLRCharStreams,
-  CommonTokenStream => ANTLRTokenStream
-}
-import util.{
-  ErrorListener,
-  SemanticErrorLog,
-  SyntaxErrorLog,
-  ColoredConsole => console
-}
+import java.io.{File, IOException, PrintWriter}
+
+import ast.symboltable.SymbolTable
+import org.antlr.v4.runtime.{CharStream => ANTLRCharStream, CharStreams => ANTLRCharStreams, CommonTokenStream => ANTLRTokenStream}
+import util.{ErrorListener, SemanticErrorLog, SyntaxErrorLog, ColoredConsole => console}
 
 object Compiler extends App {
   def error(msg: String): Unit = {
@@ -59,8 +52,9 @@ object Compiler extends App {
 
     // TODO: add flag to disable semantic analysis as in ref compiler
     // Run semantic analyzer
+    val topSymbolTable: SymbolTable = SymbolTable.topLevelSymbolTable(tree)
     val semanticVisitor
-        : Visitor = new TypeCheckVisitor(tree) // TODO: this should be a singleton
+        : Visitor = new TypeCheckVisitor(tree, topSymbolTable) // TODO: this should be a singleton
     semanticVisitor.visit(tree)
     // Check for syntax errors, exit with 100 if there are, new ones could've appeared here.
     if (SyntaxErrorLog.errorCheck) {
@@ -78,6 +72,7 @@ object Compiler extends App {
     // Use ARM 11 instruction set
     console.info("Using ARM 11 instruction set.")
     CodeGenerator.useInstructionSet(ARM11)
+    CodeGenerator.useTopSymbolTable(topSymbolTable)
     // Generate ASM instructions from AST
     console.log("Compiling...")
     val instructions: IndexedSeq[Instruction] =
