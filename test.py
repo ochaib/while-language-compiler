@@ -5,7 +5,7 @@ from termcolor import colored
 from time import time
 from tqdm import tqdm
 MAX_POOL_SIZE=40 # be careful
-EMU_MAX_POOL_SIZE=5 # be EVEN MORE careful
+EMU_MAX_POOL_SIZE=20 # be EVEN MORE careful
 
 # Collect testcases
 def get_testcases():
@@ -47,7 +47,7 @@ assemble_file = lambda asm_fn, exe_fn: Popen([
 # Emulate an ARM executable
 emulate_ARM = lambda exe: Popen([
     'qemu-arm',
-    '-L /usr/arm-linux/gnueabi/',
+    '-L/usr/arm-linux/gnueabi/',
     exe
 ], stdout=PIPE, stderr=PIPE)
 
@@ -243,7 +243,14 @@ def generated_assembly_has_same_output(compiled):
             with open(f'test_logs/{diff_fn}', 'w') as f:
                 f.write(diff)
             error(f"FAILED {fn}: Output did not match, stored diff in test_logs/{diff_fn}")
-        else: passed += 1
+        else:
+            out_fn = fn[fn.rfind('/')+1:fn.rfind('.')] + '.out'
+            with open(f'test_logs/{out_fn}', 'w') as f:
+                f.write("EXPECTED:\n")
+                f.write(proc_ref.output)
+                f.write("MATCHES ACTUAL:\n")
+                f.write(proc.output)
+            passed += 1
     total = len(compiled["valid"])
     print(f"Passed {passed}/{total}")
     return passed, total
