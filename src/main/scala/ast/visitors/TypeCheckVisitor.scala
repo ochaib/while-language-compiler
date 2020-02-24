@@ -5,8 +5,7 @@ import ast.symboltable._
 import org.antlr.v4.runtime.Token
 import util.{SemanticErrorLog, SyntaxErrorLog}
 
-sealed class TypeCheckVisitor(entryNode: ASTNode) extends Visitor(entryNode) {
-  var topSymbolTable: SymbolTable = SymbolTable.topLevelSymbolTable(entryNode)
+sealed class TypeCheckVisitor(entryNode: ASTNode, topSymbolTable: SymbolTable) extends Visitor(entryNode) {
   var currentSymbolTable: SymbolTable = topSymbolTable
   var currentFuncReturnType: TYPE = _
 
