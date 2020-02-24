@@ -120,13 +120,11 @@ def emulate_batch(exe_fns):
                 out, _ = p.communicate(timeout=10) # can add input here for IO tests
                 p.output = out.decode('utf-8')
                 p.stdout.close()
-                p.stderr.close()
                 p.stdin.close()
                 p.kill()
             except:
                 p.output = "TIMEOUT/ERROR"
                 p.stdout.close()
-                p.stderr.close()
                 p.stdin.close()
                 p.kill()
             out, _ = p_ref.communicate()
