@@ -186,7 +186,7 @@ object CodeGenerator {
                      new Immediate(if (bool) 1 else 0)))
       case Char_literNode(_, char)
                   => IndexedSeq[Instruction](Move(None, RM.peekVariableRegister(),
-                     new ImmediateChar(char)))
+                     new Immediate(char)))
       // Need to produce message instead of Label(str).
       case Str_literNode(_, str)
                   => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),

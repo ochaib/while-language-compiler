@@ -255,7 +255,7 @@ object ARM11 extends InstructionSet {
     case Move(condition, dest, src) =>
       src match {
         case imm: Immediate => s"MOV${print(condition)} ${print(dest)}, #${print(src)}"
-        case immChr: ImmediateChar => s"MOV${print(condition)} ${print(dest)}, #'${print(src)}'"
+//        case immChr: ImmediateChar => s"MOV${print(condition)} ${print(dest)}, #'${print(src)}'"
         case _:ShiftedRegister =>  s"MOV${print(condition)} ${print(dest)}, ${print(src)}"
       }
 
@@ -273,6 +273,8 @@ object ARM11 extends InstructionSet {
     case EndFunction() => s".ltorg"
 
   }
+
+  def print(immediate: Immediate): String = s"#${immediate.toString}"
 
   def print(op: FlexibleSndOp): String = op match {
     case immediate: Immediate        => print(immediate)
