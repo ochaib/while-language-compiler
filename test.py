@@ -4,7 +4,7 @@ from subprocess import Popen, PIPE
 from termcolor import colored
 from time import time
 from tqdm import tqdm
-MAX_POOL_SIZE=20
+MAX_POOL_SIZE=40 # 
 
 # Collect testcases
 def get_testcases():
@@ -42,13 +42,13 @@ assemble_file = lambda asm_fn, exe_fn: Popen([
     "-mcpu=arm1176jzf-s",
     "-mtune=arm1176jzf-s",
     asm_fn
-])
+], stdout=PIPE, stderr=PIPE)
 # Emulate an ARM executable
 emulate_ARM = lambda exe: Popen([
     'qemu-arm',
     '-L /usr/arm-linux/gnueabi/',
     exe
-])
+], stdout=PIPE, stderr=PIPE)
 
 # Compilation
 def compile_batch(testcases):
@@ -234,7 +234,8 @@ passed, total = get_coverage(
     every_valid_program_should_compile,
     every_syntax_error_should_fail,
     every_semantic_error_should_fail,
-    every_valid_program_generates_assembly
+    every_valid_program_generates_assembly,
+    generated_assembly_has_same_output
 )
 coverage = "%.2f" % (passed/total*100)
 print('-'*10)
