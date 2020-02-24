@@ -3,6 +3,7 @@ package ast.nodes
 import ast.symboltable._
 import org.antlr.v4.runtime.Token
 import util.{SemanticErrorLog, ColoredConsole => console}
+import scala.util.control.Breaks._
 
 // Every node necessary to generate AST. From the WACCLangSpec.
 
@@ -265,9 +266,14 @@ case class ArrayElemNode(token: Token, identNode: IdentNode, exprNodes: IndexedS
 
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
     var innermostType: TYPE = identNode.getType(topST, ST)
-    for (_ <- exprNodes.indices) {
-      if (! innermostType.isInstanceOf[ARRAY]) SemanticErrorLog.add(s"${getPos(token)} array elem $toString refers to an undefined depth.")
-      innermostType = innermostType.asInstanceOf[ARRAY]._type
+    breakable {
+      for (_ <- exprNodes.indices) {
+        if (innermostType == STRING)
+          SemanticErrorLog.add(s"${getPos(token)} Array elem $toString is trying to access an element of a string")
+          break
+        if (!innermostType.isInstanceOf[ARRAY]) SemanticErrorLog.add(s"${getPos(token)} array elem $toString refers to an undefined depth.")
+        innermostType = innermostType.asInstanceOf[ARRAY]._type
+      }
     }
     innerMostKey = innermostType.getKey
     innermostType
