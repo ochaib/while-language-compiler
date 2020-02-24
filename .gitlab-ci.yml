@@ -3,12 +3,12 @@ stages:
   - test
 
 # configuring code quality checks
-include:
-  - template: Code-Quality.gitlab-ci.yml
+# include:
+#  - template: Code-Quality.gitlab-ci.yml
 
-code_quality:
-  artifacts:
-    paths: [gl-code-quality-report.json]
+# code_quality:
+#  artifacts:
+#    paths: [gl-code-quality-report.json]
 
 # building the docker in docker, docker-ception!!
 # this is so we start on a clean environment when we build docker

@@ -84,13 +84,14 @@ object ARM11 extends InstructionSet {
   )
 
   // Print the instructions to a string with the instruction set's syntax
-  def print(
-      instructions: IndexedSeq[Instruction],
-      strings: IndexedSeq[String] = IndexedSeq[String]()
-  ): String =
+  def print(instructions: IndexedSeq[Instruction],
+            strings: IndexedSeq[String] = IndexedSeq[String]()): String = {
+
+    //printStringLabels(strings)
     // TODO print required strings
     ".text\n\n" + ".global main\n" +
       instructions.map(print).mkString("\n")
+  }
 
   def print(instruction: Instruction): String = instruction match {
     // ARM 11 syntax as per ref manual:
@@ -233,7 +234,7 @@ object ARM11 extends InstructionSet {
             s" ${print(dest)}, ${print(src1)}, #${print(src2)}"
         case Subtract(condition, conditionFlag, dest, src1, src2) =>
           s"SUB${print(condition)}${conditionFlagToString(conditionFlag)}" +
-            s" ${print(dest)}, ${print(src1)}, #${print(src2)}"
+            s" ${print(dest)}, ${print(src1)}, ${print(src2)}"
         case And(condition, conditionFlag, dest, src1, src2) =>
           s"AND${print(condition)}${conditionFlagToString(conditionFlag)}" +
             s" ${print(dest)}, ${print(src1)}, ${print(src2)}"
@@ -274,9 +275,8 @@ object ARM11 extends InstructionSet {
   }
 
   def print(op: FlexibleSndOp): String = op match {
-    case immediate: Immediate        => immediate.immediate.toString
-    case immediateChr: ImmediateChar => immediateChr.immediate.toString
-    case register: ShiftedRegister   => print(register.register)
+    case immediate: Immediate        => print(immediate)
+    case register: ShiftedRegister   => print(register.register)/* + ", " + register.shift NOT IMPLEMENTED*/
     case _ =>
       assert(assertion = false, "print for FlexibleSndOp type is undefined")
       ""
@@ -291,19 +291,17 @@ object ARM11 extends InstructionSet {
   }
 
   def print(loadable: Loadable): String = loadable match {
-    case immediate: Immediate        => immediate.immediate.toString
-    case immediateChr: ImmediateChar => immediateChr.immediate.toString
-    case label: Label                => label.label
+    case immediate: Immediate        => print(immediate)
+    case label: Label                => print(label)
     case _ =>
       assert(assertion = false, "print for FlexOffset type is undefined")
       ""
   }
 
-  def print(label: Label): String = label.label
+  def print(label: Label): String = ":" + label.label
 
   def print(flexOffset: FlexOffset): String = flexOffset match {
-    case immediate: Immediate        => immediate.immediate.toString
-    case immediateChr: ImmediateChar => immediateChr.immediate.toString
+    case immediate: Immediate        => print(immediate)
     case _ =>
       assert(assertion = false, "print for FlexOffset type is undefined")
       ""

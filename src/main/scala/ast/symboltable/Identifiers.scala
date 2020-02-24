@@ -12,6 +12,7 @@ class VARIABLE(key:String, val _type: TYPE) extends IDENTIFIER(key)
 abstract class TYPE(key: String) extends IDENTIFIER(key)
 
 class SCALAR(key: String, min: Int, max: Int) extends TYPE(key)
+object STRING extends TYPE(key = "string")
 class ARRAY(key: String, val _type: TYPE) extends TYPE(key)
 object GENERAL_ARRAY extends ARRAY("[]", _type = null)
 class PAIR(key: String, val _type1: TYPE, val _type2: TYPE) extends TYPE(key)
