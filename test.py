@@ -105,7 +105,7 @@ def emulate_batch(exe_fns):
     for i in tqdm(range(0, len(exe_fns), MAX_POOL_SIZE)):
         emulating = []
         for fn, exe_fn, ref_exe_fn in exe_fns[i:i+MAX_POOL_SIZE]:
-            assembling.append((fn, emulate_ARM(exe_fn), emulate_ARM(ref_exe_fn)))
+            emulating.append((fn, emulate_ARM(exe_fn), emulate_ARM(ref_exe_fn)))
         for _, p in emulating: p.wait()
         emulated.extend(emulating)
     t = time() - t
