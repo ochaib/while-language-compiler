@@ -289,13 +289,13 @@ object ARM11 extends InstructionSet {
 
   def print(loadable: Loadable): String = loadable match {
     case immediate: Immediate        => print(immediate)
-    case label: Label                => label.label
+    case label: Label                => print(label)
     case _ =>
       assert(assertion = false, "print for FlexOffset type is undefined")
       ""
   }
 
-  def print(label: Label): String = label.label
+  def print(label: Label): String = ":" + label.label
 
   def print(flexOffset: FlexOffset): String = flexOffset match {
     case immediate: Immediate        => print(immediate)
