@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y apt-transport-https ca-certificates && 
 RUN apt-get update && apt install build-essential -y --no-install-recommends
 RUN apt-get update && apt install -y libreadline-gplv2-dev libncursesw5-dev libssl-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev
 RUN apt-get update && apt-get upgrade -y && apt-get install wget gcc zlib1g-dev -y
-RUN apt-get update && apt-get install -y gcc-arm-linux-gnueabi gcc-arm-linux-gnueabihf libc6-dev-armhf-cross qemu qemu-user-static qemu-system-arm qemu-uti
+RUN apt-get update && apt-get install -y gcc-arm-linux-gnueabi gcc-arm-linux-gnueabihf libc6-dev-armhf-cross qemu qemu-user-static qemu-system-arm qemu-utils
 RUN ls /usr/bin | grep qemu
 # Build Python 3.6
 RUN wget --quiet https://www.python.org/ftp/python/3.6.8/Python-3.6.8.tgz
