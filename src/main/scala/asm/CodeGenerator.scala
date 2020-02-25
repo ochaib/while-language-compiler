@@ -5,7 +5,7 @@ import asm.instructions._
 import asm.instructionset._
 import asm.registers._
 import ast.nodes._
-import ast.symboltable.{ARRAY, PAIR, SCALAR, STRING, SymbolTable, TYPE, VARIABLE}
+import ast.symboltable._
 
 object CodeGenerator {
 
@@ -54,13 +54,20 @@ object CodeGenerator {
 
     // Generated instructions to encompass everything generated.
     val generatedInstructions: IndexedSeq[Instruction] = (functions
-      ++ IndexedSeq[Instruction](Label("main"), pushLR)
-      ++ stats ++ IndexedSeq[Instruction](zeroReturn, popPC, new EndFunction))
+      ++ IndexedSeq[Instruction](Label("main"), pushLR,
+      Subtract(None, conditionFlag = false,
+      instructionSet.getSP, instructionSet.getSP, new Immediate(getCurrentSTSize))
+    ) ++ stats)
+
+    val endInstructions = IndexedSeq[Instruction](
+      Add(None, conditionFlag = false, instructionSet.getSP,
+        instructionSet.getSP, new Immediate(getCurrentSTSize)),
+      zeroReturn, popPC, new EndFunction)
 
     // Leave the current scope
     // symbolTableManager.leaveScope()
 
-    generatedInstructions
+    generatedInstructions ++ endInstructions
   }
 
   def generateFunction(func: FuncNode): IndexedSeq[Instruction] = {
@@ -102,13 +109,12 @@ object CodeGenerator {
   }
 
   def generateDeclaration(declaration: DeclarationNode): IndexedSeq[Instruction] = {
-    val identType: TYPE = declaration.ident.getType(topSymbolTable, currentSymbolTable)
-    val identImmediate: Immediate = new Immediate(getSize(identType))
+//    val identType: TYPE = declaration.ident.getType(topSymbolTable, currentSymbolTable)
+//    val identImmediate: Immediate = new Immediate(getSize(identType))
     // SUB sp, sp, #size ++ RHS ++ Ident ++ ADD sp, sp, #size
-    (Subtract(None, conditionFlag = false, instructionSet.getSP, instructionSet.getSP, identImmediate)
-      +: (generateAssignRHS(declaration.rhs) ++
-      generateIdent(declaration.ident))) :+
-      Add(None, conditionFlag = false, instructionSet.getSP, instructionSet.getSP, identImmediate)
+//    (Subtract(None, conditionFlag = false, instructionSet.getSP, instructionSet.getSP, identImmediate)
+    generateAssignRHS(declaration.rhs) ++ generateIdent(declaration.ident)
+//    :+ Add(None, conditionFlag = false, instructionSet.getSP, instructionSet.getSP, identImmediate)
   }
 
   def generateAssignment(assignment: AssignmentNode): IndexedSeq[Instruction] = {
@@ -124,15 +130,20 @@ object CodeGenerator {
   }
 
   def generateIdent(ident: IdentNode): IndexedSeq[Instruction] = {
-    // Need to retrieve actual size for ident from symbol table.
+    // Retrieve actual size for ident from symbol table.
+    val identSize = getSize(ident.getType(topSymbolTable, currentSymbolTable))
+
+    // ASMType to classify if ident is of type bool and if so should be loaded
+    // with ByteType triggering STRB instead of the usual STR.
+    var asmType: Option[ASMType] = None
 
     if (ident.getType(topSymbolTable, currentSymbolTable)
               == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable))
-      IndexedSeq[Instruction](new Store(None, Some(ByteType),
-        RM.peekVariableRegister(), instructionSet.getSP))
-    else
-      IndexedSeq[Instruction](new Store(None, None,
-        RM.peekVariableRegister(), instructionSet.getSP))
+      asmType = Some(ByteType)
+
+    IndexedSeq[Instruction](new Store(None, asmType,
+      RM.peekVariableRegister(), instructionSet.getSP,
+      new Immediate(identSize)))
   }
 
   def generateArrayElem(arrayElem: ArrayElemNode): IndexedSeq[Instruction] = {
@@ -478,6 +489,11 @@ object CodeGenerator {
         assert(assertion = false, s"Size for type is undefined")
         -1
     }
+  }
+
+  def getCurrentSTSize: Int = {
+//    currentSymbolTable.map.keys.map(getSize())
+    4
   }
 
   case class SymbolTableManager(private val topLevelTable: SymbolTable) {
