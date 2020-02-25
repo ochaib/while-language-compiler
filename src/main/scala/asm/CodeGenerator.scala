@@ -71,7 +71,6 @@ object CodeGenerator {
       case assign: AssignmentNode => generateAssignment(assign)
       case ReadNode(_, lhs) => generateRead(lhs)
       case FreeNode(_, expr) => generateFree(expr)
-      // Possibly do more for return and exit, moving used register into r0 (return reg)?
       case ReturnNode(_, expr) => generateReturn(expr)
       case ExitNode(_, expr) => generateExit(expr)
 
@@ -179,7 +178,9 @@ object CodeGenerator {
 
   def generateRead(lhs: AssignLHSNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
-  def generateFree(expr: ExprNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+  def generateFree(expr: ExprNode): IndexedSeq[Instruction] = {
+    generateExpression(expr) ++ IndexedSeq[Instruction](BranchLink(None, Label("p_free_pair")))
+  }
 
   def generateReturn(expr: ExprNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
