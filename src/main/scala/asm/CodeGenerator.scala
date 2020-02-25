@@ -1,6 +1,5 @@
 package asm
 
-import ast.nodes._
 import asm.instructions._
 import asm.instructionset._
 import asm.registers._
