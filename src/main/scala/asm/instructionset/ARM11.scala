@@ -173,7 +173,13 @@ object ARM11 extends InstructionSet {
         Some(loadable),
         None
         ) =>
-      s"\tLDR${printCondition(condition)}${printType(asmType)} ${print(dest)}, =${print(loadable)}"
+      s"\tLDR${printCondition(condition)}${printType(asmType)} ${print(dest)}, " +
+        s"=${
+          loadable match {
+            case Label(label) => label
+            case expression: LoadableExpression => expression.num.toString
+            case _ => assert(false, "Loadable not accounted for")
+          }}"
 
     // Invalid LDR case
     case Load(_, _, _, _, _, _, _, _) =>
@@ -288,14 +294,6 @@ object ARM11 extends InstructionSet {
     case Some(SignedByte) => "SB"
     case Some(ByteType) => "B"
     case None    => ""
-  }
-
-  def print(loadable: Loadable): String = loadable match {
-    case immediate: Immediate        => print(immediate)
-    case label: Label                => print(label)
-    case _ =>
-      assert(assertion = false, "print for FlexOffset type is undefined")
-      ""
   }
 
   def print(label: Label): String = ":" + label.label
