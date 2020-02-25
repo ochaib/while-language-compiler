@@ -33,13 +33,9 @@ object CodeGenerator {
   )
 
   def generateProgram(program: ProgramNode): IndexedSeq[Instruction] = {
-    assert(symbolTableManager != null, "Top level symbol table needs to be defined")
-    assert(instructionSet != null, "Instruction set needs to be defined")
-    assert(RM != null, "Register manager needs to be defiend")
-
-
-    // Generated instructions to encompass everything generated.
-    val generatedInstructions: IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+    assert(symbolTableManager != null, "Top level symbol table needs to be defined.")
+    assert(instructionSet != null, "Instruction set needs to be defined.")
+    assert(RM != null, "Register manager needs to be defined.")
 
     // Generated code for functions
     val functions: IndexedSeq[Instruction] = program.functions.flatMap(generateFunction)
@@ -50,14 +46,15 @@ object CodeGenerator {
     // Generated code for stats
     val stats: IndexedSeq[Instruction] = generateStatement(program.stat)
 
-    val instructions: IndexedSeq[Instruction] = (generatedInstructions ++ functions
+    // Generated instructions to encompass everything generated.
+    val generatedInstructions: IndexedSeq[Instruction] = (functions
       ++ IndexedSeq[Instruction](Label("main"), pushLR)
       ++ stats ++ IndexedSeq[Instruction](zeroReturn, popPC, new EndFunction))
 
     // Leave the current scope
     // symbolTableManager.leaveScope()
 
-    instructions
+    generatedInstructions
   }
 
   def generateFunction(func: FuncNode): IndexedSeq[Instruction] = {
