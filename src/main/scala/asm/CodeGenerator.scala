@@ -2,7 +2,7 @@ package asm
 
 import asm.instructions._
 import asm.instructionset._
-import asm.registers.{Register, RegisterManager}
+import asm.registers._
 import ast.nodes._
 import ast.symboltable.SymbolTable
 
@@ -26,7 +26,7 @@ object CodeGenerator {
   def popPC: Instruction = Pop(None, List(instructionSet.getPC))
   def zeroReturn: Instruction = new Load(
     condition = None,
-    asmType = Some(new SignedByte),
+    asmType = None,
     dest = instructionSet.getReturn,
     loadable = new Immediate(0)
   )
@@ -103,7 +103,7 @@ object CodeGenerator {
     // Need to retrieve actual size for ident from symbol table.
 
     IndexedSeq[Instruction](
-      new Store(None, Some(new ByteType), RM.peekVariableRegister(), instructionSet.getSP)
+      new Store(None, None, RM.peekVariableRegister(), instructionSet.getSP)
     )
   }
 
@@ -131,7 +131,7 @@ object CodeGenerator {
 
     // Need to load size of array into r0, this is a temporary hardcode below.
     val preExprInstructions = IndexedSeq[Instruction](
-      new Load(None, Some(new SignedByte), instructionSet.getReturn, new Immediate(8)),
+      new Load(None, None, instructionSet.getReturn, new Immediate(8)),
       BranchLink(None, Label("malloc")),
       Move(None, varReg1, new ShiftedRegister(instructionSet.getReturn))
     )
@@ -140,7 +140,7 @@ object CodeGenerator {
 
     arrayLiteral.exprNodes.foreach(expr => generatedExpressions
       ++= generateExpression(expr) :+
-      new Store(None, Some(new ByteType), RM.peekVariableRegister(), varReg1, new Immediate(4)))
+      new Store(None, None, RM.peekVariableRegister(), varReg1, new Immediate(4)))
 
     val varReg2 = RM.nextVariableRegister()
 
@@ -148,8 +148,8 @@ object CodeGenerator {
     val postExprInstructions = generatedExpressions ++ IndexedSeq[Instruction](
       // Store number of elements in array in next available variable register.
       // Temporary hardcode below.
-      new Load(None, Some(new SignedByte), varReg2, new Immediate(1)),
-      new Store(None, Some(new ByteType), varReg2, varReg1)
+      new Load(None, None, varReg2, new Immediate(1)),
+      new Store(None, None, varReg2, varReg1)
     )
     // Since we are done with varReg1 above we can free it back to available registers.
     RM.freeVariableRegister(varReg1)
@@ -161,7 +161,7 @@ object CodeGenerator {
     val varReg1 = RM.nextVariableRegister()
 
     val preExprInstructions: IndexedSeq[Instruction] = IndexedSeq[Instruction](
-      new Load(None, Some(new SignedByte), instructionSet.getReturn, new Immediate(8)),
+      new Load(None, None, instructionSet.getReturn, new Immediate(8)),
       BranchLink(None, Label("malloc")),
       Move(None, varReg1, new ShiftedRegister(instructionSet.getReturn))
     )
@@ -202,7 +202,7 @@ object CodeGenerator {
   def generateExpression(expr: ExprNode): IndexedSeq[Instruction] = {
     expr match {
       case Int_literNode(_, str)
-                  => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
+                  => IndexedSeq[Instruction](new Load(None, None,
                      RM.peekVariableRegister(), new Immediate(str.toInt)))
       case Bool_literNode(_, bool)
                   => IndexedSeq[Instruction](Move(None, RM.peekVariableRegister(),
@@ -211,11 +211,11 @@ object CodeGenerator {
                   => IndexedSeq[Instruction](Move(None, RM.nextVariableRegister(),
                      new Immediate(char)))
       case Str_literNode(_, str)
-                  => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
+                  => IndexedSeq[Instruction](new Load(None, None,
                      RM.peekVariableRegister(), Label(str)))
       // May replace with zeroReturn.
       case Pair_literNode(_)
-                  => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
+                  => IndexedSeq[Instruction](new Load(None, None,
                      RM.peekVariableRegister(), new Immediate(0)))
       case ident: IdentNode => generateIdent(ident)
       case arrayElem: ArrayElemNode => generateArrayElem(arrayElem)
