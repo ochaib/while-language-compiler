@@ -11,6 +11,7 @@ object CodeGenerator {
   var symbolTableManager: SymbolTableManager = _
   var instructionSet: InstructionSet = _
   var RM: RegisterManager = _
+  var topSymbolTable: SymbolTable = _
   var currentSymbolTable: SymbolTable = _
 
   def useInstructionSet(_instructionSet: InstructionSet): Unit = {
@@ -20,6 +21,7 @@ object CodeGenerator {
 
   def useTopSymbolTable(symbolTable: SymbolTable): Unit = {
     symbolTableManager = SymbolTableManager(symbolTable)
+    topSymbolTable = symbolTable
   }
 
   // Common instructions
@@ -100,7 +102,7 @@ object CodeGenerator {
   }
 
   def generateDeclaration(declaration: DeclarationNode): IndexedSeq[Instruction] = {
-    generateAssignRHS(declaration.rhs) ++ generateIdent(declaration.ident)
+    generateAssignRHS(declaration.rhs) /*++ generateIdent(declaration.ident)*/
   }
 
   def generateAssignment(assignment: AssignmentNode): IndexedSeq[Instruction] = {
