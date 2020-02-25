@@ -220,13 +220,22 @@ case class Subtract(
     src2: FlexibleSndOp
 ) extends DataProcess(condition, conditionFlag, dest, src1, src2)
 
-case class SMull(
+// Reverse Subtract, RSB{S}{cond} {Rd}, Rn, Operand2
+case class RSBS(
     condition: Option[Condition],
     conditionFlag: Boolean,
-    dest1: Register,
-    dest2: Register,
+    dest: Register,
     src1: Register,
-    src2: Register
+    src2: FlexibleSndOp
+) extends DataProcess(condition, conditionFlag, dest, src1, src2)
+
+case class SMull(
+     condition: Option[Condition],
+     conditionFlag: Boolean,
+     dest1: Register,
+     dest2: Register,
+     src1: Register,
+     src2: Register
 ) extends Instruction(condition)
 
 case class And(

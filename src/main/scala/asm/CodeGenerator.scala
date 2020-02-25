@@ -182,7 +182,11 @@ object CodeGenerator {
     generateExpression(expr) ++ IndexedSeq[Instruction](BranchLink(None, Label("p_free_pair")))
   }
 
-  def generateReturn(expr: ExprNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+  def generateReturn(expr: ExprNode): IndexedSeq[Instruction] = {
+    IndexedSeq[Instruction](
+      Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())),
+      popPC)
+  }
 
   def generateExit(expr: ExprNode): IndexedSeq[Instruction] = {
     // Must generate the instructions necessary for the exit code,
@@ -248,10 +252,23 @@ object CodeGenerator {
   def generateUnary(unaryOperation: UnaryOperationNode): IndexedSeq[Instruction] = {
     unaryOperation match {
       // More must be done for these according to the reference compiler.
-      case LogicalNotNode(_, expr) => generateExpression(expr)
+      case LogicalNotNode(_, expr) =>
+        generateExpression(expr) ++ IndexedSeq[Instruction](
+          ExclusiveOr(None, conditionFlag = false, RM.peekVariableRegister(),
+                      RM.peekVariableRegister(), new Immediate(1)))
+
       // Negate is not currently adding sign to the immediate to be loaded.
-      case NegateNode(_, expr) => generateExpression(expr)
-      case LenNode(_, expr) => generateExpression(expr)
+      case NegateNode(_, expr) =>
+        generateExpression(expr) ++
+        IndexedSeq[Instruction](
+          RSBS(None, conditionFlag = false, RM.peekVariableRegister(),
+               RM.peekVariableRegister(), new Immediate(0)),
+          BranchLink(Some(Overflow), Label("p_throw_overflow_error")))
+      case LenNode(_, expr) =>
+        val varReg = RM.peekVariableRegister()
+        generateExpression(expr) ++ IndexedSeq[Instruction](
+//          new Load(None, Some(new SignedByte), varReg, Some(varReg))
+        )
       // Finished implementation as nothing else must be done.
       case OrdNode(_, expr) => generateExpression(expr)
       case ChrNode(_, expr) => generateExpression(expr)
