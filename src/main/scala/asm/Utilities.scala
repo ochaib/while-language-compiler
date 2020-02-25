@@ -1,23 +1,22 @@
 package asm
 
-import asm.instructions.{Immediate}
+import asm.instructions.{Label}
 import scala.collection.mutable.Map
 
 object Utilities {
 
     // data label: string literal
-    val strings: Map[String, String] = Map[String, String]()
+    val strings: Map[Label, String] = Map[Label, String]()
 
     // adds a string literal, returns its data label
     /* e.g.:
-        val msgLabel: Immediate = Utilities.addString("hello world")
-    Then msgLabel can be used in Load/etc as immediate
+        val msgLabel: Label = Utilities.addString("hello world")
+    Then msgLabel can be used in Load/etc as Label is Loadable
     */
-    // TODO: this should have a signature Immediate[String]
-    def addString(s: String): Immediate = {
-        val dataLabel: String = "msg_" + strings.size
+    def addString(s: String): Label = {
+        val dataLabel: Label = new Label("msg_" + strings.size)
         strings += (dataLabel -> s)
-        new Immediate(dataLabel)
+        dataLabel
     }
 
 }

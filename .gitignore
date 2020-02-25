@@ -39,5 +39,4 @@ test_logs/
 *.db
 
 # ignore generated assembly
-*.s
 assembly/
