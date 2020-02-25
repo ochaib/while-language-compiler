@@ -267,7 +267,7 @@ object CodeGenerator {
       case LenNode(_, expr) =>
         val varReg = RM.peekVariableRegister()
         generateExpression(expr) ++ IndexedSeq[Instruction](
-//          new Load(None, Some(new SignedByte), varReg, Some(varReg))
+          new Load(None, asmType = new SignedByte, dest = varReg, src = varReg)
         )
       // Finished implementation as nothing else must be done.
       case OrdNode(_, expr) => generateExpression(expr)
