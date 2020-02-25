@@ -1,10 +1,11 @@
 package asm
 
+import ast.nodes._
 import asm.instructions._
 import asm.instructionset._
 import asm.registers._
 import ast.nodes._
-import ast.symboltable.SymbolTable
+import ast.symboltable.{ARRAY, PAIR, SCALAR, STRING, SymbolTable, TYPE, VARIABLE}
 
 object CodeGenerator {
 
@@ -102,7 +103,13 @@ object CodeGenerator {
   }
 
   def generateDeclaration(declaration: DeclarationNode): IndexedSeq[Instruction] = {
-    generateAssignRHS(declaration.rhs) /*++ generateIdent(declaration.ident)*/
+    val identType: TYPE = declaration.ident.getType(topSymbolTable, currentSymbolTable)
+    val identImmediate: Immediate = new Immediate(getSize(identType))
+    // SUB sp, sp, #size ++ RHS ++ Ident ++ ADD sp, sp, #size
+    (Subtract(None, conditionFlag = false, instructionSet.getSP, instructionSet.getSP,
+      identImmediate) +: (generateAssignRHS(declaration.rhs) ++
+      generateIdent(declaration.ident))) :+ Add(None, conditionFlag = false, dest = instructionSet.getSP,
+      src1 = instructionSet.getSP, src2 = identImmediate)
   }
 
   def generateAssignment(assignment: AssignmentNode): IndexedSeq[Instruction] = {
@@ -120,9 +127,12 @@ object CodeGenerator {
   def generateIdent(ident: IdentNode): IndexedSeq[Instruction] = {
     // Need to retrieve actual size for ident from symbol table.
 
-    IndexedSeq[Instruction](
-      new Store(None, None, RM.peekVariableRegister(), instructionSet.getSP)
-    )
+    if (ident.getType(topSymbolTable, currentSymbolTable) == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable))
+      IndexedSeq[Instruction](new Store(None, Some(ByteType),
+        RM.peekVariableRegister(), instructionSet.getSP))
+    else
+      IndexedSeq[Instruction](new Store(None, None,
+        RM.peekVariableRegister(), instructionSet.getSP))
   }
 
   def generateArrayElem(arrayElem: ArrayElemNode): IndexedSeq[Instruction] = {
@@ -354,6 +364,25 @@ object CodeGenerator {
         generateExpression(argTwo) ++ generateExpression(argOne) ++
         IndexedSeq[Instruction](Or(None, conditionFlag = false, varReg1,
                                    varReg1, new ShiftedRegister(varReg2)))
+    }
+  }
+
+  def getSize(_type: TYPE): Int = {
+    _type match {
+      case _: ARRAY => 4
+      case _: PAIR => 4
+      case scalar: SCALAR =>
+        if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)) 4
+        else if (scalar == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable)) 1
+        else if (scalar == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable)) 1
+        else {
+          assert(assertion = false, "Size undefined for scalar")
+          -1
+        }
+      case STRING => 4
+      case _ =>
+        assert(assertion = false, s"Size for type is undefined")
+        -1
     }
   }
 
