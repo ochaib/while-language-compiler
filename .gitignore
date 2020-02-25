@@ -33,7 +33,7 @@ project/plugins/project/
 .idea
 
 # ignore test logs
-test_logs/
+#test_logs/
 
 # ignore scala metals
 *.db
