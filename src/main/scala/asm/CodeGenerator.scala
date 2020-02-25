@@ -216,7 +216,11 @@ object CodeGenerator {
     // Enter Scope
     symbolTableManager.enterScope()
 
-    // TODO generate instructions
+    currentSymbolTable = symbolTableManager.nextScope()
+    // TODO generate instructions for first block
+
+    currentSymbolTable = symbolTableManager.nextScope()
+    // TODO generate instructions for second block
 
     // Leave Scope
     symbolTableManager.leaveScope()
@@ -355,7 +359,7 @@ object CodeGenerator {
     private var indexStack: List[Int] = List[Int]()
     // Returns the next scope under the current scope level
     def nextScope(): SymbolTable = {
-      assert(currentScopeIndex + 1 < topLevelTable.children.length, s"Cannot go to next scope.")
+      assert(currentScopeIndex + 1 < currentScopeParent.children.length, s"Cannot go to next scope.")
       currentScopeIndex += 1
       currentScopeParent.children.apply(currentScopeIndex)
     }
