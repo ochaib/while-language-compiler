@@ -121,17 +121,14 @@ def emulate_batch(exe_fns):
                 p.output = out.decode('utf-8')
                 p.stdout.close()
                 p.stdin.close()
-                p.kill()
             except:
                 p.output = "TIMEOUT/ERROR"
                 p.stdout.close()
                 p.stdin.close()
-                p.kill()
             out, _ = p_ref.communicate()
             p_ref.output = out.decode('utf-8')
             p_ref.stdout.close()
             p_ref.stdin.close()
-            p_ref.kill()
 
         emulated.extend(emulating)
     t = time() - t
