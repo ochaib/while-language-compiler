@@ -7,6 +7,8 @@ from tqdm import tqdm
 MAX_POOL_SIZE=40 # be careful
 EMU_MAX_POOL_SIZE=5 # be EVEN MORE careful
 
+retcode = 0
+
 # Collect testcases
 def get_testcases():
     if not os.path.exists('testcases'):
@@ -121,10 +123,12 @@ def emulate_batch(exe_fns):
                 p.output = out.decode('utf-8')
                 p.stdout.close()
                 p.stdin.close()
+                p.wait()
             except:
                 p.output = "TIMEOUT/ERROR"
                 p.stdout.close()
                 p.stdin.close()
+                p.wait()
             out, _ = p_ref.communicate()
             p_ref.output = out.decode('utf-8')
             p_ref.stdout.close()
@@ -241,6 +245,7 @@ def generated_assembly_has_same_output(compiled):
         # Return code should match
         if proc.returncode != proc_ref.returncode:
             error(f"FAILED {fn}: Executable exited with {proc.returncode} but was expecting {proc_ref.returncode}")
+            retcode = -1
         elif proc.output != proc_ref.output:
             # Diff the output
             diff = ''.join(
@@ -253,6 +258,7 @@ def generated_assembly_has_same_output(compiled):
             with open(f'test_logs/{diff_fn}', 'w') as f:
                 f.write(diff)
             error(f"FAILED {fn}: Output did not match, stored diff in test_logs/{diff_fn}")
+            retcode = -1
         else:
             out_fn = fn[fn.rfind('/')+1:fn.rfind('.')] + '.out'
             with open(f'test_logs/{out_fn}', 'w') as f:
@@ -275,3 +281,4 @@ passed, total = get_coverage(
 coverage = "%.2f" % (passed/total*100)
 print('-'*10)
 print(f'coverage: {coverage}% ({passed}/{total})')
+exit(retcode)
