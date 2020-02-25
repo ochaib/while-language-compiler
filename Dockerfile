@@ -37,5 +37,6 @@ COPY . .
 RUN cd /usr/app
 RUN make all
 RUN python3 -m pip install -r requirements.txt
+RUN python3 make_asm_tests.py
 
 ENTRYPOINT [ "python3.6", "/usr/app/test.py" ]
