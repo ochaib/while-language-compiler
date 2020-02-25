@@ -10,13 +10,17 @@ import ast.nodes.{
 import scala.collection.immutable.HashMap
 
 
-class SymbolTable(var map: Map[String, IDENTIFIER], var funcMap: Map[String, FUNCTION], var encSymbolTable: SymbolTable) {
+class SymbolTable(var map: Map[String, IDENTIFIER], var funcMap: Map[String, FUNCTION], var encSymbolTable: SymbolTable, var children: IndexedSeq[SymbolTable]) {
 
   def this(map: Map[String, IDENTIFIER], funcMap: Map[String, FUNCTION]){
-    this(map, funcMap, null)
+    this(map, funcMap, null, IndexedSeq())
   }
   def this(encSymbolTable: SymbolTable) {
-    this(null, null, encSymbolTable)
+    this(null, null, encSymbolTable, IndexedSeq())
+  }
+
+  def addChild(child: SymbolTable): Unit = {
+    children = children :+ child
   }
 
   def add(name: String, function: FUNCTION): Unit = {
@@ -62,15 +66,18 @@ object SymbolTable {
   def topLevelSymbolTable(astTree: ASTNode): SymbolTable = {
     // return a symbol table with the map of all the standard types, global constants, global functions
     // TODO: refactor
-    new SymbolTable(HashMap(new IntTypeNode(null).getKey -> new SCALAR(new IntTypeNode(null).getKey, min= Int.MinValue, max= Int.MaxValue),
-      new CharTypeNode(null).getKey -> new SCALAR(new CharTypeNode(null).getKey, min=0, max=255),
-      new BoolTypeNode(null).getKey -> new SCALAR(new BoolTypeNode(null).getKey, min=0, max=1),
+    new SymbolTable(HashMap(IntTypeNode(null).getKey -> new SCALAR(IntTypeNode(null).getKey, min= Int.MinValue, max= Int.MaxValue),
+      CharTypeNode(null).getKey -> new SCALAR(CharTypeNode(null).getKey, min=0, max=255),
+      BoolTypeNode(null).getKey -> new SCALAR(BoolTypeNode(null).getKey, min=0, max=1),
       STRING.getKey -> STRING,
       GENERAL_PAIR.getKey -> GENERAL_PAIR,
       GENERAL_ARRAY.getKey -> GENERAL_ARRAY), new HashMap())
 
   }
 
-  def newSymbolTable(encSymbolTable: SymbolTable): SymbolTable = new SymbolTable(new HashMap(),
-    new HashMap(), encSymbolTable)
+  def newSymbolTable(encSymbolTable: SymbolTable): SymbolTable = {
+    val newSymbolTable: SymbolTable = new SymbolTable(new HashMap(), new HashMap(), encSymbolTable, IndexedSeq())
+    encSymbolTable.addChild(newSymbolTable)
+    newSymbolTable
+  }
 }

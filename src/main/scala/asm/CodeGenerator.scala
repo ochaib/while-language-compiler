@@ -4,15 +4,21 @@ import asm.instructions._
 import asm.instructionset._
 import asm.registers.{Register, RegisterManager}
 import ast.nodes._
+import ast.symboltable.SymbolTable
 
 object CodeGenerator {
 
+  var symbolTableManager: SymbolTableManager = _
   var instructionSet: InstructionSet = _
   var RM: RegisterManager = _
 
   def useInstructionSet(_instructionSet: InstructionSet): Unit = {
     instructionSet = _instructionSet
     RM = new RegisterManager(instructionSet)
+  }
+
+  def useTopSymbolTable(symbolTable: SymbolTable): Unit = {
+    symbolTableManager = SymbolTableManager(symbolTable)
   }
 
   // Common instructions
@@ -94,11 +100,17 @@ object CodeGenerator {
   }
 
   def generateIdent(ident: IdentNode): IndexedSeq[Instruction] = {
+    // Need to retrieve actual size for ident from symbol table.
+
     IndexedSeq[Instruction](
-      new Store(None, Some(new ByteType), RM.nextVariableRegister(), instructionSet.getSP))
+      new Store(None, Some(new ByteType), RM.peekVariableRegister(), instructionSet.getSP)
+    )
   }
 
-  def generateArrayElem(arrayElem: ArrayElemNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+  def generateArrayElem(arrayElem: ArrayElemNode): IndexedSeq[Instruction] = {
+    generateIdent(arrayElem.identNode) ++
+      arrayElem.exprNodes.flatMap(generateExpression) ++ IndexedSeq[Instruction]()
+  }
 
   def generatePairElem(pairElem: PairElemNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
@@ -114,9 +126,53 @@ object CodeGenerator {
     }
   }
 
-  def generateArrayLiteral(arrayLiteral: ArrayLiteralNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+  def generateArrayLiteral(arrayLiteral: ArrayLiteralNode): IndexedSeq[Instruction] = {
+    val varReg1 = RM.nextVariableRegister()
 
-  def generateNewPair(newPair: NewPairNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+    // Need to load size of array into r0, this is a temporary hardcode below.
+    val preExprInstructions = IndexedSeq[Instruction](
+      new Load(None, Some(new SignedByte), instructionSet.getReturn, new Immediate(8)),
+      BranchLink(None, Label("malloc")),
+      Move(None, varReg1, new ShiftedRegister(instructionSet.getReturn))
+    )
+
+    var generatedExpressions: IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+
+    arrayLiteral.exprNodes.foreach(expr => generatedExpressions
+      ++= generateExpression(expr) :+
+      new Store(None, Some(new ByteType), RM.peekVariableRegister(), varReg1, new Immediate(4)))
+
+    val varReg2 = RM.nextVariableRegister()
+
+    // However above once expression in arrayLiteral is generated we must store it.
+    val postExprInstructions = generatedExpressions ++ IndexedSeq[Instruction](
+      // Store number of elements in array in next available variable register.
+      // Temporary hardcode below.
+      new Load(None, Some(new SignedByte), varReg2, new Immediate(1)),
+      new Store(None, Some(new ByteType), varReg2, varReg1)
+    )
+    // Since we are done with varReg1 above we can free it back to available registers.
+    RM.freeVariableRegister(varReg1)
+
+    preExprInstructions ++ postExprInstructions
+  }
+
+  def generateNewPair(newPair: NewPairNode): IndexedSeq[Instruction] = {
+    val varReg1 = RM.nextVariableRegister()
+
+    val preExprInstructions: IndexedSeq[Instruction] = IndexedSeq[Instruction](
+      new Load(None, Some(new SignedByte), instructionSet.getReturn, new Immediate(8)),
+      BranchLink(None, Label("malloc")),
+      Move(None, varReg1, new ShiftedRegister(instructionSet.getReturn))
+    )
+
+    generateExpression(newPair.fstElem)
+
+
+    RM.freeVariableRegister(varReg1)
+
+    preExprInstructions
+  }
 
   def generateRead(lhs: AssignLHSNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
@@ -129,9 +185,9 @@ object CodeGenerator {
     // then branch to exit.
     // Need next available register to move into r0, temporary fix below.
     // TODO: Implement following code better.
-    val regUsedByGenExp: Register = RM.nextVariableRegister()
+    val regUsedByGenExp: Register = RM.peekVariableRegister()
     // So that it can actually be used by generateExpression.
-    RM.free(regUsedByGenExp)
+    RM.freeVariableRegister(regUsedByGenExp)
     generateExpression(expr) ++ IndexedSeq[Instruction](
       Move(None, instructionSet.getReturn, new ShiftedRegister(regUsedByGenExp)),
       BranchLink(None, Label("exit")))
@@ -147,20 +203,20 @@ object CodeGenerator {
     expr match {
       case Int_literNode(_, str)
                   => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
-                     RM.nextVariableRegister(), new Immediate(str.toInt)))
+                     RM.peekVariableRegister(), new Immediate(str.toInt)))
       case Bool_literNode(_, bool)
-                  => IndexedSeq[Instruction](Move(None, RM.nextVariableRegister(),
+                  => IndexedSeq[Instruction](Move(None, RM.peekVariableRegister(),
                      new Immediate(if (bool) 1 else 0)))
       case Char_literNode(_, char)
                   => IndexedSeq[Instruction](Move(None, RM.nextVariableRegister(),
-                     new ImmediateChar(char)))
+                     new Immediate(char)))
       case Str_literNode(_, str)
                   => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
-                     RM.nextVariableRegister(), Label(str)))
+                     RM.peekVariableRegister(), Label(str)))
       // May replace with zeroReturn.
       case Pair_literNode(_)
                   => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
-                     RM.nextVariableRegister(), new Immediate(0)))
+                     RM.peekVariableRegister(), new Immediate(0)))
       case ident: IdentNode => generateIdent(ident)
       case arrayElem: ArrayElemNode => generateArrayElem(arrayElem)
       case unaryOperation: UnaryOperationNode => generateUnary(unaryOperation)
@@ -182,23 +238,101 @@ object CodeGenerator {
   }
 
   def generateBinary(binaryOperation: BinaryOperationNode): IndexedSeq[Instruction] = {
+    val varReg1 = RM.nextVariableRegister()
+    val varReg2 = RM.peekVariableRegister()
+    RM.freeVariableRegister(varReg1)
+
     binaryOperation match {
-      case MultiplyNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
+      case MultiplyNode(_, argOne, argTwo) =>
+        generateExpression(argTwo) ++ generateExpression(argOne) ++
+        IndexedSeq[Instruction](SMull(None, conditionFlag = false, varReg1,
+                                      varReg2, varReg1, varReg2))
       case DivideNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
       case ModNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
-      case PlusNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
-      case MinusNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
-      case GreaterThanNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
-      case GreaterEqualNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
-      case LessThanNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
-      case LessEqualNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
-      case EqualToNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
-      case NotEqualNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
-      case LogicalAndNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
-      case LogicalOrNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
+      case PlusNode(_, argOne, argTwo) =>
+        generateExpression(argTwo) ++ generateExpression(argOne) ++
+        IndexedSeq[Instruction](Add(None, conditionFlag = false, varReg1,
+                                    varReg1, new ShiftedRegister(varReg2)))
+      case MinusNode(_, argOne, argTwo) =>
+        generateExpression(argTwo) ++ generateExpression(argOne) ++
+        IndexedSeq[Instruction](Subtract(None, conditionFlag = false, varReg1,
+                                         varReg1, new ShiftedRegister(varReg2)))
+
+      case GreaterThanNode(_, argOne, argTwo) =>
+        generateExpression(argTwo) ++ generateExpression(argOne) ++
+        IndexedSeq[Instruction](
+          Compare(None, varReg1, new ShiftedRegister(varReg2)),
+          Move(Some(GreaterThan), varReg1, new Immediate(1)),
+          Move(Some(LessEqual), varReg1, new Immediate(0)))
+      case GreaterEqualNode(_, argOne, argTwo) =>
+        generateExpression(argTwo) ++ generateExpression(argOne) ++
+        IndexedSeq[Instruction](
+          Compare(None, varReg1, new ShiftedRegister(varReg2)),
+          Move(Some(GreaterEqual), varReg1, new Immediate(1)),
+          Move(Some(LessThan), varReg1, new Immediate(0)))
+      case LessThanNode(_, argOne, argTwo) =>
+        generateExpression(argTwo) ++ generateExpression(argOne) ++
+        IndexedSeq[Instruction](
+          Compare(None, varReg1, new ShiftedRegister(varReg2)),
+          Move(Some(LessThan), varReg1, new Immediate(1)),
+          Move(Some(GreaterEqual), varReg1, new Immediate(0)))
+      case LessEqualNode(_, argOne, argTwo) =>
+        generateExpression(argTwo) ++ generateExpression(argOne) ++
+        IndexedSeq[Instruction](
+          Compare(None, varReg1, new ShiftedRegister(varReg2)),
+          Move(Some(LessEqual), varReg1, new Immediate(1)),
+          Move(Some(GreaterThan), varReg1, new Immediate(0)))
+      case EqualToNode(_, argOne, argTwo) =>
+        generateExpression(argTwo) ++ generateExpression(argOne) ++
+        IndexedSeq[Instruction](
+          Compare(None, varReg1, new ShiftedRegister(varReg2)),
+          Move(Some(Equal), varReg1, new Immediate(1)),
+          Move(Some(NotEqual), varReg1, new Immediate(0)))
+      case NotEqualNode(_, argOne, argTwo) =>
+        generateExpression(argTwo) ++ generateExpression(argOne) ++
+        IndexedSeq[Instruction](
+          Compare(None, varReg1, new ShiftedRegister(varReg2)),
+          Move(Some(NotEqual), varReg1, new Immediate(1)),
+          Move(Some(Equal), varReg1, new Immediate(0)))
+
+      case LogicalAndNode(_, argOne, argTwo) =>
+        generateExpression(argTwo) ++ generateExpression(argOne) ++
+        IndexedSeq[Instruction](And(None, conditionFlag = false, varReg1,
+                                    varReg1, new ShiftedRegister(varReg2)))
+      case LogicalOrNode(_, argOne, argTwo) =>
+        generateExpression(argTwo) ++ generateExpression(argOne) ++
+        IndexedSeq[Instruction](Or(None, conditionFlag = false, varReg1,
+                                   varReg1, new ShiftedRegister(varReg2)))
     }
   }
 
+  case class SymbolTableManager(private val topLevelTable: SymbolTable) {
+    private var currentScopeParent: SymbolTable = topLevelTable
+    private var currentScopeIndex: Int = -1
+    private var indexStack: List[Int] = List[Int]()
+    // Returns the next scope under the current scope level
+    def nextScope(): SymbolTable = {
+      assert(topLevelTable.children.length < currentScopeIndex + 1, s"Cannot go to next scope.")
+      currentScopeIndex += 1
+      currentScopeParent.children.apply(currentScopeIndex)
+    }
+    // Enters the current scope
+    def enterScope(): Unit = {
+      assert(!currentScopeParent.children.isDefinedAt(currentScopeIndex))
+      currentScopeParent = currentScopeParent.children.apply(currentScopeIndex)
+      // Push
+      indexStack = currentScopeIndex :: indexStack
+      currentScopeIndex = -1
+    }
+    // Leaves the current scope
+    def leaveScope(): Unit = {
+      assert(indexStack.nonEmpty, "Scope is at the top level already")
+      currentScopeParent = currentScopeParent.encSymbolTable
+      // Pop
+      currentScopeIndex = indexStack.head
+      indexStack = indexStack.tail
+    }
+  }
 }
 
 
