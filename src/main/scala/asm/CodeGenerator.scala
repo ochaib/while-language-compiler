@@ -15,6 +15,9 @@ object CodeGenerator {
   var topSymbolTable: SymbolTable = _
   var currentSymbolTable: SymbolTable = _
 
+  // Keep track of number of branches.
+  var n_branches = 0
+
   def useInstructionSet(_instructionSet: InstructionSet): Unit = {
     instructionSet = _instructionSet
     RM = new RegisterManager(instructionSet)
@@ -269,21 +272,33 @@ object CodeGenerator {
   def generateIf(ifNode: IfNode): IndexedSeq[Instruction] = {
     var instructions: IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
+    // Instructions generated for condition expression.
+    val condInstructions = generateExpression(ifNode.conditionExpr) :+
+      Compare(None, RM.peekVariableRegister(), new Immediate(0)) :+
+      Branch(Some(Equal), Label(s"L$n_branches"))
+
+    n_branches += 1
+
     // Enter Scope
     symbolTableManager.enterScope()
-
     // First if block
     currentSymbolTable = symbolTableManager.nextScope()
-    // TODO generate instructions for first block
+
+    val thenInstructions = generateStatement(ifNode.thenStat) :+
+      Branch(None, Label(s"L$n_branches"))
+
+    n_branches += 1
 
     // Second if block
     currentSymbolTable = symbolTableManager.nextScope()
     // TODO generate instructions for second block
 
+    val elseInstructions = generateStatement(ifNode.elseStat)
+
     // Leave Scope
     symbolTableManager.leaveScope()
 
-    instructions
+    instructions ++ condInstructions ++ thenInstructions ++ elseInstructions
   }
 
   def generateWhile(whileNode: WhileNode): IndexedSeq[Instruction] = {
