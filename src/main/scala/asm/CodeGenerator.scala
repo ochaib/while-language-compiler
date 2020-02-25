@@ -4,7 +4,7 @@ import asm.instructions._
 import asm.instructionset._
 import asm.registers._
 import ast.nodes._
-import ast.symboltable.SymbolTable
+import ast.symboltable.{SCALAR, SymbolTable}
 
 object CodeGenerator {
 
@@ -154,7 +154,8 @@ object CodeGenerator {
 
     arrayLiteral.exprNodes.foreach(expr => generatedExpressions
       ++= generateExpression(expr) :+
-      new Store(None, None, RM.peekVariableRegister(), varReg1, new Immediate(4)))
+      new Store(None, None, RM.peekVariableRegister(), varReg1,
+        new Immediate(4)))
 
     val varReg2 = RM.nextVariableRegister()
 
@@ -188,7 +189,41 @@ object CodeGenerator {
     preExprInstructions
   }
 
-  def generateRead(lhs: AssignLHSNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+  def generateRead(lhs: AssignLHSNode): IndexedSeq[Instruction] = {
+    var generatedReadInstructions = IndexedSeq[Instruction]()
+
+    // Peek for now doesn't seem like I would need to pop the register.
+    val varReg1 = RM.peekVariableRegister()
+
+    val addInstruction: IndexedSeq[Instruction] = lhs match {
+      // Temporary hardcode for ident replace 4 with offset from symbol table.
+      case ident: IdentNode => IndexedSeq[Instruction](Add(None, conditionFlag = false, varReg1,
+                      instructionSet.getSP, new Immediate(4)))
+      // No offset if not reading variable.
+      case _ => IndexedSeq[Instruction](Add(None, conditionFlag = false, varReg1,
+        instructionSet.getSP, new Immediate(0)))
+    }
+
+    generatedReadInstructions = addInstruction :+
+      Move(None, instructionSet.getReturn, new ShiftedRegister(varReg1))
+
+    // Now must generate BL depending on the type, however only for character and int as
+    // they are the only types that can be read.
+
+    val lhsType = lhs.getType(topSymbolTable, currentSymbolTable)
+
+    lhsType match {
+      case scalar if scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)
+        // Generate top level msg with " %c\\0" and with "p_read_int"
+        => generatedReadInstructions :+ BranchLink(None, Label("p_read_int"))
+      case scalar if scalar == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable)
+        // Generate top level msg with " %c\\0" and with "p_read_char"
+      => generatedReadInstructions :+ BranchLink(None, Label("p_read_char"))
+      case _ => assert(assertion = false, "Undefined type for read.")
+    }
+
+    generatedReadInstructions
+  }
 
   def generateFree(expr: ExprNode): IndexedSeq[Instruction] = {
     generateExpression(expr) ++ IndexedSeq[Instruction](BranchLink(None, Label("p_free_pair")))
