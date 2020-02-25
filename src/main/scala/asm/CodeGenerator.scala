@@ -11,6 +11,7 @@ object CodeGenerator {
   var symbolTableManager: SymbolTableManager = _
   var instructionSet: InstructionSet = _
   var RM: RegisterManager = _
+  var currentSymbolTable: SymbolTable = _
 
   def useInstructionSet(_instructionSet: InstructionSet): Unit = {
     instructionSet = _instructionSet
@@ -32,6 +33,15 @@ object CodeGenerator {
   )
 
   def generateProgram(program: ProgramNode): IndexedSeq[Instruction] = {
+    assert(symbolTableManager != null, "Top level symbol table needs to be defined")
+    assert(instructionSet != null, "Instruction set needs to be defined")
+    assert(RM != null, "Register manager needs to be defiend")
+
+    // Update the current symbol table
+    currentSymbolTable = symbolTableManager.nextScope()
+    //  Enter the current scope
+    symbolTableManager.enterScope()
+
     // Generated instructions to encompass everything generated.
     val generatedInstructions: IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
@@ -41,16 +51,21 @@ object CodeGenerator {
     // Generated code for stats
     val stats: IndexedSeq[Instruction] = generateStatement(program.stat)
 
-    generatedInstructions ++ functions ++ IndexedSeq[Instruction](
-      Label("main"),
-      pushLR) ++ stats ++ IndexedSeq[Instruction](
-      zeroReturn,
-      popPC,
-      new EndFunction
-    )
+    val instructions: IndexedSeq[Instruction] = (generatedInstructions ++ functions
+      ++ IndexedSeq[Instruction](Label("main"), pushLR)
+      ++ stats ++ IndexedSeq[Instruction](zeroReturn, popPC, new EndFunction))
+
+    // Leave the current scope
+    symbolTableManager.leaveScope()
+
+    instructions
   }
 
   def generateFunction(func: FuncNode): IndexedSeq[Instruction] = {
+
+    // Update the current symbol table
+    currentSymbolTable = symbolTableManager.nextScope()
+
     IndexedSeq[Instruction](
       Label(s"f_${func.identNode.ident}"),
       pushLR,
@@ -193,9 +208,37 @@ object CodeGenerator {
       BranchLink(None, Label("exit")))
   }
 
-  def generateIf(ifNode: IfNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+  def generateIf(ifNode: IfNode): IndexedSeq[Instruction] = {
+    var instructions: IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
-  def generateWhile(whileNode: WhileNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+    // Update Scope
+    currentSymbolTable = symbolTableManager.nextScope()
+    // Enter Scope
+    symbolTableManager.enterScope()
+
+    // TODO generate instructions
+
+    // Leave Scope
+    symbolTableManager.leaveScope()
+
+    instructions
+  }
+
+  def generateWhile(whileNode: WhileNode): IndexedSeq[Instruction] = {
+    var instructions: IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+
+    // Update Scope
+    currentSymbolTable = symbolTableManager.nextScope()
+    // Enter Scope
+    symbolTableManager.enterScope()
+
+    // TODO generate instructions
+
+    // Leave Scope
+    symbolTableManager.leaveScope()
+
+    instructions
+  }
 
   def generateBegin(begin: BeginNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
@@ -312,13 +355,13 @@ object CodeGenerator {
     private var indexStack: List[Int] = List[Int]()
     // Returns the next scope under the current scope level
     def nextScope(): SymbolTable = {
-      assert(topLevelTable.children.length < currentScopeIndex + 1, s"Cannot go to next scope.")
+      assert(currentScopeIndex + 1 < topLevelTable.children.length, s"Cannot go to next scope.")
       currentScopeIndex += 1
       currentScopeParent.children.apply(currentScopeIndex)
     }
     // Enters the current scope
     def enterScope(): Unit = {
-      assert(!currentScopeParent.children.isDefinedAt(currentScopeIndex))
+      assert(currentScopeParent.children.isDefinedAt(currentScopeIndex))
       currentScopeParent = currentScopeParent.children.apply(currentScopeIndex)
       // Push
       indexStack = currentScopeIndex :: indexStack
@@ -331,6 +374,15 @@ object CodeGenerator {
       // Pop
       currentScopeIndex = indexStack.head
       indexStack = indexStack.tail
+    }
+  }
+
+  case class LabelGenerator() {
+    private var labelNum = 0
+    def generate(): Label = {
+      val label = Label(s"L$labelNum")
+      labelNum += 1
+      label
     }
   }
 }
