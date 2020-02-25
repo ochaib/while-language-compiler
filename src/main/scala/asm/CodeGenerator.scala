@@ -216,10 +216,8 @@ object CodeGenerator {
   def generateIf(ifNode: IfNode): IndexedSeq[Instruction] = {
     var instructions: IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
-    // Update Scope
-    currentSymbolTable = symbolTableManager.nextScope()
     // Enter Scope
-    symbolTableManager.enterScope()
+    //symbolTableManager.enterScope()
 
     currentSymbolTable = symbolTableManager.nextScope()
     // TODO generate instructions for first block
@@ -228,7 +226,7 @@ object CodeGenerator {
     // TODO generate instructions for second block
 
     // Leave Scope
-    symbolTableManager.leaveScope()
+    //symbolTableManager.leaveScope()
 
     instructions
   }
