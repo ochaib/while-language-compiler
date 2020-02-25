@@ -28,7 +28,7 @@ object CodeGenerator {
     condition = None,
     asmType = None,
     dest = instructionSet.getReturn,
-    loadable = new Immediate(0)
+    loadable = new LoadableExpression(0)
   )
 
   def generateProgram(program: ProgramNode): IndexedSeq[Instruction] = {
@@ -131,7 +131,7 @@ object CodeGenerator {
 
     // Need to load size of array into r0, this is a temporary hardcode below.
     val preExprInstructions = IndexedSeq[Instruction](
-      new Load(None, None, instructionSet.getReturn, new Immediate(8)),
+      new Load(None, None, instructionSet.getReturn, new LoadableExpression(8)),
       BranchLink(None, Label("malloc")),
       Move(None, varReg1, new ShiftedRegister(instructionSet.getReturn))
     )
@@ -148,7 +148,7 @@ object CodeGenerator {
     val postExprInstructions = generatedExpressions ++ IndexedSeq[Instruction](
       // Store number of elements in array in next available variable register.
       // Temporary hardcode below.
-      new Load(None, None, varReg2, new Immediate(1)),
+      new Load(None, None, varReg2, new LoadableExpression(1)),
       new Store(None, None, varReg2, varReg1)
     )
     // Since we are done with varReg1 above we can free it back to available registers.
@@ -161,7 +161,7 @@ object CodeGenerator {
     val varReg1 = RM.nextVariableRegister()
 
     val preExprInstructions: IndexedSeq[Instruction] = IndexedSeq[Instruction](
-      new Load(None, None, instructionSet.getReturn, new Immediate(8)),
+      new Load(None, None, instructionSet.getReturn, new LoadableExpression(8)),
       BranchLink(None, Label("malloc")),
       Move(None, varReg1, new ShiftedRegister(instructionSet.getReturn))
     )
@@ -203,7 +203,7 @@ object CodeGenerator {
     expr match {
       case Int_literNode(_, str)
                   => IndexedSeq[Instruction](new Load(None, None,
-                     RM.peekVariableRegister(), new Immediate(str.toInt)))
+                     RM.peekVariableRegister(), new LoadableExpression(str.toInt)))
       case Bool_literNode(_, bool)
                   => IndexedSeq[Instruction](Move(None, RM.peekVariableRegister(),
                      new Immediate(if (bool) 1 else 0)))
@@ -216,7 +216,7 @@ object CodeGenerator {
       // May replace with zeroReturn.
       case Pair_literNode(_)
                   => IndexedSeq[Instruction](new Load(None, None,
-                     RM.peekVariableRegister(), new Immediate(0)))
+                     RM.peekVariableRegister(), new LoadableExpression(0)))
       case ident: IdentNode => generateIdent(ident)
       case arrayElem: ArrayElemNode => generateArrayElem(arrayElem)
       case unaryOperation: UnaryOperationNode => generateUnary(unaryOperation)
