@@ -102,10 +102,10 @@ object CodeGenerator {
     val identType: TYPE = declaration.ident.getType(topSymbolTable, currentSymbolTable)
     val identImmediate: Immediate = new Immediate(getSize(identType))
     // SUB sp, sp, #size ++ RHS ++ Ident ++ ADD sp, sp, #size
-    (Subtract(None, conditionFlag = false, instructionSet.getSP, instructionSet.getSP,
-      identImmediate) +: (generateAssignRHS(declaration.rhs) ++
-      generateIdent(declaration.ident))) :+ Add(None, conditionFlag = false, dest = instructionSet.getSP,
-      src1 = instructionSet.getSP, src2 = identImmediate)
+    (Subtract(None, conditionFlag = false, instructionSet.getSP, instructionSet.getSP, identImmediate)
+      +: (generateAssignRHS(declaration.rhs) ++
+      generateIdent(declaration.ident))) :+
+      Add(None, conditionFlag = false, instructionSet.getSP, instructionSet.getSP, identImmediate)
   }
 
   def generateAssignment(assignment: AssignmentNode): IndexedSeq[Instruction] = {
@@ -123,7 +123,8 @@ object CodeGenerator {
   def generateIdent(ident: IdentNode): IndexedSeq[Instruction] = {
     // Need to retrieve actual size for ident from symbol table.
 
-    if (ident.getType(topSymbolTable, currentSymbolTable) == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable))
+    if (ident.getType(topSymbolTable, currentSymbolTable)
+              == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable))
       IndexedSeq[Instruction](new Store(None, Some(ByteType),
         RM.peekVariableRegister(), instructionSet.getSP))
     else
@@ -165,7 +166,8 @@ object CodeGenerator {
     arrayLiteral.exprNodes.foreach(expr => generatedExpressions
       ++= generateExpression(expr) :+
       new Store(None, None, RM.peekVariableRegister(), varReg1,
-        new Immediate(4)))
+        // Replaced hardcoded 4 with actual expression type, hopefully it works.
+        new Immediate(getSize(expr.getType(topSymbolTable, currentSymbolTable)))))
 
     val varReg2 = RM.nextVariableRegister()
 
@@ -208,7 +210,7 @@ object CodeGenerator {
     val addInstruction: IndexedSeq[Instruction] = lhs match {
       // Temporary hardcode for ident replace 4 with offset from symbol table.
       case ident: IdentNode => IndexedSeq[Instruction](Add(None, conditionFlag = false, varReg1,
-                      instructionSet.getSP, new Immediate(4)))
+        instructionSet.getSP, new Immediate(getSize(ident.getType(topSymbolTable, currentSymbolTable)))))
       // No offset if not reading variable.
       case _ => IndexedSeq[Instruction](Add(None, conditionFlag = false, varReg1,
         instructionSet.getSP, new Immediate(0)))
@@ -334,7 +336,9 @@ object CodeGenerator {
       case ident: IdentNode
       // Get offset from symbol table for the ident and replace it in the immediate.
                   => IndexedSeq[Instruction](new Load(None, None,
-                     RM.peekVariableRegister(), new LoadableExpression(4)))
+                     RM.peekVariableRegister(),
+                     new LoadableExpression(getSize(
+                         ident.getType(topSymbolTable, currentSymbolTable)))))
       case arrayElem: ArrayElemNode => generateArrayElem(arrayElem)
       case unaryOperation: UnaryOperationNode => generateUnary(unaryOperation)
       case binaryOperation: BinaryOperationNode => generateBinary(binaryOperation)
