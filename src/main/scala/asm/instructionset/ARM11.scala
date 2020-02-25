@@ -252,7 +252,7 @@ object ARM11 extends InstructionSet {
           s"\tEOR${printCondition(condition)}${conditionFlagToString(conditionFlag)}" +
             s" ${print(dest)}, ${print(src1)}, ${print(src2)}"
         case RSBS(condition, conditionFlag, dest, src1, src2) =>
-          s"\tRSBS${print(condition)}${conditionFlagToString(conditionFlag)}" +
+          s"\tRSBS${printCondition(condition)}${conditionFlagToString(conditionFlag)}" +
             s" ${print(dest)}, ${print(src1)}, ${print(src2)}"
       }
 

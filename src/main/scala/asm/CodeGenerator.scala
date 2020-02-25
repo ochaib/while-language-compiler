@@ -288,8 +288,8 @@ object CodeGenerator {
                      RM.peekVariableRegister(), new LoadableExpression(0)))
       case ident: IdentNode
       // Get offset from symbol table for the ident and replace it in the immediate.
-                  => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
-                     RM.peekVariableRegister(), new Immediate(4)))
+                  => IndexedSeq[Instruction](new Load(None, None,
+                     RM.peekVariableRegister(), new LoadableExpression(4)))
       case arrayElem: ArrayElemNode => generateArrayElem(arrayElem)
       case unaryOperation: UnaryOperationNode => generateUnary(unaryOperation)
       case binaryOperation: BinaryOperationNode => generateBinary(binaryOperation)
@@ -314,7 +314,7 @@ object CodeGenerator {
       case LenNode(_, expr) =>
         val varReg = RM.peekVariableRegister()
         generateExpression(expr) ++ IndexedSeq[Instruction](
-          new Load(None, asmType = new SignedByte, varReg, varReg)
+          new Load(None, None, varReg, varReg)
         )
       // Finished implementation as nothing else must be done.
       case OrdNode(_, expr) => generateExpression(expr)

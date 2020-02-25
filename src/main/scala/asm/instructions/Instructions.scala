@@ -25,13 +25,13 @@ case class Load private (
   // LDR{cond}{B|Type} Rd, [Rn]
   def this(
       condition: Option[Condition],
-      asmType: ASMType,
+      asmType: Option[ASMType],
       dest: Register,
       src: Register
   ) =
     this(
       condition,
-      Some(asmType),
+      asmType,
       dest,
       Some(src),
       None,
@@ -42,7 +42,7 @@ case class Load private (
   // LDR{cond}{B|Type} Rd, [Rn, FlexOffset]{!}
   def this(
       condition: Option[Condition],
-      asmType: ASMType,
+      asmType: Option[ASMType],
       dest: Register,
       src: Register,
       flexOffset: FlexOffset,
@@ -50,7 +50,7 @@ case class Load private (
   ) =
     this(
       condition,
-      Some(asmType),
+      asmType,
       dest,
       Some(src),
       Some(flexOffset),
@@ -61,13 +61,14 @@ case class Load private (
   // LDR{cond}{B|Type} Rd, label
   def this(
       condition: Option[Condition],
-      asmType: WordType,
+      // Was wordtype.
+      asmType: Option[ASMType],
       dest: Register,
       label: Label
   ) =
     this(
       condition,
-      Some(asmType),
+      asmType,
       dest,
       None,
       None,
@@ -78,14 +79,14 @@ case class Load private (
   // LDR{cond}{B|Type} Rd, [Rn], FlexOffset
   def this(
       condition: Option[Condition],
-      asmType: ASMType,
+      asmType: Option[ASMType],
       dest: Register,
       src: Register,
       flexOffset: FlexOffset
   ) =
     this(
       condition,
-      Some(asmType),
+      asmType,
       dest,
       Some(src),
       Some(flexOffset),
