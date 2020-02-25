@@ -39,7 +39,6 @@ object CodeGenerator {
     assert(instructionSet != null, "Instruction set needs to be defined")
     assert(RM != null, "Register manager needs to be defiend")
 
-
     // Generated instructions to encompass everything generated.
     val generatedInstructions: IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
@@ -86,13 +85,12 @@ object CodeGenerator {
       case assign: AssignmentNode => generateAssignment(assign)
       case ReadNode(_, lhs) => generateRead(lhs)
       case FreeNode(_, expr) => generateFree(expr)
-      // Possibly do more for return and exit, moving used register into r0 (return reg)?
       case ReturnNode(_, expr) => generateReturn(expr)
       case ExitNode(_, expr) => generateExit(expr)
 
       // Unsure as of what to do for the print generation.
-      case PrintNode(_, expr) => IndexedSeq[Instruction]()
-      case PrintlnNode(_, expr) => IndexedSeq[Instruction]()
+      case PrintNode(_, expr) => generatePrint(expr)
+      case PrintlnNode(_, expr) => generatePrint(expr)
 
       case ifNode: IfNode => generateIf(ifNode)
       case whileNode: WhileNode => generateWhile(whileNode)
@@ -194,9 +192,15 @@ object CodeGenerator {
 
   def generateRead(lhs: AssignLHSNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
-  def generateFree(expr: ExprNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+  def generateFree(expr: ExprNode): IndexedSeq[Instruction] = {
+    generateExpression(expr) ++ IndexedSeq[Instruction](BranchLink(None, Label("p_free_pair")))
+  }
 
-  def generateReturn(expr: ExprNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+  def generateReturn(expr: ExprNode): IndexedSeq[Instruction] = {
+    IndexedSeq[Instruction](
+      Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())),
+      popPC)
+  }
 
   def generateExit(expr: ExprNode): IndexedSeq[Instruction] = {
     // Must generate the instructions necessary for the exit code,
@@ -209,6 +213,12 @@ object CodeGenerator {
     generateExpression(expr) ++ IndexedSeq[Instruction](
       Move(None, instructionSet.getReturn, new ShiftedRegister(regUsedByGenExp)),
       BranchLink(None, Label("exit")))
+  }
+
+  def generatePrint(expr: ExprNode): IndexedSeq[Instruction] = {
+    // Need to distinguish between print branch links.
+
+    generateExpression(expr)
   }
 
   def generateIf(ifNode: IfNode): IndexedSeq[Instruction] = {
@@ -248,7 +258,17 @@ object CodeGenerator {
     instructions
   }
 
-  def generateBegin(begin: BeginNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+  def generateBegin(begin: BeginNode): IndexedSeq[Instruction] = {
+    // We must first enter the new scope, then generate the statements inside the scope,
+    // then finally close the scope.
+//    symbolTableManager.enterScope()
+
+    val generatedInstructions = generateStatement(begin.stat)
+
+//    symbolTableManager.leaveScope()
+
+    generatedInstructions
+  }
 
   def generateExpression(expr: ExprNode): IndexedSeq[Instruction] = {
     expr match {
@@ -268,7 +288,10 @@ object CodeGenerator {
       case Pair_literNode(_)
                   => IndexedSeq[Instruction](new Load(None, None,
                      RM.peekVariableRegister(), new LoadableExpression(0)))
-      case ident: IdentNode => generateIdent(ident)
+      case ident: IdentNode
+      // Get offset from symbol table for the ident and replace it in the immediate.
+                  => IndexedSeq[Instruction](new Load(None, None,
+                     RM.peekVariableRegister(), new LoadableExpression(4)))
       case arrayElem: ArrayElemNode => generateArrayElem(arrayElem)
       case unaryOperation: UnaryOperationNode => generateUnary(unaryOperation)
       case binaryOperation: BinaryOperationNode => generateBinary(binaryOperation)
@@ -278,10 +301,23 @@ object CodeGenerator {
   def generateUnary(unaryOperation: UnaryOperationNode): IndexedSeq[Instruction] = {
     unaryOperation match {
       // More must be done for these according to the reference compiler.
-      case LogicalNotNode(_, expr) => generateExpression(expr)
+      case LogicalNotNode(_, expr) =>
+        generateExpression(expr) ++ IndexedSeq[Instruction](
+          ExclusiveOr(None, conditionFlag = false, RM.peekVariableRegister(),
+                      RM.peekVariableRegister(), new Immediate(1)))
+
       // Negate is not currently adding sign to the immediate to be loaded.
-      case NegateNode(_, expr) => generateExpression(expr)
-      case LenNode(_, expr) => generateExpression(expr)
+      case NegateNode(_, expr) =>
+        generateExpression(expr) ++
+        IndexedSeq[Instruction](
+          RSBS(None, conditionFlag = false, RM.peekVariableRegister(),
+               RM.peekVariableRegister(), new Immediate(0)),
+          BranchLink(Some(Overflow), Label("p_throw_overflow_error")))
+      case LenNode(_, expr) =>
+        val varReg = RM.peekVariableRegister()
+        generateExpression(expr) ++ IndexedSeq[Instruction](
+          new Load(None, None, varReg, varReg)
+        )
       // Finished implementation as nothing else must be done.
       case OrdNode(_, expr) => generateExpression(expr)
       case ChrNode(_, expr) => generateExpression(expr)
@@ -295,63 +331,69 @@ object CodeGenerator {
 
     binaryOperation match {
       case MultiplyNode(_, argOne, argTwo) =>
-        generateExpression(argTwo) ++ generateExpression(argOne) ++
+        generateExpression(argOne) ++ generateExpression(argTwo) ++
         IndexedSeq[Instruction](SMull(None, conditionFlag = false, varReg1,
                                       varReg2, varReg1, varReg2))
-      case DivideNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
-      case ModNode(_, argOne, argTwo) => IndexedSeq[Instruction]()
+      case DivideNode(_, argOne, argTwo) =>
+        generateExpression(argOne) ++ generateExpression(argTwo) ++
+        IndexedSeq[Instruction](BranchLink(None, Label("p_check_divide_by_zero")),
+                                BranchLink(None, Label("__aeabi_idiv")))
+      case ModNode(_, argOne, argTwo) =>
+        generateExpression(argOne) ++ generateExpression(argTwo) ++
+        IndexedSeq[Instruction](BranchLink(None, Label("p_check_divide_by_zero")),
+                                BranchLink(None, Label("__aeabi_idiv")))
       case PlusNode(_, argOne, argTwo) =>
-        generateExpression(argTwo) ++ generateExpression(argOne) ++
+        generateExpression(argOne) ++ generateExpression(argTwo) ++
         IndexedSeq[Instruction](Add(None, conditionFlag = false, varReg1,
                                     varReg1, new ShiftedRegister(varReg2)))
       case MinusNode(_, argOne, argTwo) =>
-        generateExpression(argTwo) ++ generateExpression(argOne) ++
+        generateExpression(argOne) ++ generateExpression(argTwo) ++
         IndexedSeq[Instruction](Subtract(None, conditionFlag = false, varReg1,
                                          varReg1, new ShiftedRegister(varReg2)))
 
       case GreaterThanNode(_, argOne, argTwo) =>
-        generateExpression(argTwo) ++ generateExpression(argOne) ++
+        generateExpression(argOne) ++ generateExpression(argTwo) ++
         IndexedSeq[Instruction](
           Compare(None, varReg1, new ShiftedRegister(varReg2)),
           Move(Some(GreaterThan), varReg1, new Immediate(1)),
           Move(Some(LessEqual), varReg1, new Immediate(0)))
       case GreaterEqualNode(_, argOne, argTwo) =>
-        generateExpression(argTwo) ++ generateExpression(argOne) ++
+        generateExpression(argOne) ++ generateExpression(argTwo) ++
         IndexedSeq[Instruction](
           Compare(None, varReg1, new ShiftedRegister(varReg2)),
           Move(Some(GreaterEqual), varReg1, new Immediate(1)),
           Move(Some(LessThan), varReg1, new Immediate(0)))
       case LessThanNode(_, argOne, argTwo) =>
-        generateExpression(argTwo) ++ generateExpression(argOne) ++
+        generateExpression(argOne) ++ generateExpression(argTwo) ++
         IndexedSeq[Instruction](
           Compare(None, varReg1, new ShiftedRegister(varReg2)),
           Move(Some(LessThan), varReg1, new Immediate(1)),
           Move(Some(GreaterEqual), varReg1, new Immediate(0)))
       case LessEqualNode(_, argOne, argTwo) =>
-        generateExpression(argTwo) ++ generateExpression(argOne) ++
+        generateExpression(argOne) ++ generateExpression(argTwo) ++
         IndexedSeq[Instruction](
           Compare(None, varReg1, new ShiftedRegister(varReg2)),
           Move(Some(LessEqual), varReg1, new Immediate(1)),
           Move(Some(GreaterThan), varReg1, new Immediate(0)))
       case EqualToNode(_, argOne, argTwo) =>
-        generateExpression(argTwo) ++ generateExpression(argOne) ++
+        generateExpression(argOne) ++ generateExpression(argTwo) ++
         IndexedSeq[Instruction](
           Compare(None, varReg1, new ShiftedRegister(varReg2)),
           Move(Some(Equal), varReg1, new Immediate(1)),
           Move(Some(NotEqual), varReg1, new Immediate(0)))
       case NotEqualNode(_, argOne, argTwo) =>
-        generateExpression(argTwo) ++ generateExpression(argOne) ++
+        generateExpression(argOne) ++ generateExpression(argTwo) ++
         IndexedSeq[Instruction](
           Compare(None, varReg1, new ShiftedRegister(varReg2)),
           Move(Some(NotEqual), varReg1, new Immediate(1)),
           Move(Some(Equal), varReg1, new Immediate(0)))
 
       case LogicalAndNode(_, argOne, argTwo) =>
-        generateExpression(argTwo) ++ generateExpression(argOne) ++
+        generateExpression(argOne) ++ generateExpression(argTwo) ++
         IndexedSeq[Instruction](And(None, conditionFlag = false, varReg1,
                                     varReg1, new ShiftedRegister(varReg2)))
       case LogicalOrNode(_, argOne, argTwo) =>
-        generateExpression(argTwo) ++ generateExpression(argOne) ++
+        generateExpression(argOne) ++ generateExpression(argTwo) ++
         IndexedSeq[Instruction](Or(None, conditionFlag = false, varReg1,
                                    varReg1, new ShiftedRegister(varReg2)))
     }
