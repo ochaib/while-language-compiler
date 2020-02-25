@@ -251,6 +251,9 @@ object ARM11 extends InstructionSet {
         case ExclusiveOr(condition, conditionFlag, dest, src1, src2) =>
           s"\tEOR${printCondition(condition)}${conditionFlagToString(conditionFlag)}" +
             s" ${print(dest)}, ${print(src1)}, ${print(src2)}"
+        case RSBS(condition, conditionFlag, dest, src1, src2) =>
+          s"\tRSBS${printCondition(condition)}${conditionFlagToString(conditionFlag)}" +
+            s" ${print(dest)}, ${print(src1)}, ${print(src2)}"
       }
 
     // SMULL{S}{cond} RdLo, RdHi, Rn, Rm

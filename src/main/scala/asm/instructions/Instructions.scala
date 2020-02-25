@@ -25,13 +25,13 @@ case class Load private (
   // LDR{cond}{B|Type} Rd, [Rn]
   def this(
       condition: Option[Condition],
-      asmType: ASMType,
+      asmType: Option[ASMType],
       dest: Register,
       src: Register
   ) =
     this(
       condition,
-      Some(asmType),
+      asmType,
       dest,
       Some(src),
       None,
@@ -42,7 +42,7 @@ case class Load private (
   // LDR{cond}{B|Type} Rd, [Rn, FlexOffset]{!}
   def this(
       condition: Option[Condition],
-      asmType: ASMType,
+      asmType: Option[ASMType],
       dest: Register,
       src: Register,
       flexOffset: FlexOffset,
@@ -50,7 +50,7 @@ case class Load private (
   ) =
     this(
       condition,
-      Some(asmType),
+      asmType,
       dest,
       Some(src),
       Some(flexOffset),
@@ -61,13 +61,14 @@ case class Load private (
   // LDR{cond}{B|Type} Rd, label
   def this(
       condition: Option[Condition],
-      asmType: WordType,
+      // Was wordtype.
+      asmType: Option[ASMType],
       dest: Register,
       label: Label
   ) =
     this(
       condition,
-      Some(asmType),
+      asmType,
       dest,
       None,
       None,
@@ -78,14 +79,14 @@ case class Load private (
   // LDR{cond}{B|Type} Rd, [Rn], FlexOffset
   def this(
       condition: Option[Condition],
-      asmType: ASMType,
+      asmType: Option[ASMType],
       dest: Register,
       src: Register,
       flexOffset: FlexOffset
   ) =
     this(
       condition,
-      Some(asmType),
+      asmType,
       dest,
       Some(src),
       Some(flexOffset),
@@ -221,13 +222,22 @@ case class Subtract(
     src2: FlexibleSndOp
 ) extends DataProcess(condition, conditionFlag, dest, src1, src2)
 
-case class SMull(
+// Reverse Subtract, RSB{S}{cond} {Rd}, Rn, Operand2
+case class RSBS(
     condition: Option[Condition],
     conditionFlag: Boolean,
-    dest1: Register,
-    dest2: Register,
+    dest: Register,
     src1: Register,
-    src2: Register
+    src2: FlexibleSndOp
+) extends DataProcess(condition, conditionFlag, dest, src1, src2)
+
+case class SMull(
+     condition: Option[Condition],
+     conditionFlag: Boolean,
+     dest1: Register,
+     dest2: Register,
+     src1: Register,
+     src2: Register
 ) extends Instruction(condition)
 
 case class And(
