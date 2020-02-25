@@ -37,8 +37,6 @@ object CodeGenerator {
     assert(instructionSet != null, "Instruction set needs to be defined")
     assert(RM != null, "Register manager needs to be defiend")
 
-    // Update the current symbol table
-    currentSymbolTable = symbolTableManager.nextScope()
 
     // Generated instructions to encompass everything generated.
     val generatedInstructions: IndexedSeq[Instruction] = IndexedSeq[Instruction]()
@@ -46,8 +44,8 @@ object CodeGenerator {
     // Generated code for functions
     val functions: IndexedSeq[Instruction] = program.functions.flatMap(generateFunction)
 
-    //  Enter the current scope
-    symbolTableManager.enterScope()
+    // Update the current symbol table for main method
+    currentSymbolTable = symbolTableManager.nextScope()
 
     // Generated code for stats
     val stats: IndexedSeq[Instruction] = generateStatement(program.stat)
@@ -57,7 +55,7 @@ object CodeGenerator {
       ++ stats ++ IndexedSeq[Instruction](zeroReturn, popPC, new EndFunction))
 
     // Leave the current scope
-    symbolTableManager.leaveScope()
+    // symbolTableManager.leaveScope()
 
     instructions
   }
@@ -65,10 +63,9 @@ object CodeGenerator {
   def generateFunction(func: FuncNode): IndexedSeq[Instruction] = {
 
     val instructions: IndexedSeq[Instruction] = IndexedSeq()
-    // Update the current symbol table
+    // Update the current symbol table to function block
     currentSymbolTable = symbolTableManager.nextScope()
 
-    symbolTableManager.enterScope()
     IndexedSeq[Instruction](
       Label(s"f_${func.identNode.ident}"),
       pushLR,
@@ -76,7 +73,6 @@ object CodeGenerator {
       popPC,
       new EndFunction
     )
-    symbolTableManager.leaveScope()
     instructions
   }
 
@@ -217,16 +213,18 @@ object CodeGenerator {
     var instructions: IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
     // Enter Scope
-    //symbolTableManager.enterScope()
+    symbolTableManager.enterScope()
 
+    // First if block
     currentSymbolTable = symbolTableManager.nextScope()
     // TODO generate instructions for first block
 
+    // Second if block
     currentSymbolTable = symbolTableManager.nextScope()
     // TODO generate instructions for second block
 
     // Leave Scope
-    //symbolTableManager.leaveScope()
+    symbolTableManager.leaveScope()
 
     instructions
   }
@@ -234,11 +232,12 @@ object CodeGenerator {
   def generateWhile(whileNode: WhileNode): IndexedSeq[Instruction] = {
     var instructions: IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
-    // Update Scope
-    currentSymbolTable = symbolTableManager.nextScope()
+
     // Enter Scope
     symbolTableManager.enterScope()
 
+    // Update Scope to while block
+    currentSymbolTable = symbolTableManager.nextScope()
     // TODO generate instructions
 
     // Leave Scope
