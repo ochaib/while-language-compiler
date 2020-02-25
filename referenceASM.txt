@@ -18832,9 +18832,10 @@ end
 ---------------------------------------------------------------
 
 -- Compiler Output:
+-- Warning: input file extension is '' and not '.wacc'. Check you are targeting a WACC program.
 -- Compiling...
 -- Printing Assembly...
-printEscChar.s contents are:
+test.s contents are:
 ===========================================================
 0	.data
 1	
@@ -19670,9 +19671,10 @@ end
 ---------------------------------------------------------------
 
 -- Compiler Output:
+-- Warning: input file extension is '' and not '.wacc'. Check you are targeting a WACC program.
 -- Compiling...
 -- Printing Assembly...
-read.s contents are:
+test.s contents are:
 ===========================================================
 0	.data
 1	
@@ -19777,9 +19779,10 @@ end
 ---------------------------------------------------------------
 
 -- Compiler Output:
+-- Warning: input file extension is '' and not '.wacc'. Check you are targeting a WACC program.
 -- Compiling...
 -- Printing Assembly...
-checkRefPair.s contents are:
+test.s contents are:
 ===========================================================
 0	.data
 1	
@@ -21441,9 +21444,10 @@ end
 ---------------------------------------------------------------
 
 -- Compiler Output:
+-- Warning: input file extension is '' and not '.wacc'. Check you are targeting a WACC program.
 -- Compiling...
 -- Printing Assembly...
-writeSnd.s contents are:
+test.s contents are:
 ===========================================================
 0	.data
 1	
