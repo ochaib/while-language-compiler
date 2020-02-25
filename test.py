@@ -46,7 +46,7 @@ assemble_file = lambda asm_fn, exe_fn: Popen([
 ], stdout=PIPE, stderr=PIPE)
 # Emulate an ARM executable
 emulate_ARM = lambda exe: Popen([
-    'qemu-arm',
+    'qemu-arm-static',
     '-L', '/usr/arm-linux-gnueabi/',
     exe
 ], stdin=PIPE, stdout=PIPE, stderr=STDOUT)
