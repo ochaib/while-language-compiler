@@ -141,8 +141,8 @@ object CodeGenerator {
       asmType = Some(ByteType)
 
     IndexedSeq[Instruction](new Store(None, asmType,
-      RM.peekVariableRegister(), instructionSet.getSP,
-      new Immediate(identSize)))
+      RM.peekVariableRegister(), instructionSet.getSP))
+//      new Immediate(identSize)))
   }
 
   def generateArrayElem(arrayElem: ArrayElemNode): IndexedSeq[Instruction] = {
@@ -167,9 +167,12 @@ object CodeGenerator {
   def generateArrayLiteral(arrayLiteral: ArrayLiteralNode): IndexedSeq[Instruction] = {
     val varReg1 = RM.nextVariableRegister()
 
-    // Need to load size of array into r0, this is a temporary hardcode below.
+    // Calculations necessary to retrieve size of array for loading into return.
+    val arraySize = 4 + arrayLiteral.exprNodes.length *
+      getSize(arrayLiteral.getType(topSymbolTable, currentSymbolTable))
+
     val preExprInstructions = IndexedSeq[Instruction](
-      new Load(None, None, instructionSet.getReturn, new LoadableExpression(8)),
+      new Load(None, None, instructionSet.getReturn, new LoadableExpression(arraySize)),
       BranchLink(None, Label("malloc")),
       Move(None, varReg1, new ShiftedRegister(instructionSet.getReturn))
     )
