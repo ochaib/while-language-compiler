@@ -19,6 +19,6 @@ class Immediate private(val immediate_int: Option[Int], val immediate_char: Opti
 class ShiftedRegister(val register: Register /* Unimplemented ARM fields */) extends FlexibleSndOp
 
 sealed abstract class ASMType
-class ByteType extends ASMType
+object ByteType extends ASMType
 sealed abstract class WordType extends ASMType
-class SignedByte extends WordType
+object SignedByte extends WordType
