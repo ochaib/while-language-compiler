@@ -115,7 +115,7 @@ case class Load private (
 // Store
 case class Store private (
     condition: Option[Condition],
-    byteType: Option[ByteType],
+    byteType: Option[ASMType],
     dest: Register,
     src: Option[Register],
     offset: Option[FlexOffset],
@@ -126,10 +126,11 @@ case class Store private (
     label.isDefined || src.isDefined,
     "Either a label or source must be defined"
   )
+  assert(!(byteType.isDefined && byteType.get == SignedByte), "Cannot store signed bytes")
   // STR{cond}{B} Rd, [Rn]
   def this(
       condition: Option[Condition],
-      byteType: Option[ByteType],
+      byteType: Option[ASMType],
       dest: Register,
       src: Register
   ) =
@@ -145,7 +146,7 @@ case class Store private (
   // STR{cond}{B} Rd, [Rn, FlexOffset]{!}
   def this(
       condition: Option[Condition],
-      byteType: Option[ByteType],
+      byteType: Option[ASMType],
       dest: Register,
       src: Register,
       flexOffset: FlexOffset,
@@ -163,7 +164,7 @@ case class Store private (
   // STR{cond}{B} Rd, label
   def this(
       condition: Option[Condition],
-      byteType: Option[ByteType],
+      byteType: Option[ASMType],
       dest: Register,
       label: Label
   ) =
@@ -179,7 +180,7 @@ case class Store private (
   // STR{cond}{B} Rd, [Rn], FlexOffset
   def this(
       condition: Option[Condition],
-      byteType: Option[ByteType],
+      byteType: Option[ASMType],
       dest: Register,
       src: Register,
       flexOffset: FlexOffset

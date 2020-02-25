@@ -40,3 +40,4 @@ test_logs/
 
 # ignore generated assembly
 *.s
+assembly/

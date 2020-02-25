@@ -2,7 +2,7 @@ package asm
 
 import asm.instructions._
 import asm.instructionset._
-import asm.registers.{Register, RegisterManager}
+import asm.registers._
 import ast.nodes._
 import ast.symboltable.SymbolTable
 
@@ -11,6 +11,7 @@ object CodeGenerator {
   var symbolTableManager: SymbolTableManager = _
   var instructionSet: InstructionSet = _
   var RM: RegisterManager = _
+  var currentSymbolTable: SymbolTable = _
 
   def useInstructionSet(_instructionSet: InstructionSet): Unit = {
     instructionSet = _instructionSet
@@ -26,14 +27,15 @@ object CodeGenerator {
   def popPC: Instruction = Pop(None, List(instructionSet.getPC))
   def zeroReturn: Instruction = new Load(
     condition = None,
-    asmType = Some(new SignedByte),
+    asmType = None,
     dest = instructionSet.getReturn,
-    loadable = new Immediate(0)
+    loadable = new LoadableExpression(0)
   )
 
   def generateProgram(program: ProgramNode): IndexedSeq[Instruction] = {
-    // Get starting scope.
-//    symbolTableManager.nextScope()
+    assert(symbolTableManager != null, "Top level symbol table needs to be defined")
+    assert(instructionSet != null, "Instruction set needs to be defined")
+    assert(RM != null, "Register manager needs to be defiend")
 
     // Generated instructions to encompass everything generated.
     val generatedInstructions: IndexedSeq[Instruction] = IndexedSeq[Instruction]()
@@ -41,19 +43,28 @@ object CodeGenerator {
     // Generated code for functions
     val functions: IndexedSeq[Instruction] = program.functions.flatMap(generateFunction)
 
+    // Update the current symbol table for main method
+    currentSymbolTable = symbolTableManager.nextScope()
+
     // Generated code for stats
     val stats: IndexedSeq[Instruction] = generateStatement(program.stat)
 
-    generatedInstructions ++ functions ++ IndexedSeq[Instruction](
-      Label("main"),
-      pushLR) ++ stats ++ IndexedSeq[Instruction](
-      zeroReturn,
-      popPC,
-      new EndFunction
-    )
+    val instructions: IndexedSeq[Instruction] = (generatedInstructions ++ functions
+      ++ IndexedSeq[Instruction](Label("main"), pushLR)
+      ++ stats ++ IndexedSeq[Instruction](zeroReturn, popPC, new EndFunction))
+
+    // Leave the current scope
+    // symbolTableManager.leaveScope()
+
+    instructions
   }
 
   def generateFunction(func: FuncNode): IndexedSeq[Instruction] = {
+
+    val instructions: IndexedSeq[Instruction] = IndexedSeq()
+    // Update the current symbol table to function block
+    currentSymbolTable = symbolTableManager.nextScope()
+
     IndexedSeq[Instruction](
       Label(s"f_${func.identNode.ident}"),
       pushLR,
@@ -61,6 +72,7 @@ object CodeGenerator {
       popPC,
       new EndFunction
     )
+    instructions
   }
 
   def generateStatement(statement: StatNode): IndexedSeq[Instruction] = {
@@ -105,7 +117,7 @@ object CodeGenerator {
     // Need to retrieve actual size for ident from symbol table.
 
     IndexedSeq[Instruction](
-      new Store(None, Some(new ByteType), RM.peekVariableRegister(), instructionSet.getSP)
+      new Store(None, None, RM.peekVariableRegister(), instructionSet.getSP)
     )
   }
 
@@ -133,7 +145,7 @@ object CodeGenerator {
 
     // Need to load size of array into r0, this is a temporary hardcode below.
     val preExprInstructions = IndexedSeq[Instruction](
-      new Load(None, Some(new SignedByte), instructionSet.getReturn, new Immediate(8)),
+      new Load(None, None, instructionSet.getReturn, new LoadableExpression(8)),
       BranchLink(None, Label("malloc")),
       Move(None, varReg1, new ShiftedRegister(instructionSet.getReturn))
     )
@@ -142,7 +154,7 @@ object CodeGenerator {
 
     arrayLiteral.exprNodes.foreach(expr => generatedExpressions
       ++= generateExpression(expr) :+
-      new Store(None, Some(new ByteType), RM.peekVariableRegister(), varReg1, new Immediate(4)))
+      new Store(None, None, RM.peekVariableRegister(), varReg1, new Immediate(4)))
 
     val varReg2 = RM.nextVariableRegister()
 
@@ -150,8 +162,8 @@ object CodeGenerator {
     val postExprInstructions = generatedExpressions ++ IndexedSeq[Instruction](
       // Store number of elements in array in next available variable register.
       // Temporary hardcode below.
-      new Load(None, Some(new SignedByte), varReg2, new Immediate(1)),
-      new Store(None, Some(new ByteType), varReg2, varReg1)
+      new Load(None, None, varReg2, new LoadableExpression(1)),
+      new Store(None, None, varReg2, varReg1)
     )
     // Since we are done with varReg1 above we can free it back to available registers.
     RM.freeVariableRegister(varReg1)
@@ -163,7 +175,7 @@ object CodeGenerator {
     val varReg1 = RM.nextVariableRegister()
 
     val preExprInstructions: IndexedSeq[Instruction] = IndexedSeq[Instruction](
-      new Load(None, Some(new SignedByte), instructionSet.getReturn, new Immediate(8)),
+      new Load(None, None, instructionSet.getReturn, new LoadableExpression(8)),
       BranchLink(None, Label("malloc")),
       Move(None, varReg1, new ShiftedRegister(instructionSet.getReturn))
     )
@@ -207,10 +219,42 @@ object CodeGenerator {
     generateExpression(expr)
   }
 
+  def generateIf(ifNode: IfNode): IndexedSeq[Instruction] = {
+    var instructions: IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
-  def generateIf(ifNode: IfNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+    // Enter Scope
+    symbolTableManager.enterScope()
 
-  def generateWhile(whileNode: WhileNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+    // First if block
+    currentSymbolTable = symbolTableManager.nextScope()
+    // TODO generate instructions for first block
+
+    // Second if block
+    currentSymbolTable = symbolTableManager.nextScope()
+    // TODO generate instructions for second block
+
+    // Leave Scope
+    symbolTableManager.leaveScope()
+
+    instructions
+  }
+
+  def generateWhile(whileNode: WhileNode): IndexedSeq[Instruction] = {
+    var instructions: IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+
+
+    // Enter Scope
+    symbolTableManager.enterScope()
+
+    // Update Scope to while block
+    currentSymbolTable = symbolTableManager.nextScope()
+    // TODO generate instructions
+
+    // Leave Scope
+    symbolTableManager.leaveScope()
+
+    instructions
+  }
 
   def generateBegin(begin: BeginNode): IndexedSeq[Instruction] = {
     // We must first enter the new scope, then generate the statements inside the scope,
@@ -227,8 +271,8 @@ object CodeGenerator {
   def generateExpression(expr: ExprNode): IndexedSeq[Instruction] = {
     expr match {
       case Int_literNode(_, str)
-                  => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
-                     RM.peekVariableRegister(), new Immediate(str.toInt)))
+                  => IndexedSeq[Instruction](new Load(None, None,
+                     RM.peekVariableRegister(), new LoadableExpression(str.toInt)))
       case Bool_literNode(_, bool)
                   => IndexedSeq[Instruction](Move(None, RM.peekVariableRegister(),
                      new Immediate(if (bool) 1 else 0)))
@@ -236,12 +280,12 @@ object CodeGenerator {
                   => IndexedSeq[Instruction](Move(None, RM.nextVariableRegister(),
                      new Immediate(char)))
       case Str_literNode(_, str)
-                  => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
+                  => IndexedSeq[Instruction](new Load(None, None,
                      RM.peekVariableRegister(), Label(str)))
       // May replace with zeroReturn.
       case Pair_literNode(_)
-                  => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
-                     RM.peekVariableRegister(), new Immediate(0)))
+                  => IndexedSeq[Instruction](new Load(None, None,
+                     RM.peekVariableRegister(), new LoadableExpression(0)))
       case ident: IdentNode
       // Get offset from symbol table for the ident and replace it in the immediate.
                   => IndexedSeq[Instruction](new Load(None, Some(new SignedByte),
@@ -359,13 +403,13 @@ object CodeGenerator {
     private var indexStack: List[Int] = List[Int]()
     // Returns the next scope under the current scope level
     def nextScope(): SymbolTable = {
-      assert(topLevelTable.children.length < currentScopeIndex + 1, s"Cannot go to next scope.")
+      assert(currentScopeIndex + 1 < currentScopeParent.children.length, s"Cannot go to next scope.")
       currentScopeIndex += 1
       currentScopeParent.children.apply(currentScopeIndex)
     }
     // Enters the current scope
     def enterScope(): Unit = {
-      assert(!currentScopeParent.children.isDefinedAt(currentScopeIndex))
+      assert(currentScopeParent.children.isDefinedAt(currentScopeIndex))
       currentScopeParent = currentScopeParent.children.apply(currentScopeIndex)
       // Push
       indexStack = currentScopeIndex :: indexStack
@@ -378,6 +422,15 @@ object CodeGenerator {
       // Pop
       currentScopeIndex = indexStack.head
       indexStack = indexStack.tail
+    }
+  }
+
+  case class LabelGenerator() {
+    private var labelNum = 0
+    def generate(): Label = {
+      val label = Label(s"L$labelNum")
+      labelNum += 1
+      label
     }
   }
 }
