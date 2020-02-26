@@ -263,7 +263,19 @@ object CodeGenerator {
   }
 
   def generatePairElem(pairElem: PairElemNode): IndexedSeq[Instruction] = {
-    IndexedSeq[Instruction]()
+    pairElem match {
+      case fst: FstNode => generateExpression(fst.expression) ++ generatePEHelper(fst, isSnd = false)
+      case snd: SndNode => generateExpression(snd.expression) ++ generatePEHelper(snd, isSnd = true)
+    }
+  }
+
+  def generatePEHelper(pairElemNode: PairElemNode, isSnd: Boolean): IndexedSeq[Instruction] = {
+    val peInstructions = IndexedSeq[Instruction](
+      BranchLink(None, Label("p_check_null_pointer")),
+      new Load(None, None, RM.peekVariableRegister(), RM.peekVariableRegister())
+    )
+
+    peInstructions
   }
 
   def generateCall(call: CallNode): IndexedSeq[Instruction] = {
