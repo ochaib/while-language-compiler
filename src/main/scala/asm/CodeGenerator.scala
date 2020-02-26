@@ -57,12 +57,12 @@ object CodeGenerator {
     val generatedInstructions: IndexedSeq[Instruction] = (functions
       ++ IndexedSeq[Instruction](Label("main"), pushLR,
       Subtract(None, conditionFlag = false,
-      instructionSet.getSP, instructionSet.getSP, new Immediate(getScopeStackSize))
+      instructionSet.getSP, instructionSet.getSP, new Immediate(getScopeStackSize(currentSymbolTable)))
     ) ++ stats)
 
     val endInstructions = IndexedSeq[Instruction](
       Add(None, conditionFlag = false, instructionSet.getSP,
-        instructionSet.getSP, new Immediate(getScopeStackSize)),
+        instructionSet.getSP, new Immediate(getScopeStackSize(currentSymbolTable))),
       zeroReturn, popPC, new EndFunction)
 
     // Leave the current scope
