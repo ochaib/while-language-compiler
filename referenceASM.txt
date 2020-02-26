@@ -8695,54 +8695,6 @@ exitBasic2.s contents are:
 ===========================================================
 -- Finished
 
-calling the reference compiler on testcases/valid/basic/exit/exitBigNum.wacc
--- Test: exitBigNum.wacc
-
--- Uploaded file: 
----------------------------------------------------------------
-# exit with wrapped int 
-
-# Output:
-# #empty#
-
-# Observations:
-# exit 1024 --> exit: 0
-# exit 1023 --> exit: 255
-# exit 4096 --> exit: 0
-# exit 4095 --> exit: 255
-# exit 256 --> exit: 0
-# exit 255 --> exit: 255
-
-# Exit:
-# 0
-
-# Program:
-
-begin
-  exit 4096
-end
----------------------------------------------------------------
-
--- Compiler Output:
--- Compiling...
--- Printing Assembly...
-exitBigNum.s contents are:
-===========================================================
-0	.text
-1	
-2	.global main
-3	main:
-4		PUSH {lr}
-5		LDR r4, =4096
-6		MOV r0, r4
-7		BL exit
-8		LDR r0, =0
-9		POP {pc}
-10		.ltorg
-11	
-===========================================================
--- Finished
-
 calling the reference compiler on testcases/valid/basic/exit/exitWrap.wacc
 -- Test: exitWrap.wacc
 
@@ -18102,7 +18054,7 @@ calling the reference compiler on testcases/valid/IO/print/multipleStringsAssign
 # s2 is Hi
 # They are not the same string.
 # Now make s1 = s2
-# s1 is hi
+# s1 is Hi
 # s2 is Hi
 # They are the same string.
 
