@@ -57,12 +57,12 @@ object CodeGenerator {
     val generatedInstructions: IndexedSeq[Instruction] = (functions
       ++ IndexedSeq[Instruction](Label("main"), pushLR,
       Subtract(None, conditionFlag = false,
-      instructionSet.getSP, instructionSet.getSP, new Immediate(getCurrentSTSize))
+      instructionSet.getSP, instructionSet.getSP, new Immediate(getScopeStackSize))
     ) ++ stats)
 
     val endInstructions = IndexedSeq[Instruction](
       Add(None, conditionFlag = false, instructionSet.getSP,
-        instructionSet.getSP, new Immediate(getCurrentSTSize)),
+        instructionSet.getSP, new Immediate(getScopeStackSize)),
       zeroReturn, popPC, new EndFunction)
 
     // Leave the current scope
@@ -116,12 +116,8 @@ object CodeGenerator {
   }
 
   def generateDeclaration(declaration: DeclarationNode): IndexedSeq[Instruction] = {
-//    val identType: TYPE = declaration.ident.getType(topSymbolTable, currentSymbolTable)
-//    val identImmediate: Immediate = new Immediate(getSize(identType))
-    // SUB sp, sp, #size ++ RHS ++ Ident ++ ADD sp, sp, #size
-//    (Subtract(None, conditionFlag = false, instructionSet.getSP, instructionSet.getSP, identImmediate)
+    // TODO
     generateAssignRHS(declaration.rhs) ++ generateIdent(declaration.ident)
-//    :+ Add(None, conditionFlag = false, instructionSet.getSP, instructionSet.getSP, identImmediate)
   }
 
   def generateAssignment(assignment: AssignmentNode): IndexedSeq[Instruction] = {
@@ -362,8 +358,6 @@ object CodeGenerator {
   }
 
   def generateIf(ifNode: IfNode): IndexedSeq[Instruction] = {
-    var instructions: IndexedSeq[Instruction] = IndexedSeq[Instruction]()
-
     // Instructions generated for condition expression.
     val condInstructions = generateExpression(ifNode.conditionExpr) :+
       Compare(None, RM.peekVariableRegister(), new Immediate(0)) :+
@@ -372,7 +366,7 @@ object CodeGenerator {
     n_branches += 1
 
     // Enter Scope
-    symbolTableManager.enterScope()
+    val allocateInstruction: Instruction = enterScopeAndAllocateStack()
     // First if block
     currentSymbolTable = symbolTableManager.nextScope()
 
@@ -383,14 +377,13 @@ object CodeGenerator {
 
     // Second if block
     currentSymbolTable = symbolTableManager.nextScope()
-    // TODO generate instructions for second block
 
     val elseInstructions = generateStatement(ifNode.elseStat)
 
     // Leave Scope
-    symbolTableManager.leaveScope()
+    val deallocateInstruction: Instruction = leaveScopeAndDeallocateStack()
 
-    instructions ++ condInstructions ++ thenInstructions ++ elseInstructions
+    allocateInstruction +: (condInstructions ++ thenInstructions ++ elseInstructions :+ deallocateInstruction)
   }
 
   def generateWhile(whileNode: WhileNode): IndexedSeq[Instruction] = {
@@ -398,16 +391,16 @@ object CodeGenerator {
 
 
     // Enter Scope
-    symbolTableManager.enterScope()
+    val allocateInstruction: Instruction = enterScopeAndAllocateStack()
 
     // Update Scope to while block
     currentSymbolTable = symbolTableManager.nextScope()
     // TODO generate instructions
 
     // Leave Scope
-    symbolTableManager.leaveScope()
+    val deallocateInstruction: Instruction = leaveScopeAndDeallocateStack()
 
-    instructions
+    allocateInstruction +: instructions :+ deallocateInstruction
   }
 
   def generateBegin(begin: BeginNode): IndexedSeq[Instruction] = {
@@ -573,28 +566,71 @@ object CodeGenerator {
     }
   }
 
-  def getCurrentSTSize: Int = {
-    currentSymbolTable.map.values.map(getSTValueSize).sum
+  def getScopeStackSize(symbolTable: SymbolTable): Int = {
+    symbolTable.map.values.map(getSTValueSize).sum
   }
 
   def getSTValueSize(identifier: IDENTIFIER): Int = {
     identifier match {
       case _: PARAM => 0
       case value: TYPE => getSize(value)
-      case _ => assert(false, "ST should not have non type or param identifiers")
+      case _ =>
+        assert(assertion = false, "ST should not have non type or param identifiers")
+        -1
     }
   }
 
+  def enterScopeAndAllocateStack(): Instruction = {
+    symbolTableManager.enterScope()
+    Subtract(None, conditionFlag = false,
+      instructionSet.getSP, instructionSet.getSP, new Immediate(getScopeStackSize(currentSymbolTable)))
+  }
+
+  def leaveScopeAndDeallocateStack(): Instruction = {
+    symbolTableManager.enterScope()
+    Add(None, conditionFlag = false,
+      instructionSet.getSP, instructionSet.getSP, new Immediate(getScopeStackSize(currentSymbolTable)))
+  }
+
   case class SymbolTableManager(private val topLevelTable: SymbolTable) {
+    // Scope information
     private var currentScopeParent: SymbolTable = topLevelTable
     private var currentScopeIndex: Int = -1
     private var indexStack: List[Int] = List[Int]()
+    private var currentScope: SymbolTable = _
+
+    // Variable offset information
+    private var currentOffset: Int = -1
     // Returns the next scope under the current scope level
     def nextScope(): SymbolTable = {
+      // Check you can go to next scope
       assert(currentScopeIndex + 1 < currentScopeParent.children.length, s"Cannot go to next scope.")
+      // Increment Scope
       currentScopeIndex += 1
-      currentScopeParent.children.apply(currentScopeIndex)
+      // Update current scope
+      currentScope = currentScopeParent.children.apply(currentScopeIndex)
+      // Update currentOffset
+      currentOffset = getScopeStackSize(currentScope)
+      currentScope
     }
+
+    private def idIsVariableOrType(id: IDENTIFIER): Boolean = id.isInstanceOf[VARIABLE] || id.isInstanceOf[TYPE]
+
+    def getNextOffset(key: String): Int = {
+      val currentIdOption = currentScope.lookup(key)
+      assert (currentIdOption.isDefined, "key must be defined in the scope")
+      assert (idIsVariableOrType(currentIdOption.get), "key ID must be a variable or type")
+      val offsetSize: Int = currentIdOption.get match {
+        case value: TYPE => getSize(value)
+        case variable: VARIABLE => getSize(variable._type)
+        case _ =>
+          assert(assertion = false, "key must refer to a type or variable")
+          -1
+      }
+      currentOffset -= offsetSize
+      currentOffset
+    }
+
     // Enters the current scope
     def enterScope(): Unit = {
       assert(currentScopeParent.children.isDefinedAt(currentScopeIndex))
