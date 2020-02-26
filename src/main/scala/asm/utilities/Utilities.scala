@@ -43,11 +43,66 @@ object Utilities {
         // BL p_print_string
         val reg: Register = RM.peekVariableRegister
         if (commonFunctions.add(PrintString))
-            addString("%.*s\\0", length=Some(5))
+            strings += (new Label("msg_print_string") -> new StringLiteral("%.*s\\0", 5))
         IndexedSeq[Instruction](
             new Load(condition=None, asmType=None, dest=reg, label=PrintString.label),
             new Move(condition=None, dest=RM.instructionSet.getReturn, src=new ShiftedRegister(reg)),
             new BranchLink(condition=None, label=PrintString.label)
+        )
+    }
+
+    def printNewline: IndexedSeq[Instruction] = {
+        // BL p_print_ln
+        if (commonFunctions.add(PrintLn))
+            strings += (new Label("msg_print_ln") -> new StringLiteral("\\0", 1))
+        IndexedSeq[Instruction](
+            new BranchLink(condition=None, label=PrintLn.label)
+        )
+    }
+
+    def printBool(b: Boolean): IndexedSeq[Instruction] = {
+        // Mov r4, (#1 if true else #0)
+        // Mov R0, R4
+        // BL p_print_bool
+        val reg: Register = RM.peekVariableRegister
+        if (commonFunctions.add(PrintBool)) {
+            strings += (new Label("msg_print_bool_true") -> new StringLiteral("true\\0", 5))
+            strings += (new Label("msg_print_bool_false") -> new StringLiteral("false\\0", 6))
+        }
+        IndexedSeq[Instruction](
+            new Move(condition=None, dest=reg, src=new Immediate(if (b) 1 else 0)),
+            new Move(condition=None, dest=RM.instructionSet.getReturn, src=new ShiftedRegister(reg)),
+            new BranchLink(condition=None, label=PrintBool.label)
+        )
+    }
+
+    def printChar(c: Char): IndexedSeq[Instruction] = {
+        // Mov R4, #'c'
+        // Mov R0, R4
+        // BL putchar
+        val reg: Register = RM.peekVariableRegister
+        IndexedSeq[Instruction](
+            new Move(condition=None, dest=reg, src=new Immediate(c)),
+            new Move(condition=None, dest=RM.instructionSet.getReturn, src=new ShiftedRegister(reg)),
+            new BranchLink(condition=None, label=PutChar.label)
+        )
+    }
+
+    // TODO: how are we handling array prints?
+    // IMO we should stray from ref compiler and just print each elem one by one
+    // not represented here as it should just call the correct typed print function
+
+    def printInt(i: Int): IndexedSeq[Instruction] = {
+        // Load R4, =i
+        // Mov R0, R4
+        // BL p_print_int
+        val reg: Register = RM.peekVariableRegister
+        if (commonFunctions.add(PrintInt))
+            strings += (new Label("msg_print_int") -> new StringLiteral("%d\\0", 3))
+        IndexedSeq[Instruction](
+            new Load(condition=None, asmType=None, dest=reg, loadable=new LoadableExpression(i)),
+            new Move(condition=None, dest=RM.instructionSet.getReturn, src=new ShiftedRegister(reg)),
+            new BranchLink(condition=None, label=PrintInt.label)
         )
     }
 
