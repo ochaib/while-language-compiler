@@ -588,7 +588,7 @@ object CodeGenerator {
   }
 
   def leaveScopeAndDeallocateStack(): Instruction = {
-    symbolTableManager.enterScope()
+    symbolTableManager.leaveScope()
     Add(None, conditionFlag = false,
       instructionSet.getSP, instructionSet.getSP, new Immediate(getScopeStackSize(currentSymbolTable)))
   }
