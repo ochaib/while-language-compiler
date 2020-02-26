@@ -368,27 +368,36 @@ object CodeGenerator {
     // Instructions generated for condition expression.
     val elseLabel: Label = labelGenerator.generate()
     val fiLabel: Label = labelGenerator.generate()
-    val condInstructions = generateExpression(ifNode.conditionExpr) :+
-      Compare(None, RM.peekVariableRegister(), new Immediate(0)) :+
-      Branch(Some(Equal), elseLabel)
 
     // Enter Scope
     val allocateInstruction: IndexedSeq[Instruction] = enterScopeAndAllocateStack()
     // First if block
     currentSymbolTable = symbolTableManager.nextScope()
 
-    val thenInstructions = generateStatement(ifNode.thenStat) :+
-      Branch(None, fiLabel)
+    // Condition
+    val condInstructions: IndexedSeq[Instruction] = generateExpression(ifNode.conditionExpr) :+
+      Compare(None, RM.peekVariableRegister(), new Immediate(0))
+
+    // elseBranch
+    val elseBranchInstructions: IndexedSeq[Instruction] = IndexedSeq(Branch(Some(Equal), elseLabel))
+
+    // Then
+    val thenInstructions = generateStatement(ifNode.thenStat)
+
+    // fiBranch
+    val fiBranchInstructions: IndexedSeq[Instruction] = IndexedSeq(Branch(None, fiLabel))
 
     // Second if block
     currentSymbolTable = symbolTableManager.nextScope()
 
-    val elseInstructions = generateStatement(ifNode.elseStat)
+    // Else
+    val elseInstructions = elseLabel +: generateStatement(ifNode.elseStat)
 
     // Leave Scope
     val deallocateInstruction: IndexedSeq[Instruction] = leaveScopeAndDeallocateStack()
 
-    allocateInstruction ++ condInstructions ++ thenInstructions ++ elseInstructions ++ deallocateInstruction
+    allocateInstruction ++ condInstructions ++ elseBranchInstructions ++ thenInstructions ++
+      fiBranchInstructions ++ elseInstructions ++ (fiLabel +: deallocateInstruction)
   }
 
   def generateWhile(whileNode: WhileNode): IndexedSeq[Instruction] = {
