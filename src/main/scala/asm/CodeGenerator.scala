@@ -567,10 +567,10 @@ object CodeGenerator {
   }
 
   def getScopeStackSize(symbolTable: SymbolTable): Int = {
-    symbolTable.map.values.map(getSTValueSize).sum
+    symbolTable.map.values.map(getSTStackSize).sum
   }
 
-  def getSTValueSize(identifier: IDENTIFIER): Int = {
+  def getSTStackSize(identifier: IDENTIFIER): Int = {
     identifier match {
       case _: PARAM => 0
       case value: TYPE => getSize(value)
