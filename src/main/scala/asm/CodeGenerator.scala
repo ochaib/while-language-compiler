@@ -150,8 +150,6 @@ object CodeGenerator {
       arrayElem.exprNodes.flatMap(generateExpression) ++ IndexedSeq[Instruction]()
   }
 
-  def generatePairElem(pairElem: PairElemNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
-
   def generateCall(call: CallNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
   def generateAssignRHS(rhs: AssignRHSNode): IndexedSeq[Instruction] = {
@@ -206,18 +204,51 @@ object CodeGenerator {
   def generateNewPair(newPair: NewPairNode): IndexedSeq[Instruction] = {
     val varReg1 = RM.nextVariableRegister()
 
+    // Generate instructions for the new pair.
     val preExprInstructions: IndexedSeq[Instruction] = IndexedSeq[Instruction](
+      // TODO: REPLACE MAGIC NUMBER FOR PAIR SIZE BELOW
       new Load(None, None, instructionSet.getReturn, new LoadableExpression(8)),
       BranchLink(None, Label("malloc")),
       Move(None, varReg1, new ShiftedRegister(instructionSet.getReturn))
     )
 
-    generateExpression(newPair.fstElem)
+    // Generate instructions for the expressions and those necessary to allocate space for them on the stack.
+    val fstInstructions = generateNPElem(newPair.fstElem, varReg1, isSnd = false)
+    val varReg2 = RM.nextVariableRegister()
+    val sndInstructions = generateNPElem(newPair.sndElem, varReg2, isSnd = true)
 
+    preExprInstructions ++ fstInstructions ++ sndInstructions
+  }
 
-    RM.freeVariableRegister(varReg1)
+  def generateNPElem(expr: ExprNode, varReg: Register, isSnd: Boolean): IndexedSeq[Instruction] = {
+    // Size of type of expression.
+    val exprSize = getSize(expr.getType(topSymbolTable, currentSymbolTable))
+    val pairSizeOffset = 4
 
-    preExprInstructions
+    val exprInstructions = generateExpression(expr)
+
+    val coreInstructions = IndexedSeq[Instruction](
+        // Load the size of the type into a variable register.
+        new Load(None, None, instructionSet.getReturn, new LoadableExpression(exprSize)),
+        BranchLink(None, Label("malloc")),
+        new Store(None, Some(ByteType), RM.peekVariableRegister(), instructionSet.getReturn),
+      )
+
+    RM.freeVariableRegister(varReg)
+    val varReg2 = RM.peekVariableRegister()
+
+    // Once we are on the second element it will be at an offset that we must retrieve.
+    var finalStore = new Store(None, None, instructionSet.getReturn, varReg2)
+    // Where 4 is the pair size offset and this refers to the instruction where we store the
+    // variable register in the return one.
+    if (isSnd) finalStore =
+      new Store(None, None, instructionSet.getReturn, varReg2, new Immediate(pairSizeOffset))
+
+    exprInstructions ++ coreInstructions :+ finalStore
+  }
+
+  def generatePairElem(pairElem: PairElemNode): IndexedSeq[Instruction] = {
+    IndexedSeq[Instruction]()
   }
 
   def generateRead(lhs: AssignLHSNode): IndexedSeq[Instruction] = {
@@ -355,7 +386,8 @@ object CodeGenerator {
                   => IndexedSeq[Instruction](Move(None, RM.peekVariableRegister(),
                      new Immediate(if (bool) 1 else 0)))
       case Char_literNode(_, char)
-                  => IndexedSeq[Instruction](Move(None, RM.nextVariableRegister(),
+        // This was using next not sure it should be so I changed it to peek.
+                  => IndexedSeq[Instruction](Move(None, RM.peekVariableRegister(),
                      new Immediate(char)))
       case Str_literNode(_, str)
                   => IndexedSeq[Instruction](new Load(None, None,
