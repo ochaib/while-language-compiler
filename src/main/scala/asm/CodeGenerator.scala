@@ -54,11 +54,11 @@ object CodeGenerator {
     val stats: IndexedSeq[Instruction] = generateStatement(program.stat)
 
     // Generated instructions to encompass everything generated.
-    val generatedInstructions: IndexedSeq[Instruction] = (functions
-      ++ IndexedSeq[Instruction](Label("main"), pushLR,
-      Subtract(None, conditionFlag = false,
+    val generatedInstructions: IndexedSeq[Instruction] =
+      IndexedSeq[Instruction](Label("main"), pushLR) ++ functions ++
+      IndexedSeq[Instruction](Subtract(None, conditionFlag = false,
       instructionSet.getSP, instructionSet.getSP, new Immediate(getCurrentSTSize))
-    ) ++ stats)
+    ) ++ stats
 
     val endInstructions = IndexedSeq[Instruction](
       Add(None, conditionFlag = false, instructionSet.getSP,
@@ -78,6 +78,7 @@ object CodeGenerator {
 
     var labelPushLR = IndexedSeq[Instruction](Label(s"f_${func.identNode.ident}"), pushLR)
     if (func.paramList.isDefined)
+      // May need to fetch parameters in reverse.
       labelPushLR ++= func.paramList.get.paramList.flatMap(generateParam)
     // Otherwise nothing?
 
