@@ -166,10 +166,13 @@ object CodeGenerator {
 
   def generateArrayLiteral(arrayLiteral: ArrayLiteralNode): IndexedSeq[Instruction] = {
     val varReg1 = RM.nextVariableRegister()
+    // Because we assume every expr in the array is of the same type.
+    var exprElemSize = getSize(arrayLiteral.exprNodes.head.getType(topSymbolTable, currentSymbolTable))
+    val arrayLength = arrayLiteral.exprNodes.length
+    var intSize = 4
 
     // Calculations necessary to retrieve size of array for loading into return.
-    val arraySize = 4 + arrayLiteral.exprNodes.length *
-      getSize(arrayLiteral.getType(topSymbolTable, currentSymbolTable))
+    val arraySize = intSize + arrayLength * exprElemSize
 
     val preExprInstructions = IndexedSeq[Instruction](
       new Load(None, None, instructionSet.getReturn, new LoadableExpression(arraySize)),
@@ -179,19 +182,19 @@ object CodeGenerator {
 
     var generatedExpressions: IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
-    arrayLiteral.exprNodes.foreach(expr => generatedExpressions
-      ++= generateExpression(expr) :+
+    var acc = exprElemSize
+    // Generate expression instructions for each expression node in the array.
+    arrayLiteral.exprNodes.foreach(expr => { generatedExpressions ++= generateExpression(expr) :+
       new Store(None, None, RM.peekVariableRegister(), varReg1,
-        // Replaced hardcoded 4 with actual expression type, hopefully it works.
-        new Immediate(getSize(expr.getType(topSymbolTable, currentSymbolTable)))))
+        // Replaced hardcoded 4 with actual expression type.
+        new Immediate(acc));  acc = acc + getSize(expr.getType(topSymbolTable, currentSymbolTable))})
 
     val varReg2 = RM.nextVariableRegister()
 
     // However above once expression in arrayLiteral is generated we must store it.
     val postExprInstructions = generatedExpressions ++ IndexedSeq[Instruction](
       // Store number of elements in array in next available variable register.
-      // Temporary hardcode below.
-      new Load(None, None, varReg2, new LoadableExpression(1)),
+      new Load(None, None, varReg2, new LoadableExpression(arrayLength)),
       new Store(None, None, varReg2, varReg1)
     )
     // Since we are done with varReg1 above we can free it back to available registers.
