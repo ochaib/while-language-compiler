@@ -574,8 +574,15 @@ object CodeGenerator {
   }
 
   def getCurrentSTSize: Int = {
-//    currentSymbolTable.map.keys.map(getSize())
-    4
+    currentSymbolTable.map.values.map(getSTValueSize).sum
+  }
+
+  def getSTValueSize(identifier: IDENTIFIER): Int = {
+    identifier match {
+      case _: PARAM => 0
+      case value: TYPE => getSize(value)
+      case _ => assert(false, "ST should not have non type or param identifiers")
+    }
   }
 
   case class SymbolTableManager(private val topLevelTable: SymbolTable) {
