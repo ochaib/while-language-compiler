@@ -272,7 +272,7 @@ object ARM11 extends InstructionSet {
     case Label(s) => s + ":"
 
     // B{cond} label
-    case Branch(condition, label) => s"\tB${printCondition(condition)} ${print(label)}"
+    case Branch(condition, label) => s"\tB${printCondition(condition)} ${label.label}"
     case BranchLink(condition, label) =>
       s"\tBL${printCondition(condition)} ${label.label}"
 

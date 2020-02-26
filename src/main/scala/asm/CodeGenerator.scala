@@ -1,11 +1,10 @@
 package asm
 
-import ast.nodes._
 import asm.instructions._
 import asm.instructionset._
 import asm.registers._
 import ast.nodes._
-import ast.symboltable.{ARRAY, PAIR, SCALAR, STRING, SymbolTable, TYPE, VARIABLE}
+import ast.symboltable._
 
 object CodeGenerator {
 
@@ -14,6 +13,9 @@ object CodeGenerator {
   var RM: RegisterManager = _
   var topSymbolTable: SymbolTable = _
   var currentSymbolTable: SymbolTable = _
+
+  // Keep track of number of branches.
+  var n_branches = 0
 
   def useInstructionSet(_instructionSet: InstructionSet): Unit = {
     instructionSet = _instructionSet
@@ -51,30 +53,43 @@ object CodeGenerator {
 
     // Generated instructions to encompass everything generated.
     val generatedInstructions: IndexedSeq[Instruction] = (functions
-      ++ IndexedSeq[Instruction](Label("main"), pushLR)
-      ++ stats ++ IndexedSeq[Instruction](zeroReturn, popPC, new EndFunction))
+      ++ IndexedSeq[Instruction](Label("main"), pushLR,
+      Subtract(None, conditionFlag = false,
+      instructionSet.getSP, instructionSet.getSP, new Immediate(getCurrentSTSize))
+    ) ++ stats)
+
+    val endInstructions = IndexedSeq[Instruction](
+      Add(None, conditionFlag = false, instructionSet.getSP,
+        instructionSet.getSP, new Immediate(getCurrentSTSize)),
+      zeroReturn, popPC, new EndFunction)
 
     // Leave the current scope
     // symbolTableManager.leaveScope()
 
-    generatedInstructions
+    generatedInstructions ++ endInstructions
   }
 
   def generateFunction(func: FuncNode): IndexedSeq[Instruction] = {
 
-    val instructions: IndexedSeq[Instruction] = IndexedSeq()
     // Update the current symbol table to function block
     currentSymbolTable = symbolTableManager.nextScope()
 
-    IndexedSeq[Instruction](
-      Label(s"f_${func.identNode.ident}"),
-      pushLR,
-      // TODO: generate stats
-      popPC,
-      new EndFunction
-    )
-    instructions
+    var labelPushLR = IndexedSeq[Instruction](Label(s"f_${func.identNode.ident}"), pushLR)
+    if (func.paramList.isDefined)
+      labelPushLR ++= func.paramList.get.paramList.flatMap(generateParam)
+    // Otherwise nothing?
+
+    // Generate instructions for statement.
+    val statInstructions = generateStatement(func.stat)
+
+    var popEndInstruction = IndexedSeq[Instruction](popPC, new EndFunction)
+
+    labelPushLR ++ statInstructions ++ popEndInstruction
   }
+
+//  def generateParamList(paramList: ParamListNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+
+  def generateParam(param: ParamNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
   def generateStatement(statement: StatNode): IndexedSeq[Instruction] = {
     statement match {
@@ -99,13 +114,12 @@ object CodeGenerator {
   }
 
   def generateDeclaration(declaration: DeclarationNode): IndexedSeq[Instruction] = {
-    val identType: TYPE = declaration.ident.getType(topSymbolTable, currentSymbolTable)
-    val identImmediate: Immediate = new Immediate(getSize(identType))
+//    val identType: TYPE = declaration.ident.getType(topSymbolTable, currentSymbolTable)
+//    val identImmediate: Immediate = new Immediate(getSize(identType))
     // SUB sp, sp, #size ++ RHS ++ Ident ++ ADD sp, sp, #size
-    (Subtract(None, conditionFlag = false, instructionSet.getSP, instructionSet.getSP,
-      identImmediate) +: (generateAssignRHS(declaration.rhs) ++
-      generateIdent(declaration.ident))) :+ Add(None, conditionFlag = false, dest = instructionSet.getSP,
-      src1 = instructionSet.getSP, src2 = identImmediate)
+//    (Subtract(None, conditionFlag = false, instructionSet.getSP, instructionSet.getSP, identImmediate)
+    generateAssignRHS(declaration.rhs) ++ generateIdent(declaration.ident)
+//    :+ Add(None, conditionFlag = false, instructionSet.getSP, instructionSet.getSP, identImmediate)
   }
 
   def generateAssignment(assignment: AssignmentNode): IndexedSeq[Instruction] = {
@@ -121,24 +135,26 @@ object CodeGenerator {
   }
 
   def generateIdent(ident: IdentNode): IndexedSeq[Instruction] = {
-    // Need to retrieve actual size for ident from symbol table.
+    // Retrieve actual size for ident from symbol table.
+    val identSize = getSize(ident.getType(topSymbolTable, currentSymbolTable))
 
-    if (ident.getType(topSymbolTable, currentSymbolTable) == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable))
-      IndexedSeq[Instruction](new Store(None, Some(ByteType),
-        RM.peekVariableRegister(), instructionSet.getSP))
-    else
-      IndexedSeq[Instruction](new Store(None, None,
-        RM.peekVariableRegister(), instructionSet.getSP))
+    // ASMType to classify if ident is of type bool and if so should be loaded
+    // with ByteType triggering STRB instead of the usual STR.
+    var asmType: Option[ASMType] = None
+
+    if (ident.getType(topSymbolTable, currentSymbolTable)
+              == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable))
+      asmType = Some(ByteType)
+
+    IndexedSeq[Instruction](new Store(None, asmType,
+      RM.peekVariableRegister(), instructionSet.getSP))
+//      new Immediate(identSize)))
   }
 
   def generateArrayElem(arrayElem: ArrayElemNode): IndexedSeq[Instruction] = {
     generateIdent(arrayElem.identNode) ++
       arrayElem.exprNodes.flatMap(generateExpression) ++ IndexedSeq[Instruction]()
   }
-
-  def generatePairElem(pairElem: PairElemNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
-
-  def generateCall(call: CallNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
   def generateAssignRHS(rhs: AssignRHSNode): IndexedSeq[Instruction] = {
     rhs match {
@@ -152,28 +168,35 @@ object CodeGenerator {
 
   def generateArrayLiteral(arrayLiteral: ArrayLiteralNode): IndexedSeq[Instruction] = {
     val varReg1 = RM.nextVariableRegister()
+    // Because we assume every expr in the array is of the same type.
+    var exprElemSize = getSize(arrayLiteral.exprNodes.head.getType(topSymbolTable, currentSymbolTable))
+    val arrayLength = arrayLiteral.exprNodes.length
+    var intSize = 4
 
-    // Need to load size of array into r0, this is a temporary hardcode below.
+    // Calculations necessary to retrieve size of array for loading into return.
+    val arraySize = intSize + arrayLength * exprElemSize
+
     val preExprInstructions = IndexedSeq[Instruction](
-      new Load(None, None, instructionSet.getReturn, new LoadableExpression(8)),
+      new Load(None, None, instructionSet.getReturn, new LoadableExpression(arraySize)),
       BranchLink(None, Label("malloc")),
       Move(None, varReg1, new ShiftedRegister(instructionSet.getReturn))
     )
 
     var generatedExpressions: IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
-    arrayLiteral.exprNodes.foreach(expr => generatedExpressions
-      ++= generateExpression(expr) :+
+    var acc = exprElemSize
+    // Generate expression instructions for each expression node in the array.
+    arrayLiteral.exprNodes.foreach(expr => { generatedExpressions ++= generateExpression(expr) :+
       new Store(None, None, RM.peekVariableRegister(), varReg1,
-        new Immediate(4)))
+        // Replaced hardcoded 4 with actual expression type.
+        new Immediate(acc));  acc = acc + getSize(expr.getType(topSymbolTable, currentSymbolTable))})
 
     val varReg2 = RM.nextVariableRegister()
 
     // However above once expression in arrayLiteral is generated we must store it.
     val postExprInstructions = generatedExpressions ++ IndexedSeq[Instruction](
       // Store number of elements in array in next available variable register.
-      // Temporary hardcode below.
-      new Load(None, None, varReg2, new LoadableExpression(1)),
+      new Load(None, None, varReg2, new LoadableExpression(arrayLength)),
       new Store(None, None, varReg2, varReg1)
     )
     // Since we are done with varReg1 above we can free it back to available registers.
@@ -185,18 +208,90 @@ object CodeGenerator {
   def generateNewPair(newPair: NewPairNode): IndexedSeq[Instruction] = {
     val varReg1 = RM.nextVariableRegister()
 
+    // Generate instructions for the new pair.
     val preExprInstructions: IndexedSeq[Instruction] = IndexedSeq[Instruction](
+      // TODO: REPLACE MAGIC NUMBER FOR PAIR SIZE BELOW
       new Load(None, None, instructionSet.getReturn, new LoadableExpression(8)),
       BranchLink(None, Label("malloc")),
       Move(None, varReg1, new ShiftedRegister(instructionSet.getReturn))
     )
 
-    generateExpression(newPair.fstElem)
+    // Generate instructions for the expressions and those necessary to allocate space for them on the stack.
+    val fstInstructions = generateNPElem(newPair.fstElem, varReg1, isSnd = false)
+    val varReg2 = RM.nextVariableRegister()
+    val sndInstructions = generateNPElem(newPair.sndElem, varReg2, isSnd = true)
 
+    preExprInstructions ++ fstInstructions ++ sndInstructions
+  }
 
-    RM.freeVariableRegister(varReg1)
+  def generateNPElem(expr: ExprNode, varReg: Register, isSnd: Boolean): IndexedSeq[Instruction] = {
+    // Size of type of expression.
+    val exprSize = getSize(expr.getType(topSymbolTable, currentSymbolTable))
+    val pairSizeOffset = 4
 
-    preExprInstructions
+    val exprInstructions = generateExpression(expr)
+
+    var coreInstructions = IndexedSeq[Instruction](
+        // Load the size of the type into a variable register.
+        new Load(None, None, instructionSet.getReturn, new LoadableExpression(exprSize)),
+        BranchLink(None, Label("malloc")))
+
+    // Check if B suffix is necessary (ByteType).
+    if ((expr.getType(topSymbolTable, currentSymbolTable)
+         == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable)) ||
+        (expr.getType(topSymbolTable, currentSymbolTable)
+         == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable))) {
+      coreInstructions = coreInstructions :+ new Store(None, Some(ByteType), RM.peekVariableRegister(), instructionSet.getReturn)
+    } else {
+      coreInstructions = coreInstructions :+ new Store(None, None, RM.peekVariableRegister(), instructionSet.getReturn)
+    }
+
+    RM.freeVariableRegister(varReg)
+    val varReg2 = RM.peekVariableRegister()
+
+    // Once we are on the second element it will be at an offset that we must retrieve.
+    var finalStore = new Store(None, None, instructionSet.getReturn, varReg2)
+    // Where 4 is the pair size offset and this refers to the instruction where we store the
+    // variable register in the return one.
+    if (isSnd) finalStore =
+      new Store(None, None, instructionSet.getReturn, varReg2, new Immediate(pairSizeOffset))
+
+    exprInstructions ++ coreInstructions :+ finalStore
+  }
+
+  def generatePairElem(pairElem: PairElemNode): IndexedSeq[Instruction] = {
+    IndexedSeq[Instruction]()
+  }
+
+  def generateCall(call: CallNode): IndexedSeq[Instruction] = {
+    // Must store every argument on the stack, negative intervals, backwards.
+    var argInstructions = IndexedSeq[Instruction]()
+    var totalArgOffset: Int = 0
+    // First check if there are arguments in the arglist.
+    if (call.argList.isDefined)
+      argInstructions = call.argList.get.exprNodes.flatMap(e =>
+      { val exprSize = getSize(e.getType(topSymbolTable, currentSymbolTable))
+        totalArgOffset += exprSize
+        generateExpression(e) :+
+        // May need to distinguish between STR and STRB.
+        // Register write back should be allowed, hence the true.
+          new Store(None, None, RM.peekVariableRegister(), instructionSet.getSP,
+            new Immediate(-exprSize), true)
+      })
+
+    var labelAndBranch = IndexedSeq[Instruction](
+      BranchLink(None, Label(s"f_${call.identNode.ident}"))
+    )
+
+    // May need to do this multiple times if stack exceeds 1024 (max stack size).
+    labelAndBranch = labelAndBranch :+ Add(None, conditionFlag = false, instructionSet.getSP,
+                                           instructionSet.getSP, new Immediate(totalArgOffset))
+
+    val finalMove = IndexedSeq[Instruction](
+      Move(None, RM.peekVariableRegister(), new ShiftedRegister(instructionSet.getReturn))
+    )
+
+    argInstructions ++ labelAndBranch ++ finalMove
   }
 
   def generateRead(lhs: AssignLHSNode): IndexedSeq[Instruction] = {
@@ -208,7 +303,7 @@ object CodeGenerator {
     val addInstruction: IndexedSeq[Instruction] = lhs match {
       // Temporary hardcode for ident replace 4 with offset from symbol table.
       case ident: IdentNode => IndexedSeq[Instruction](Add(None, conditionFlag = false, varReg1,
-                      instructionSet.getSP, new Immediate(4)))
+        instructionSet.getSP, new Immediate(getSize(ident.getType(topSymbolTable, currentSymbolTable)))))
       // No offset if not reading variable.
       case _ => IndexedSeq[Instruction](Add(None, conditionFlag = false, varReg1,
         instructionSet.getSP, new Immediate(0)))
@@ -267,21 +362,33 @@ object CodeGenerator {
   def generateIf(ifNode: IfNode): IndexedSeq[Instruction] = {
     var instructions: IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
+    // Instructions generated for condition expression.
+    val condInstructions = generateExpression(ifNode.conditionExpr) :+
+      Compare(None, RM.peekVariableRegister(), new Immediate(0)) :+
+      Branch(Some(Equal), Label(s"L$n_branches"))
+
+    n_branches += 1
+
     // Enter Scope
     symbolTableManager.enterScope()
-
     // First if block
     currentSymbolTable = symbolTableManager.nextScope()
-    // TODO generate instructions for first block
+
+    val thenInstructions = generateStatement(ifNode.thenStat) :+
+      Branch(None, Label(s"L$n_branches"))
+
+    n_branches += 1
 
     // Second if block
     currentSymbolTable = symbolTableManager.nextScope()
     // TODO generate instructions for second block
 
+    val elseInstructions = generateStatement(ifNode.elseStat)
+
     // Leave Scope
     symbolTableManager.leaveScope()
 
-    instructions
+    instructions ++ condInstructions ++ thenInstructions ++ elseInstructions
   }
 
   def generateWhile(whileNode: WhileNode): IndexedSeq[Instruction] = {
@@ -322,7 +429,8 @@ object CodeGenerator {
                   => IndexedSeq[Instruction](Move(None, RM.peekVariableRegister(),
                      new Immediate(if (bool) 1 else 0)))
       case Char_literNode(_, char)
-                  => IndexedSeq[Instruction](Move(None, RM.nextVariableRegister(),
+        // This was using next not sure it should be so I changed it to peek.
+                  => IndexedSeq[Instruction](Move(None, RM.peekVariableRegister(),
                      new Immediate(char)))
       case Str_literNode(_, str)
                   => IndexedSeq[Instruction](new Load(None, None,
@@ -334,7 +442,9 @@ object CodeGenerator {
       case ident: IdentNode
       // Get offset from symbol table for the ident and replace it in the immediate.
                   => IndexedSeq[Instruction](new Load(None, None,
-                     RM.peekVariableRegister(), new LoadableExpression(4)))
+                     RM.peekVariableRegister(),
+                     new LoadableExpression(getSize(
+                         ident.getType(topSymbolTable, currentSymbolTable)))))
       case arrayElem: ArrayElemNode => generateArrayElem(arrayElem)
       case unaryOperation: UnaryOperationNode => generateUnary(unaryOperation)
       case binaryOperation: BinaryOperationNode => generateBinary(binaryOperation)
@@ -459,6 +569,11 @@ object CodeGenerator {
         assert(assertion = false, s"Size for type is undefined")
         -1
     }
+  }
+
+  def getCurrentSTSize: Int = {
+//    currentSymbolTable.map.keys.map(getSize())
+    4
   }
 
   case class SymbolTableManager(private val topLevelTable: SymbolTable) {
