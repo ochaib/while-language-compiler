@@ -240,10 +240,7 @@ object CodeGenerator {
         BranchLink(None, Label("malloc")))
 
     // Check if B suffix is necessary (ByteType).
-    if ((expr.getType(topSymbolTable, currentSymbolTable)
-         == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable)) ||
-        (expr.getType(topSymbolTable, currentSymbolTable)
-         == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable))) {
+    if (checkSingleByte(expr)) {
       coreInstructions = coreInstructions :+ new Store(None, Some(ByteType), RM.peekVariableRegister(), instructionSet.getReturn)
     } else {
       coreInstructions = coreInstructions :+ new Store(None, None, RM.peekVariableRegister(), instructionSet.getReturn)
@@ -271,11 +268,28 @@ object CodeGenerator {
 
   def generatePEHelper(pairElemNode: PairElemNode, isSnd: Boolean): IndexedSeq[Instruction] = {
     val peInstructions = IndexedSeq[Instruction](
-      BranchLink(None, Label("p_check_null_pointer")),
-      new Load(None, None, RM.peekVariableRegister(), RM.peekVariableRegister())
+      BranchLink(None, Label("p_check_null_pointer")))
+
+    var asmType: Option[ASMType] = None
+
+    // Check if B is necessary for load, store etc.
+    if (checkSingleByte(pairElemNode)) asmType = Some(ByteType)
+
+    var loads = IndexedSeq[Instruction](
+      new Load(None, None, RM.peekVariableRegister(), RM.peekVariableRegister()),
+      new Load(None, asmType, RM.peekVariableRegister(), RM.peekVariableRegister())
     )
 
-    peInstructions
+    if (isSnd)
+      loads = IndexedSeq[Instruction](
+        new Load(None, None, RM.peekVariableRegister(), RM.peekVariableRegister(),
+          new Immediate(getSize(pairElemNode.getType(topSymbolTable, currentSymbolTable))), registerWriteBack = false),
+        new Load(None, asmType, RM.peekVariableRegister(), RM.peekVariableRegister())
+      )
+
+
+    // Should set a flag that triggers checkNullPointer at top level.
+    peInstructions ++ loads
   }
 
   def generateCall(call: CallNode): IndexedSeq[Instruction] = {
@@ -565,6 +579,20 @@ object CodeGenerator {
         IndexedSeq[Instruction](Or(None, conditionFlag = false, varReg1,
                                    varReg1, new ShiftedRegister(varReg2)))
     }
+  }
+
+  def checkSingleByte(expr: ExprNode): Boolean = {
+    (expr.getType(topSymbolTable, currentSymbolTable)
+      == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable)) ||
+      (expr.getType(topSymbolTable, currentSymbolTable)
+        == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable))
+  }
+
+  def checkSingleByte(expr: PairElemNode): Boolean = {
+    (expr.getType(topSymbolTable, currentSymbolTable)
+      == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable)) ||
+      (expr.getType(topSymbolTable, currentSymbolTable)
+        == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable))
   }
 
   def checkNullPointer: IndexedSeq[Instruction] = {
