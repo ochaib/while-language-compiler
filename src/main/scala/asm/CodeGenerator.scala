@@ -71,19 +71,25 @@ object CodeGenerator {
 
   def generateFunction(func: FuncNode): IndexedSeq[Instruction] = {
 
-    val instructions: IndexedSeq[Instruction] = IndexedSeq()
     // Update the current symbol table to function block
     currentSymbolTable = symbolTableManager.nextScope()
 
-    IndexedSeq[Instruction](
-      Label(s"f_${func.identNode.ident}"),
-      pushLR,
-      // TODO: generate stats
-      popPC,
-      new EndFunction
-    )
-    instructions
+    var labelPushLR = IndexedSeq[Instruction](Label(s"f_${func.identNode.ident}"), pushLR)
+    if (func.paramList.isDefined)
+      labelPushLR ++= func.paramList.get.paramList.flatMap(generateParam)
+    // Otherwise nothing?
+
+    // Generate instructions for statement.
+    val statInstructions = generateStatement(func.stat)
+
+    var popEndInstruction = IndexedSeq[Instruction](popPC, new EndFunction)
+
+    labelPushLR ++ statInstructions ++ popEndInstruction
   }
+
+//  def generateParamList(paramList: ParamListNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+
+  def generateParam(param: ParamNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
   def generateStatement(statement: StatNode): IndexedSeq[Instruction] = {
     statement match {
@@ -149,8 +155,6 @@ object CodeGenerator {
     generateIdent(arrayElem.identNode) ++
       arrayElem.exprNodes.flatMap(generateExpression) ++ IndexedSeq[Instruction]()
   }
-
-  def generateCall(call: CallNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
   def generateAssignRHS(rhs: AssignRHSNode): IndexedSeq[Instruction] = {
     rhs match {
@@ -258,6 +262,13 @@ object CodeGenerator {
   def generatePairElem(pairElem: PairElemNode): IndexedSeq[Instruction] = {
     IndexedSeq[Instruction]()
   }
+
+  def generateCall(call: CallNode): IndexedSeq[Instruction] = {
+
+
+    IndexedSeq[Instruction]()
+  }
+
 
   def generateRead(lhs: AssignLHSNode): IndexedSeq[Instruction] = {
     var generatedReadInstructions = IndexedSeq[Instruction]()
