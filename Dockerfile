@@ -35,8 +35,7 @@ COPY . .
 # make sure all dependencies needed to "make" come before this or
 # you may have to wait until SBT is downloaded + everything installed
 RUN cd /usr/app
-RUN make all
 RUN python3 -m pip install -r requirements.txt
-RUN python3 make_asm_tests.py
+RUN make all
 
 ENTRYPOINT [ "python3.6", "/usr/app/test.py" ]
