@@ -8,6 +8,7 @@ sealed abstract class CommonFunction { val label: Label }
 case object PrintString extends CommonFunction { val label: Label = new Label("p_print_string") }
 case object PrintLn extends CommonFunction { val label: Label = new Label("p_print_ln") }
 case object PrintBool extends CommonFunction { val label: Label = new Label("p_print_bool") }
+case object PrintInt extends CommonFunction { val label: Label = new Label("p_print_int") }
 
 
 // NOTE: the functions below DO NOT need to be generated

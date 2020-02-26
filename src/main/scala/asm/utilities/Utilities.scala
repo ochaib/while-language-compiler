@@ -88,4 +88,22 @@ object Utilities {
         )
     }
 
+    // TODO: how are we handling array prints?
+    // IMO we should stray from ref compiler and just print each elem one by one
+    // not represented here as it should just call the correct typed print function
+
+    def printInt(i: Int): IndexedSeq[Instruction] = {
+        // Load R4, =i
+        // Mov R0, R4
+        // BL p_print_int
+        val reg: Register = RM.peekVariableRegister
+        if (commonFunctions.add(PrintInt))
+            strings += (new Label("msg_print_int") -> new StringLiteral("%d\\0", 3))
+        IndexedSeq[Instruction](
+            new Load(condition=None, asmType=None, dest=reg, loadable=new Immediate(i)),
+            new Move(condition=None, dest=RM.instructionSet.getReturn, src=new ShiftedRegister(reg)),
+            new BranchLink(condition=None, label=PrintInt.label)
+        )
+    }
+
 }
