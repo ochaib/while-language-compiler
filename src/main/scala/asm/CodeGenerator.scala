@@ -250,11 +250,7 @@ object CodeGenerator {
     val varReg2 = RM.peekVariableRegister()
 
     // Once we are on the second element it will be at an offset that we must retrieve.
-    var finalStore = new Store(None, None, instructionSet.getReturn, varReg2)
-    // Where 4 is the pair size offset and this refers to the instruction where we store the
-    // variable register in the return one.
-    if (isSnd) finalStore =
-      new Store(None, None, instructionSet.getReturn, varReg2, new Immediate(pairSizeOffset))
+    val finalStore = new Store(None, None, instructionSet.getReturn, varReg2, new Immediate(pairSizeOffset))
 
     exprInstructions ++ coreInstructions :+ finalStore
   }
@@ -301,7 +297,7 @@ object CodeGenerator {
     val varReg1 = RM.peekVariableRegister()
 
     val addInstruction: IndexedSeq[Instruction] = lhs match {
-      // Temporary hardcode for ident replace 4 with offset from symbol table.
+      // Offset from symbol table for ident.
       case ident: IdentNode => IndexedSeq[Instruction](Add(None, conditionFlag = false, varReg1,
         instructionSet.getSP, new Immediate(getSize(ident.getType(topSymbolTable, currentSymbolTable)))))
       // No offset if not reading variable.
@@ -344,7 +340,6 @@ object CodeGenerator {
     // Must generate the instructions necessary for the exit code,
     // then branch to exit.
     // Need next available register to move into r0, temporary fix below.
-    // TODO: Implement following code better.
     val regUsedByGenExp: Register = RM.peekVariableRegister()
     // So that it can actually be used by generateExpression.
     RM.freeVariableRegister(regUsedByGenExp)
