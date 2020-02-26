@@ -467,7 +467,7 @@ object CodeGenerator {
         IndexedSeq[Instruction](
           RSBS(None, conditionFlag = false, RM.peekVariableRegister(),
                RM.peekVariableRegister(), new Immediate(0)),
-          BranchLink(Some(Overflow), Label("p_throw_overflow_error")))
+        ) ++ Utilities.printOverflowError
       case LenNode(_, expr) =>
         val varReg = RM.peekVariableRegister()
         generateExpression(expr) ++ IndexedSeq[Instruction](
