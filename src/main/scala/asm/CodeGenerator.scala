@@ -264,11 +264,35 @@ object CodeGenerator {
   }
 
   def generateCall(call: CallNode): IndexedSeq[Instruction] = {
+    // Must store every argument on the stack, negative intervals, backwards.
+    var argInstructions = IndexedSeq[Instruction]()
+    var totalArgOffset: Int = 0
+    // First check if there are arguments in the arglist.
+    if (call.argList.isDefined)
+      argInstructions = call.argList.get.exprNodes.flatMap(e =>
+      { val exprSize = getSize(e.getType(topSymbolTable, currentSymbolTable))
+        totalArgOffset += exprSize
+        generateExpression(e) :+
+        // May need to distinguish between STR and STRB.
+        // Register write back should be allowed, hence the true.
+          new Store(None, None, RM.peekVariableRegister(), instructionSet.getSP,
+            new Immediate(-exprSize), true)
+      })
 
+    var labelAndBranch = IndexedSeq[Instruction](
+      BranchLink(None, Label(s"f_${call.identNode.ident}"))
+    )
 
-    IndexedSeq[Instruction]()
+    // May need to do this multiple times if stack exceeds 1024 (max stack size).
+    labelAndBranch = labelAndBranch :+ Add(None, conditionFlag = false, instructionSet.getSP,
+                                           instructionSet.getSP, new Immediate(totalArgOffset))
+
+    val finalMove = IndexedSeq[Instruction](
+      Move(None, RM.peekVariableRegister(), new ShiftedRegister(instructionSet.getReturn))
+    )
+
+    argInstructions ++ labelAndBranch ++ finalMove
   }
-
 
   def generateRead(lhs: AssignLHSNode): IndexedSeq[Instruction] = {
     var generatedReadInstructions = IndexedSeq[Instruction]()
