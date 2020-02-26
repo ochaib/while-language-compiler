@@ -2,17 +2,18 @@ package asm.utilities
 
 import asm.instructions._
 import asm.registers._
-import scala.collection.mutable.{Map, Set}
+
+import scala.collection.mutable
 
 object Utilities {
 
     var RM: RegisterManager = _
 
     // data label: string literal
-    val strings: Map[Label, StringLiteral] = Map[Label, StringLiteral]()
+    val strings: mutable.Map[Label, StringLiteral] = mutable.Map[Label, StringLiteral]()
 
     // common functions in use
-    val commonFunctions: Set[CommonFunction] = Set[CommonFunction]()
+    val commonFunctions: mutable.Set[CommonFunction] = mutable.Set[CommonFunction]()
 
     // needs a RM for common funcs
     def useRegisterManager(_RM: RegisterManager): Unit = {
@@ -31,7 +32,7 @@ object Utilities {
             case None => s.length
             case Some(l) => l
         }
-        val dataLabel: Label = new Label("msg_" + strings.size)
+        val dataLabel: Label = Label("msg_" + strings.size)
         strings += (dataLabel -> new StringLiteral(s, len))
         dataLabel
     }
@@ -41,22 +42,22 @@ object Utilities {
         // Load R4, =msg_#
         // Mov R0, R4
         // BL p_print_string
-        val reg: Register = RM.peekVariableRegister
+        val reg: Register = RM.peekVariableRegister()
         if (commonFunctions.add(PrintString))
-            strings += (new Label("msg_print_string") -> new StringLiteral("%.*s\\0", 5))
+            strings += (Label("msg_print_string") -> new StringLiteral("%.*s\\0", 5))
         IndexedSeq[Instruction](
             new Load(condition=None, asmType=None, dest=reg, label=PrintString.label),
-            new Move(condition=None, dest=RM.instructionSet.getReturn, src=new ShiftedRegister(reg)),
-            new BranchLink(condition=None, label=PrintString.label)
+            Move(condition = None, dest = RM.instructionSet.getReturn, src = new ShiftedRegister(reg)),
+            BranchLink(condition = None, label = PrintString.label)
         )
     }
 
     def printNewline: IndexedSeq[Instruction] = {
         // BL p_print_ln
         if (commonFunctions.add(PrintLn))
-            strings += (new Label("msg_print_ln") -> new StringLiteral("\\0", 1))
+            strings += (Label("msg_print_ln") -> new StringLiteral("\\0", 1))
         IndexedSeq[Instruction](
-            new BranchLink(condition=None, label=PrintLn.label)
+            BranchLink(condition = None, label = PrintLn.label)
         )
     }
 
@@ -64,15 +65,15 @@ object Utilities {
         // Mov r4, (#1 if true else #0)
         // Mov R0, R4
         // BL p_print_bool
-        val reg: Register = RM.peekVariableRegister
+        val reg: Register = RM.peekVariableRegister()
         if (commonFunctions.add(PrintBool)) {
-            strings += (new Label("msg_print_bool_true") -> new StringLiteral("true\\0", 5))
-            strings += (new Label("msg_print_bool_false") -> new StringLiteral("false\\0", 6))
+            strings += (Label("msg_print_bool_true") -> new StringLiteral("true\\0", 5))
+            strings += (Label("msg_print_bool_false") -> new StringLiteral("false\\0", 6))
         }
         IndexedSeq[Instruction](
-            new Move(condition=None, dest=reg, src=new Immediate(if (b) 1 else 0)),
-            new Move(condition=None, dest=RM.instructionSet.getReturn, src=new ShiftedRegister(reg)),
-            new BranchLink(condition=None, label=PrintBool.label)
+            Move(condition = None, dest = reg, src = new Immediate(if (b) 1 else 0)),
+            Move(condition = None, dest = RM.instructionSet.getReturn, src = new ShiftedRegister(reg)),
+            BranchLink(condition = None, label = PrintBool.label)
         )
     }
 
@@ -80,11 +81,11 @@ object Utilities {
         // Mov R4, #'c'
         // Mov R0, R4
         // BL putchar
-        val reg: Register = RM.peekVariableRegister
+        val reg: Register = RM.peekVariableRegister()
         IndexedSeq[Instruction](
-            new Move(condition=None, dest=reg, src=new Immediate(c)),
-            new Move(condition=None, dest=RM.instructionSet.getReturn, src=new ShiftedRegister(reg)),
-            new BranchLink(condition=None, label=PutChar.label)
+            Move(condition = None, dest = reg, src = new Immediate(c)),
+            Move(condition = None, dest = RM.instructionSet.getReturn, src = new ShiftedRegister(reg)),
+            BranchLink(condition = None, label = PutChar.label)
         )
     }
 
@@ -96,13 +97,13 @@ object Utilities {
         // Load R4, =i
         // Mov R0, R4
         // BL p_print_int
-        val reg: Register = RM.peekVariableRegister
+        val reg: Register = RM.peekVariableRegister()
         if (commonFunctions.add(PrintInt))
-            strings += (new Label("msg_print_int") -> new StringLiteral("%d\\0", 3))
+            strings += (Label("msg_print_int") -> new StringLiteral("%d\\0", 3))
         IndexedSeq[Instruction](
-            new Load(condition=None, asmType=None, dest=reg, loadable=new LoadableExpression(i)),
-            new Move(condition=None, dest=RM.instructionSet.getReturn, src=new ShiftedRegister(reg)),
-            new BranchLink(condition=None, label=PrintInt.label)
+            new Load(condition=None, asmType=None, dest=reg, loadable = new LoadableExpression(i)),
+            Move(condition = None, dest = RM.instructionSet.getReturn, src = new ShiftedRegister(reg)),
+            BranchLink(condition = None, label = PrintInt.label)
         )
     }
 
