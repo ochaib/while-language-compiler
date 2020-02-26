@@ -574,6 +574,7 @@ object CodeGenerator {
     identifier match {
       case _: PARAM => 0
       case value: TYPE => getSize(value)
+      case variable: VARIABLE => getSize(variable._type)
       case _ =>
         assert(assertion = false, "ST should not have non type or param identifiers")
         -1
