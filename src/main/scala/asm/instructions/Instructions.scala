@@ -53,7 +53,7 @@ case class Load private (
       asmType,
       dest,
       Some(src),
-      Some(flexOffset),
+      Instructions.checkFlexOffset(flexOffset),
       Some(registerWriteBack),
       None,
       None
@@ -89,7 +89,7 @@ case class Load private (
       asmType,
       dest,
       Some(src),
-      Some(flexOffset),
+      Instructions.checkFlexOffset(flexOffset),
       None,
       None,
       None
@@ -152,16 +152,20 @@ case class Store private (
       src: Register,
       flexOffset: FlexOffset,
       registerWriteBack: Boolean
-  ) =
+  ) = {
     this(
       condition,
       byteType,
       dest,
       Some(src),
-      Some(flexOffset),
+      Instructions.checkFlexOffset(flexOffset),
       Some(registerWriteBack),
       None
     )
+  }
+
+
+
   // STR{cond}{B} Rd, label
   def this(
       condition: Option[Condition],
@@ -191,10 +195,17 @@ case class Store private (
       byteType,
       dest,
       Some(src),
-      Some(flexOffset),
+      Instructions.checkFlexOffset(flexOffset),
       None,
       None
     )
+}
+
+object Instructions {
+  def checkFlexOffset(flexOffset: FlexOffset): Option[FlexOffset] = {
+    if (flexOffset.isInstanceOf[Immediate] && flexOffset.asInstanceOf[Immediate].immediate_int.get == 0) None
+    else Some(flexOffset)
+  }
 }
 
 // Data Process Instructions include ADD, SUB, ORR, EOR
