@@ -106,4 +106,25 @@ object Utilities {
         )
     }
 
+    def printOverflowError: IndexedSeq[Instruction] = {
+        // BLVS p_throw_overflow_error
+        if (commonFunctions.add(PrintOverflowError))
+            strings += (new Label("msg_throw_overflow_error") ->
+                new StringLiteral("OverflowError: the result is too small/large to store in a 4-byte signed-integer.\n", 82)
+            )
+        printRuntimeError // make sure print runtime error is added to common functions
+        IndexedSeq[Instruction](
+            BranchLink(Some(Overflow), Label("p_throw_overflow_error"))
+        )
+    }
+
+    def printRuntimeError: IndexedSeq[Instruction] = {
+        // BL p_throw_runtime_error
+        commonFunctions.add(PrintRuntimeError)
+        printString("") // just make sure print string is added to common functions
+        IndexedSeq[Instruction](
+            BranchLink(Some(Overflow), Label("p_throw_runtime_error"))
+        )
+    }
+
 }

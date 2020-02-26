@@ -9,7 +9,8 @@ case object PrintString extends CommonFunction { val label: Label = new Label("p
 case object PrintLn extends CommonFunction { val label: Label = new Label("p_print_ln") }
 case object PrintBool extends CommonFunction { val label: Label = new Label("p_print_bool") }
 case object PrintInt extends CommonFunction { val label: Label = new Label("p_print_int") }
-
+case object PrintOverflowError extends CommonFunction { val label: Label = new Label("p_throw_overflow_error") }
+case object PrintRuntimeError extends CommonFunction { val label: Label = new Label("p_throw_runtime_error") }
 
 // NOTE: the functions below DO NOT need to be generated
 // they come with the assembler (at least in ARM 11)
