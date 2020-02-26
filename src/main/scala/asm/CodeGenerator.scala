@@ -210,11 +210,16 @@ object CodeGenerator {
 
   def generateNewPair(newPair: NewPairNode): IndexedSeq[Instruction] = {
     val varReg1 = RM.nextVariableRegister()
+    // Should be added to stack size for subbing.
+    val pairElemSize = getSize(newPair.fstElem.getType(topSymbolTable, currentSymbolTable)) +
+                       getSize(newPair.sndElem.getType(topSymbolTable, currentSymbolTable))
+    // Pair size
+    val pairSize = 2 * getSize(newPair.getType(topSymbolTable, currentSymbolTable))
+
 
     // Generate instructions for the new pair.
     val preExprInstructions: IndexedSeq[Instruction] = IndexedSeq[Instruction](
-      // TODO: REPLACE MAGIC NUMBER FOR PAIR SIZE BELOW
-      new Load(None, None, instructionSet.getReturn, new LoadableExpression(8)),
+      new Load(None, None, instructionSet.getReturn, new LoadableExpression(pairSize)),
       BranchLink(None, Label("malloc")),
       Move(None, varReg1, new ShiftedRegister(instructionSet.getReturn))
     )
