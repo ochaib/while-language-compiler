@@ -1,7 +1,6 @@
 import json
 import os
 import re
-from tqdm import tqdm
 
 # get the ASM output from reference compiler if we don't already have it
 if not os.path.exists('referenceASM.txt'):
@@ -37,5 +36,5 @@ def assemble(result):
     os.system(f'arm-linux-gnueabi-gcc -o {exe_fn} -mcpu=arm1176jzf-s -mtune=arm1176jzf-s {asm_fn}')
     return exe_fn
 
-for result in tqdm(results):
+for result in results:
     assemble(result)
