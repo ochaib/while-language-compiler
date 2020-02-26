@@ -100,7 +100,7 @@ object Utilities {
         if (commonFunctions.add(PrintInt))
             strings += (new Label("msg_print_int") -> new StringLiteral("%d\\0", 3))
         IndexedSeq[Instruction](
-            new Load(condition=None, asmType=None, dest=reg, loadable=new Immediate(i)),
+            new Load(condition=None, asmType=None, dest=reg, loadable=new LoadableExpression(i)),
             new Move(condition=None, dest=RM.instructionSet.getReturn, src=new ShiftedRegister(reg)),
             new BranchLink(condition=None, label=PrintInt.label)
         )
