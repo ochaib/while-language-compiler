@@ -8,10 +8,17 @@ SOURCE_DIR	:= src
 ANTLR	:= antlrBuild
 RM	:= rm -rf
 SBT := sbt
+PYTHON := python3.6
 
 # the make rules
 
-all: antlr sources bin
+all: antlr sources bin tests
+
+# test some
+test:
+	$(PYTHON) test-some.py
+testall:
+	$(PYTHON) test.py
 
 # runs the antlr build script
 antlr:
@@ -25,9 +32,13 @@ sources:
 bin:
 	$(SBT) assembly
 
+# compiles test files
+tests:
+	$(PYTHON) make_asm_tests.py
+
 clean:
 	$(RM) rules $(SOURCE_DIR)/main/java/antlr
 	$(SBT) clean
 	$(RM) *.s
 
-.PHONY: all rules clean sources antlr bin
+.PHONY: all rules clean sources antlr bin tests
