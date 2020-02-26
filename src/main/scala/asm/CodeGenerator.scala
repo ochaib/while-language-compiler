@@ -16,7 +16,7 @@ object CodeGenerator {
   var currentSymbolTable: SymbolTable = _
 
   // Keep track of number of branches.
-  var n_branches = 0
+  val labelGenerator: LabelGenerator = LabelGenerator()
 
   def useInstructionSet(_instructionSet: InstructionSet): Unit = {
     instructionSet = _instructionSet
@@ -395,31 +395,38 @@ object CodeGenerator {
 
   def generateIf(ifNode: IfNode): IndexedSeq[Instruction] = {
     // Instructions generated for condition expression.
-    val condInstructions = generateExpression(ifNode.conditionExpr) :+
-      Compare(None, RM.peekVariableRegister(), new Immediate(0)) :+
-      Branch(Some(Equal), Label(s"L$n_branches"))
-
-    n_branches += 1
+    val elseLabel: Label = labelGenerator.generate()
+    val fiLabel: Label = labelGenerator.generate()
 
     // Enter Scope
     val allocateInstruction: IndexedSeq[Instruction] = enterScopeAndAllocateStack()
     // First if block
     currentSymbolTable = symbolTableManager.nextScope()
 
-    val thenInstructions = generateStatement(ifNode.thenStat) :+
-      Branch(None, Label(s"L$n_branches"))
+    // Condition
+    val condInstructions: IndexedSeq[Instruction] = generateExpression(ifNode.conditionExpr) :+
+      Compare(None, RM.peekVariableRegister(), new Immediate(0))
 
-    n_branches += 1
+    // elseBranch
+    val elseBranchInstructions: IndexedSeq[Instruction] = IndexedSeq(Branch(Some(Equal), elseLabel))
+
+    // Then
+    val thenInstructions = generateStatement(ifNode.thenStat)
+
+    // fiBranch
+    val fiBranchInstructions: IndexedSeq[Instruction] = IndexedSeq(Branch(None, fiLabel))
 
     // Second if block
     currentSymbolTable = symbolTableManager.nextScope()
 
-    val elseInstructions = generateStatement(ifNode.elseStat)
+    // Else
+    val elseInstructions = elseLabel +: generateStatement(ifNode.elseStat)
 
     // Leave Scope
     val deallocateInstruction: IndexedSeq[Instruction] = leaveScopeAndDeallocateStack()
 
-    allocateInstruction ++ condInstructions ++ thenInstructions ++ elseInstructions ++ deallocateInstruction
+    allocateInstruction ++ condInstructions ++ elseBranchInstructions ++ thenInstructions ++
+      fiBranchInstructions ++ elseInstructions ++ (fiLabel +: deallocateInstruction)
   }
 
   def generateWhile(whileNode: WhileNode): IndexedSeq[Instruction] = {
