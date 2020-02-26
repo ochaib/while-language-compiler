@@ -117,12 +117,7 @@ object CodeGenerator {
   }
 
   def generateDeclaration(declaration: DeclarationNode): IndexedSeq[Instruction] = {
-//    val identType: TYPE = declaration.ident.getType(topSymbolTable, currentSymbolTable)
-//    val identImmediate: Immediate = new Immediate(getSize(identType))
-    // SUB sp, sp, #size ++ RHS ++ Ident ++ ADD sp, sp, #size
-//    (Subtract(None, conditionFlag = false, instructionSet.getSP, instructionSet.getSP, identImmediate)
     generateAssignRHS(declaration.rhs) ++ generateIdent(declaration.ident)
-//    :+ Add(None, conditionFlag = false, instructionSet.getSP, instructionSet.getSP, identImmediate)
   }
 
   def generateAssignment(assignment: AssignmentNode): IndexedSeq[Instruction] = {
@@ -154,6 +149,7 @@ object CodeGenerator {
 //      new Immediate(identSize)))
   }
 
+  // TODO: THIS
   def generateArrayElem(arrayElem: ArrayElemNode): IndexedSeq[Instruction] = {
     generateIdent(arrayElem.identNode) ++
       arrayElem.exprNodes.flatMap(generateExpression) ++ IndexedSeq[Instruction]()
@@ -278,7 +274,8 @@ object CodeGenerator {
     var asmType: Option[ASMType] = None
 
     // Check if B is necessary for load, store etc.
-    if (checkSingleByte(pairElemNode)) asmType = Some(ByteType)
+    // May need to be ByteType
+    if (checkSingleByte(pairElemNode)) asmType = Some(SignedByte)
 
     var loads = IndexedSeq[Instruction](
       new Load(None, None, RM.peekVariableRegister(), RM.peekVariableRegister()),
@@ -603,9 +600,39 @@ object CodeGenerator {
   def checkNullPointer: IndexedSeq[Instruction] = {
     IndexedSeq[Instruction](
       pushLR, Compare(None, instructionSet.getReturn, new Immediate(0)),
-      // TODO: Should be msg=0 instead of the string itself.
+      // TODO: Should be msg=n instead of the string itself.
 //      new Load(Equal, None, instructionSet.getReturn, new Immediate("NullReferenceError: dereference a null reference\n\0")),
       BranchLink(Some(Equal), Label("p_throw_runtime_error")), popPC
+    )
+  }
+
+  def printLn: IndexedSeq[Instruction] = {
+    IndexedSeq[Instruction](
+      pushLR,
+      // TODO: Should be msg=n instead of the string itself.
+      // new Load(None, None, instructionSet.getReturn, new Immediate("\0")),
+      // Maybe instead of 4, size of msg?
+      Add(None, conditionFlag = false, instructionSet.getReturn, instructionSet.getReturn, new Immediate(4)),
+      BranchLink(None, Label("puts")), Move(None, instructionSet.getReturn, new Immediate(0)),
+      BranchLink(None, Label("fflush")), popPC
+    )
+  }
+
+  def runTimeError: IndexedSeq[Instruction] = {
+    IndexedSeq[Instruction](
+      BranchLink(None, Label("p_print_string")), Move(None, instructionSet.getReturn, new Immediate(-1)),
+      BranchLink(None, Label("exit"))
+    )
+  }
+
+  def printString: IndexedSeq[Instruction] = {
+    IndexedSeq[Instruction](
+      pushLR, new Load(None, None, instructionSet.getArgumentRegisters(1), instructionSet.getReturn),
+      Add(None, conditionFlag = false, instructionSet.getArgumentRegisters(2), instructionSet.getReturn, new Immediate(4)),
+      // ImmString
+//      new Load(None, None, instructionSet.getReturn, new Immediate("%.*s\0")),
+      BranchLink(None, Label("printf")), Move(None, instructionSet.getReturn, new Immediate(0)),
+      BranchLink(None, Label("fflush")), popPC
     )
   }
 
