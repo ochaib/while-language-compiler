@@ -16,7 +16,7 @@ object CodeGenerator {
   var currentSymbolTable: SymbolTable = _
 
   // Keep track of number of branches.
-  var n_branches = 0
+  val labelGenerator: LabelGenerator = LabelGenerator()
 
   def useInstructionSet(_instructionSet: InstructionSet): Unit = {
     instructionSet = _instructionSet
@@ -358,9 +358,7 @@ object CodeGenerator {
     // Instructions generated for condition expression.
     val condInstructions = generateExpression(ifNode.conditionExpr) :+
       Compare(None, RM.peekVariableRegister(), new Immediate(0)) :+
-      Branch(Some(Equal), Label(s"L$n_branches"))
-
-    n_branches += 1
+      Branch(Some(Equal), labelGenerator.generate())
 
     // Enter Scope
     val allocateInstruction: Instruction = enterScopeAndAllocateStack()
@@ -368,9 +366,7 @@ object CodeGenerator {
     currentSymbolTable = symbolTableManager.nextScope()
 
     val thenInstructions = generateStatement(ifNode.thenStat) :+
-      Branch(None, Label(s"L$n_branches"))
-
-    n_branches += 1
+      Branch(None, labelGenerator.generate())
 
     // Second if block
     currentSymbolTable = symbolTableManager.nextScope()
