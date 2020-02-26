@@ -136,7 +136,7 @@ object CodeGenerator {
 
   def generateAssignLHS(lhs: AssignLHSNode): IndexedSeq[Instruction] = {
     lhs match {
-      case ident: IdentNode => generateIdent(ident)
+      case ident: IdentNode => generateExpression(ident)
       case arrayElem: ArrayElemNode => generateArrayElem(arrayElem)
       case pairElem: PairElemNode => generatePairElem(pairElem)
     }
@@ -161,7 +161,7 @@ object CodeGenerator {
 
   // TODO: THIS
   def generateArrayElem(arrayElem: ArrayElemNode): IndexedSeq[Instruction] = {
-    generateIdent(arrayElem.identNode) ++
+    generateExpression(arrayElem.identNode) ++
       arrayElem.exprNodes.flatMap(generateExpression) ++ IndexedSeq[Instruction]()
   }
 
