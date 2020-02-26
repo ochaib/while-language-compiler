@@ -356,17 +356,20 @@ object CodeGenerator {
 
   def generateIf(ifNode: IfNode): IndexedSeq[Instruction] = {
     // Instructions generated for condition expression.
+    val elseLabel: Label = labelGenerator.generate()
+    val fiLabel: Label = labelGenerator.generate()
     val condInstructions = generateExpression(ifNode.conditionExpr) :+
       Compare(None, RM.peekVariableRegister(), new Immediate(0)) :+
-      Branch(Some(Equal), labelGenerator.generate())
+      Branch(Some(Equal), elseLabel)
 
     // Enter Scope
     val allocateInstruction: Instruction = enterScopeAndAllocateStack()
+
     // First if block
     currentSymbolTable = symbolTableManager.nextScope()
 
     val thenInstructions = generateStatement(ifNode.thenStat) :+
-      Branch(None, labelGenerator.generate())
+      Branch(None, fiLabel)
 
     // Second if block
     currentSymbolTable = symbolTableManager.nextScope()
