@@ -402,19 +402,35 @@ object CodeGenerator {
 
   def generateWhile(whileNode: WhileNode): IndexedSeq[Instruction] = {
     var instructions: IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+    // Labels
+    val conditionLabel: Label = labelGenerator.generate()
+    val bodyLabel: Label = labelGenerator.generate()
 
 
     // Enter Scope
     val allocateInstruction: IndexedSeq[Instruction] = enterScopeAndAllocateStack()
 
+    // Initial condition check
+    val initConditionBranch: Instruction = Branch(None, conditionLabel)
+
+    // Condition
+    val condInstructions: IndexedSeq[Instruction] = generateExpression(whileNode.expr) :+
+      Compare(None, RM.peekVariableRegister(), new Immediate(1))
+
+    // Branch to start of body
+    val bodyBranch: Instruction = Branch(Some(Equal), bodyLabel)
+
     // Update Scope to while block
     currentSymbolTable = symbolTableManager.nextScope()
-    // TODO generate instructions
+
+    // Body Instruction list
+    val bodyInstructions: IndexedSeq[Instruction] = generateStatement(whileNode.stat)
 
     // Leave Scope
     val deallocateInstruction: IndexedSeq[Instruction] = leaveScopeAndDeallocateStack()
 
-    allocateInstruction ++ instructions ++ deallocateInstruction
+    (allocateInstruction :+ initConditionBranch) ++ (bodyLabel +: bodyInstructions) ++
+      (conditionLabel +: condInstructions :+ bodyBranch) ++ deallocateInstruction
   }
 
   def generateBegin(begin: BeginNode): IndexedSeq[Instruction] = {
