@@ -3,6 +3,7 @@ package asm
 import asm.instructions._
 import asm.instructionset._
 import asm.registers._
+import asm.utilities._
 import ast.nodes._
 import ast.symboltable._
 
@@ -20,6 +21,7 @@ object CodeGenerator {
   def useInstructionSet(_instructionSet: InstructionSet): Unit = {
     instructionSet = _instructionSet
     RM = new RegisterManager(instructionSet)
+    Utilities.useRegisterManager(RM)
   }
 
   def useTopSymbolTable(symbolTable: SymbolTable): Unit = {
