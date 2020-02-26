@@ -567,6 +567,15 @@ object CodeGenerator {
     }
   }
 
+  def checkNullPointer: IndexedSeq[Instruction] = {
+    IndexedSeq[Instruction](
+      pushLR, Compare(None, instructionSet.getReturn, new Immediate(0)),
+      // TODO: Should be msg=0 instead of the string itself.
+//      new Load(Equal, None, instructionSet.getReturn, new Immediate("NullReferenceError: dereference a null reference\n\0")),
+      BranchLink(Some(Equal), Label("p_throw_runtime_error")), popPC
+    )
+  }
+
   def getSize(_type: TYPE): Int = {
     _type match {
       case _: ARRAY => 4
