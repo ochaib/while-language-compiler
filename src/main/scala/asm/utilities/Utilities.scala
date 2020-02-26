@@ -51,4 +51,13 @@ object Utilities {
         )
     }
 
+    def printNewline: IndexedSeq[Instruction] = {
+        // BL p_print_ln
+        if (commonFunctions.add(PrintLn))
+            addString("\\0", length=Some(1))
+        IndexedSeq[Instruction](
+            new BranchLink(condition=None, label=PrintLn.label)
+        )
+    }
+
 }
