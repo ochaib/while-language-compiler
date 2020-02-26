@@ -76,4 +76,16 @@ object Utilities {
         )
     }
 
+    def printChar(c: Char): IndexedSeq[Instruction] = {
+        // Mov R4, #'c'
+        // Mov R0, R4
+        // BL putchar
+        val reg: Register = RM.peekVariableRegister
+        IndexedSeq[Instruction](
+            new Move(condition=None, dest=reg, src=new Immediate(c)),
+            new Move(condition=None, dest=RM.instructionSet.getReturn, src=new ShiftedRegister(reg)),
+            new BranchLink(condition=None, label=PutChar.label)
+        )
+    }
+
 }
