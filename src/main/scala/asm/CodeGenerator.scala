@@ -136,7 +136,7 @@ object CodeGenerator {
 
   def generateAssignLHS(lhs: AssignLHSNode): IndexedSeq[Instruction] = {
     lhs match {
-      case ident: IdentNode => generateIdent(ident)
+      case ident: IdentNode => generateExpression(ident)
       case arrayElem: ArrayElemNode => generateArrayElem(arrayElem)
       case pairElem: PairElemNode => generatePairElem(pairElem)
     }
@@ -161,7 +161,7 @@ object CodeGenerator {
 
   // TODO: THIS
   def generateArrayElem(arrayElem: ArrayElemNode): IndexedSeq[Instruction] = {
-    generateIdent(arrayElem.identNode) ++
+    generateExpression(arrayElem.identNode) ++
       arrayElem.exprNodes.flatMap(generateExpression) ++ IndexedSeq[Instruction]()
   }
 
@@ -382,7 +382,21 @@ object CodeGenerator {
     val regUsedByGenExp: Register = RM.peekVariableRegister()
     // So that it can actually be used by generateExpression.
     RM.freeVariableRegister(regUsedByGenExp)
-    generateExpression(expr) ++ IndexedSeq[Instruction](
+    var int = 0
+
+    val intLoad: IndexedSeq[Instruction] = expr match {
+      // Check if the expression is negate node, i.e. int to be exited with is negative.
+      case NegateNode(_, intExpr) =>
+        intExpr match {
+          // Check if negate node expression is an int.
+          case Int_literNode(_, str) => int = 0 - str.toInt
+            IndexedSeq[Instruction](new Load(None, None,
+            RM.peekVariableRegister(), new LoadableExpression(int)))
+        }
+      case _ => generateExpression(expr)
+    }
+
+    intLoad ++ IndexedSeq[Instruction](
       Move(None, instructionSet.getReturn, new ShiftedRegister(regUsedByGenExp)),
       BranchLink(None, Label("exit")))
   }
