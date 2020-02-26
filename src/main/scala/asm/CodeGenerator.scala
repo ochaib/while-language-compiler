@@ -88,6 +88,7 @@ object CodeGenerator {
 
     var labelPushLR = IndexedSeq[Instruction](Label(s"f_${func.identNode.ident}"), pushLR)
     if (func.paramList.isDefined)
+      // May need to fetch parameters in reverse.
       labelPushLR ++= func.paramList.get.paramList.flatMap(generateParam)
     // Otherwise nothing?
 
@@ -126,7 +127,6 @@ object CodeGenerator {
   }
 
   def generateDeclaration(declaration: DeclarationNode): IndexedSeq[Instruction] = {
-    // TODO
     generateAssignRHS(declaration.rhs) ++ generateIdent(declaration.ident)
   }
 
@@ -150,8 +150,6 @@ object CodeGenerator {
     // with ByteType triggering STRB instead of the usual STR.
     var asmType: Option[ASMType] = None
 
-
-
     if (ident.getType(topSymbolTable, currentSymbolTable)
               == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable))
       asmType = Some(ByteType)
@@ -161,6 +159,7 @@ object CodeGenerator {
       new Immediate(symbolTableManager.getNextOffset(ident.getKey))))
   }
 
+  // TODO: THIS
   def generateArrayElem(arrayElem: ArrayElemNode): IndexedSeq[Instruction] = {
     generateIdent(arrayElem.identNode) ++
       arrayElem.exprNodes.flatMap(generateExpression) ++ IndexedSeq[Instruction]()
@@ -217,11 +216,15 @@ object CodeGenerator {
 
   def generateNewPair(newPair: NewPairNode): IndexedSeq[Instruction] = {
     val varReg1 = RM.nextVariableRegister()
+    // Should be added to stack size for subbing.
+    val pairElemSize = getSize(newPair.fstElem.getType(topSymbolTable, currentSymbolTable)) +
+                       getSize(newPair.sndElem.getType(topSymbolTable, currentSymbolTable))
+    // Pair size
+    val pairSize = 2 * getSize(newPair.getType(topSymbolTable, currentSymbolTable))
 
     // Generate instructions for the new pair.
     val preExprInstructions: IndexedSeq[Instruction] = IndexedSeq[Instruction](
-      // TODO: REPLACE MAGIC NUMBER FOR PAIR SIZE BELOW
-      new Load(None, None, instructionSet.getReturn, new LoadableExpression(8)),
+      new Load(None, None, instructionSet.getReturn, new LoadableExpression(pairSize)),
       BranchLink(None, Label("malloc")),
       Move(None, varReg1, new ShiftedRegister(instructionSet.getReturn))
     )
@@ -247,10 +250,7 @@ object CodeGenerator {
         BranchLink(None, Label("malloc")))
 
     // Check if B suffix is necessary (ByteType).
-    if ((expr.getType(topSymbolTable, currentSymbolTable)
-         == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable)) ||
-        (expr.getType(topSymbolTable, currentSymbolTable)
-         == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable))) {
+    if (checkSingleByte(expr)) {
       coreInstructions = coreInstructions :+ new Store(None, Some(ByteType), RM.peekVariableRegister(), instructionSet.getReturn)
     } else {
       coreInstructions = coreInstructions :+ new Store(None, None, RM.peekVariableRegister(), instructionSet.getReturn)
@@ -266,7 +266,36 @@ object CodeGenerator {
   }
 
   def generatePairElem(pairElem: PairElemNode): IndexedSeq[Instruction] = {
-    IndexedSeq[Instruction]()
+    pairElem match {
+      case fst: FstNode => generateExpression(fst.expression) ++ generatePEHelper(fst, isSnd = false)
+      case snd: SndNode => generateExpression(snd.expression) ++ generatePEHelper(snd, isSnd = true)
+    }
+  }
+
+  def generatePEHelper(pairElemNode: PairElemNode, isSnd: Boolean): IndexedSeq[Instruction] = {
+    val peInstructions = IndexedSeq[Instruction](
+      BranchLink(None, Label("p_check_null_pointer")))
+
+    var asmType: Option[ASMType] = None
+
+    // Check if B is necessary for load, store etc.
+    // May need to be ByteType
+    if (checkSingleByte(pairElemNode)) asmType = Some(SignedByte)
+
+    var loads = IndexedSeq[Instruction](
+      new Load(None, None, RM.peekVariableRegister(), RM.peekVariableRegister()),
+      new Load(None, asmType, RM.peekVariableRegister(), RM.peekVariableRegister())
+    )
+
+    if (isSnd)
+      loads = IndexedSeq[Instruction](
+        new Load(None, None, RM.peekVariableRegister(), RM.peekVariableRegister(),
+          new Immediate(getSize(pairElemNode.getType(topSymbolTable, currentSymbolTable))), registerWriteBack = false),
+        new Load(None, asmType, RM.peekVariableRegister(), RM.peekVariableRegister())
+      )
+
+    // Should set a flag that triggers checkNullPointer at top level.
+    peInstructions ++ loads
   }
 
   def generateCall(call: CallNode): IndexedSeq[Instruction] = {
@@ -552,6 +581,59 @@ object CodeGenerator {
         IndexedSeq[Instruction](Or(None, conditionFlag = false, varReg1,
                                    varReg1, new ShiftedRegister(varReg2)))
     }
+  }
+
+  def checkSingleByte(expr: ExprNode): Boolean = {
+    (expr.getType(topSymbolTable, currentSymbolTable)
+      == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable)) ||
+      (expr.getType(topSymbolTable, currentSymbolTable)
+        == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable))
+  }
+
+  def checkSingleByte(expr: PairElemNode): Boolean = {
+    (expr.getType(topSymbolTable, currentSymbolTable)
+      == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable)) ||
+      (expr.getType(topSymbolTable, currentSymbolTable)
+        == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable))
+  }
+
+  def checkNullPointer: IndexedSeq[Instruction] = {
+    IndexedSeq[Instruction](
+      pushLR, Compare(None, instructionSet.getReturn, new Immediate(0)),
+      // TODO: Should be msg=n instead of the string itself.
+//      new Load(Equal, None, instructionSet.getReturn, new Immediate("NullReferenceError: dereference a null reference\n\0")),
+      BranchLink(Some(Equal), Label("p_throw_runtime_error")), popPC
+    )
+  }
+
+  def printLn: IndexedSeq[Instruction] = {
+    IndexedSeq[Instruction](
+      pushLR,
+      // TODO: Should be msg=n instead of the string itself.
+      // new Load(None, None, instructionSet.getReturn, new Immediate("\0")),
+      // Maybe instead of 4, size of msg?
+      Add(None, conditionFlag = false, instructionSet.getReturn, instructionSet.getReturn, new Immediate(4)),
+      BranchLink(None, Label("puts")), Move(None, instructionSet.getReturn, new Immediate(0)),
+      BranchLink(None, Label("fflush")), popPC
+    )
+  }
+
+  def runTimeError: IndexedSeq[Instruction] = {
+    IndexedSeq[Instruction](
+      BranchLink(None, Label("p_print_string")), Move(None, instructionSet.getReturn, new Immediate(-1)),
+      BranchLink(None, Label("exit"))
+    )
+  }
+
+  def printString: IndexedSeq[Instruction] = {
+    IndexedSeq[Instruction](
+      pushLR, new Load(None, None, instructionSet.getArgumentRegisters(1), instructionSet.getReturn),
+      Add(None, conditionFlag = false, instructionSet.getArgumentRegisters(2), instructionSet.getReturn, new Immediate(4)),
+      // ImmString
+//      new Load(None, None, instructionSet.getReturn, new Immediate("%.*s\0")),
+      BranchLink(None, Label("printf")), Move(None, instructionSet.getReturn, new Immediate(0)),
+      BranchLink(None, Label("fflush")), popPC
+    )
   }
 
   def getSize(_type: TYPE): Int = {
