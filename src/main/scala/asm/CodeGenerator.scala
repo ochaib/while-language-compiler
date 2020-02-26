@@ -55,15 +55,25 @@ object CodeGenerator {
 
     // Generated instructions to encompass everything generated.
     val generatedInstructions: IndexedSeq[Instruction] = (functions
-      ++ IndexedSeq[Instruction](Label("main"), pushLR,
-      Subtract(None, conditionFlag = false,
-      instructionSet.getSP, instructionSet.getSP, new Immediate(getScopeStackSize(currentSymbolTable)))
-    ) ++ stats)
+      ++ {
+      // If there is no stack size no need to add it to the instructions
+      if (getScopeStackSize(currentSymbolTable) == 0)
+        IndexedSeq[Instruction](Label("main"), pushLR)
+      else
+        IndexedSeq[Instruction](Label("main"), pushLR,
+          Subtract(None, conditionFlag = false,
+          instructionSet.getSP, instructionSet.getSP, new Immediate(getScopeStackSize(currentSymbolTable))))
+      } ++ stats)
 
-    val endInstructions = IndexedSeq[Instruction](
-      Add(None, conditionFlag = false, instructionSet.getSP,
-        instructionSet.getSP, new Immediate(getScopeStackSize(currentSymbolTable))),
-      zeroReturn, popPC, new EndFunction)
+    val endInstructions = {
+      if (getScopeStackSize(currentSymbolTable) == 0)
+        IndexedSeq(zeroReturn, popPC, new EndFunction)
+      else
+        IndexedSeq[Instruction](
+          Add(None, conditionFlag = false, instructionSet.getSP,
+            instructionSet.getSP, new Immediate(getScopeStackSize(currentSymbolTable))),
+          zeroReturn, popPC, new EndFunction)
+    }
 
     // Leave the current scope
     // symbolTableManager.leaveScope()
@@ -363,7 +373,7 @@ object CodeGenerator {
     n_branches += 1
 
     // Enter Scope
-    val allocateInstruction: Instruction = enterScopeAndAllocateStack()
+    val allocateInstruction: IndexedSeq[Instruction] = enterScopeAndAllocateStack()
     // First if block
     currentSymbolTable = symbolTableManager.nextScope()
 
@@ -378,9 +388,9 @@ object CodeGenerator {
     val elseInstructions = generateStatement(ifNode.elseStat)
 
     // Leave Scope
-    val deallocateInstruction: Instruction = leaveScopeAndDeallocateStack()
+    val deallocateInstruction: IndexedSeq[Instruction] = leaveScopeAndDeallocateStack()
 
-    allocateInstruction +: (condInstructions ++ thenInstructions ++ elseInstructions :+ deallocateInstruction)
+    allocateInstruction ++ condInstructions ++ thenInstructions ++ elseInstructions ++ deallocateInstruction
   }
 
   def generateWhile(whileNode: WhileNode): IndexedSeq[Instruction] = {
@@ -388,16 +398,16 @@ object CodeGenerator {
 
 
     // Enter Scope
-    val allocateInstruction: Instruction = enterScopeAndAllocateStack()
+    val allocateInstruction: IndexedSeq[Instruction] = enterScopeAndAllocateStack()
 
     // Update Scope to while block
     currentSymbolTable = symbolTableManager.nextScope()
     // TODO generate instructions
 
     // Leave Scope
-    val deallocateInstruction: Instruction = leaveScopeAndDeallocateStack()
+    val deallocateInstruction: IndexedSeq[Instruction] = leaveScopeAndDeallocateStack()
 
-    allocateInstruction +: instructions :+ deallocateInstruction
+    allocateInstruction ++ instructions ++ deallocateInstruction
   }
 
   def generateBegin(begin: BeginNode): IndexedSeq[Instruction] = {
@@ -578,16 +588,20 @@ object CodeGenerator {
     }
   }
 
-  def enterScopeAndAllocateStack(): Instruction = {
+  def enterScopeAndAllocateStack(): IndexedSeq[Instruction] = {
     symbolTableManager.enterScope()
-    Subtract(None, conditionFlag = false,
-      instructionSet.getSP, instructionSet.getSP, new Immediate(getScopeStackSize(currentSymbolTable)))
+    if (getScopeStackSize(currentSymbolTable) == 0) IndexedSeq()
+    else
+      IndexedSeq(Subtract(None, conditionFlag = false,
+        instructionSet.getSP, instructionSet.getSP, new Immediate(getScopeStackSize(currentSymbolTable))))
   }
 
-  def leaveScopeAndDeallocateStack(): Instruction = {
+  def leaveScopeAndDeallocateStack(): IndexedSeq[Instruction] = {
     symbolTableManager.leaveScope()
-    Add(None, conditionFlag = false,
-      instructionSet.getSP, instructionSet.getSP, new Immediate(getScopeStackSize(currentSymbolTable)))
+    if (getScopeStackSize(currentSymbolTable) == 0) IndexedSeq()
+    else
+      IndexedSeq(Add(None, conditionFlag = false,
+        instructionSet.getSP, instructionSet.getSP, new Immediate(getScopeStackSize(currentSymbolTable))))
   }
 
   case class SymbolTableManager(private val topLevelTable: SymbolTable) {
