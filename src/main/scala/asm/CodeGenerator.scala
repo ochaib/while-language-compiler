@@ -227,12 +227,20 @@ object CodeGenerator {
 
     val exprInstructions = generateExpression(expr)
 
-    val coreInstructions = IndexedSeq[Instruction](
+    var coreInstructions = IndexedSeq[Instruction](
         // Load the size of the type into a variable register.
         new Load(None, None, instructionSet.getReturn, new LoadableExpression(exprSize)),
-        BranchLink(None, Label("malloc")),
-        new Store(None, Some(ByteType), RM.peekVariableRegister(), instructionSet.getReturn),
-      )
+        BranchLink(None, Label("malloc")))
+
+    // Check if B suffix is necessary (ByteType).
+    if ((expr.getType(topSymbolTable, currentSymbolTable)
+         == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable)) ||
+        (expr.getType(topSymbolTable, currentSymbolTable)
+         == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable))) {
+      coreInstructions = coreInstructions :+ new Store(None, Some(ByteType), RM.peekVariableRegister(), instructionSet.getReturn)
+    } else {
+      coreInstructions = coreInstructions :+ new Store(None, None, RM.peekVariableRegister(), instructionSet.getReturn)
+    }
 
     RM.freeVariableRegister(varReg)
     val varReg2 = RM.peekVariableRegister()
