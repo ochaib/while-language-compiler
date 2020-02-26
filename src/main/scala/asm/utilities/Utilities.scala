@@ -43,7 +43,7 @@ object Utilities {
         // BL p_print_string
         val reg: Register = RM.peekVariableRegister
         if (commonFunctions.add(PrintString))
-            addString("%.*s\\0", length=Some(5))
+            strings += (new Label("msg_print_string") -> new StringLiteral("%.*s\\0", 5))
         IndexedSeq[Instruction](
             new Load(condition=None, asmType=None, dest=reg, label=PrintString.label),
             new Move(condition=None, dest=RM.instructionSet.getReturn, src=new ShiftedRegister(reg)),
@@ -54,9 +54,25 @@ object Utilities {
     def printNewline: IndexedSeq[Instruction] = {
         // BL p_print_ln
         if (commonFunctions.add(PrintLn))
-            addString("\\0", length=Some(1))
+            strings += (new Label("msg_print_ln") -> new StringLiteral("\\0", 1))
         IndexedSeq[Instruction](
             new BranchLink(condition=None, label=PrintLn.label)
+        )
+    }
+
+    def printBool(b: Boolean): IndexedSeq[Instruction] = {
+        // Mov r4, (#1 if true else #0)
+        // Mov R0, R4
+        // BL p_print_bool
+        val reg: Register = RM.peekVariableRegister
+        if (commonFunctions.add(PrintBool)) {
+            strings += (new Label("msg_print_bool_true") -> new StringLiteral("true\\0", 5))
+            strings += (new Label("msg_print_bool_false") -> new StringLiteral("false\\0", 6))
+        }
+        IndexedSeq[Instruction](
+            new Move(condition=None, dest=reg, src=new Immediate(if (b) 1 else 0)),
+            new Move(condition=None, dest=RM.instructionSet.getReturn, src=new ShiftedRegister(reg)),
+            new BranchLink(condition=None, label=PrintBool.label)
         )
     }
 
