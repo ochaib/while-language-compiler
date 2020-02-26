@@ -134,19 +134,21 @@ object CodeGenerator {
 
   def generateIdent(ident: IdentNode): IndexedSeq[Instruction] = {
     // Retrieve actual size for ident from symbol table.
-    val identSize = getSize(ident.getType(topSymbolTable, currentSymbolTable))
+//    val identSize = getSize(ident.getType(topSymbolTable, currentSymbolTable))
 
     // ASMType to classify if ident is of type bool and if so should be loaded
     // with ByteType triggering STRB instead of the usual STR.
     var asmType: Option[ASMType] = None
+
+
 
     if (ident.getType(topSymbolTable, currentSymbolTable)
               == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable))
       asmType = Some(ByteType)
 
     IndexedSeq[Instruction](new Store(None, asmType,
-      RM.peekVariableRegister(), instructionSet.getSP))
-//      new Immediate(identSize)))
+      RM.peekVariableRegister(), instructionSet.getSP,
+      new Immediate(symbolTableManager.getNextOffset(ident.getKey))))
   }
 
   def generateArrayElem(arrayElem: ArrayElemNode): IndexedSeq[Instruction] = {
