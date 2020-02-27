@@ -565,11 +565,6 @@ object CodeGenerator {
     val elseLabel: Label = labelGenerator.generate()
     val fiLabel: Label = labelGenerator.generate()
 
-    // Enter Scope
-    val allocateInstruction: IndexedSeq[Instruction] = enterScopeAndAllocateStack()
-    // First if block
-    currentSymbolTable = symbolTableManager.nextScope()
-
     // Condition
     val condInstructions: IndexedSeq[Instruction] = generateExpression(ifNode.conditionExpr) :+
       Compare(None, RM.peekVariableRegister(), new Immediate(0))
@@ -577,34 +572,58 @@ object CodeGenerator {
     // elseBranch
     val elseBranchInstructions: IndexedSeq[Instruction] = IndexedSeq(Branch(Some(Equal), elseLabel))
 
+    // *** THEN ***
+
+    // Then Scope
+    currentSymbolTable = symbolTableManager.nextScope()
+
+    // Enter Then Scope
+    val allocateThenInstruction: IndexedSeq[Instruction] = enterScopeAndAllocateStack()
+
     // Then
     val thenInstructions = generateStatement(ifNode.thenStat)
+
+    // Leave Then Scope
+    val deallocateThenInstruction: IndexedSeq[Instruction] = leaveScopeAndDeallocateStack()
+
+    // ***********
 
     // fiBranch
     val fiBranchInstructions: IndexedSeq[Instruction] = IndexedSeq(Branch(None, fiLabel))
 
+    // *** ELSE ***
+
     // Second if block
     currentSymbolTable = symbolTableManager.nextScope()
+
+    // Enter Else Scope
+    val allocateElseInstruction: IndexedSeq[Instruction] = enterScopeAndAllocateStack()
 
     // Else
     val elseInstructions = elseLabel +: generateStatement(ifNode.elseStat)
 
     // Leave Scope
-    val deallocateInstruction: IndexedSeq[Instruction] = leaveScopeAndDeallocateStack()
+    val deallocateElseInstruction: IndexedSeq[Instruction] = leaveScopeAndDeallocateStack()
 
-    allocateInstruction ++ condInstructions ++ elseBranchInstructions ++ thenInstructions ++
-      fiBranchInstructions ++ elseInstructions ++ (fiLabel +: deallocateInstruction)
+    // ***********
+
+    // *** SUMMARY ***
+
+    val totalThenInstructions = allocateThenInstruction ++ thenInstructions ++ deallocateThenInstruction
+
+    val totalElseInstructions = allocateElseInstruction ++ elseInstructions ++ deallocateElseInstruction
+
+    condInstructions ++ elseBranchInstructions ++ totalThenInstructions ++
+      fiBranchInstructions ++ totalElseInstructions :+ fiLabel
   }
 
   def generateWhile(whileNode: WhileNode): IndexedSeq[Instruction] = {
-    var instructions: IndexedSeq[Instruction] = IndexedSeq[Instruction]()
     // Labels
     val conditionLabel: Label = labelGenerator.generate()
     val bodyLabel: Label = labelGenerator.generate()
 
 
-    // Enter Scope
-    val allocateInstruction: IndexedSeq[Instruction] = enterScopeAndAllocateStack()
+    // *** CONDITION ***
 
     // Initial condition check
     val initConditionBranch: Instruction = Branch(None, conditionLabel)
@@ -616,17 +635,33 @@ object CodeGenerator {
     // Branch to start of body
     val bodyBranch: Instruction = Branch(Some(Equal), bodyLabel)
 
-    // Update Scope to while block
+    // ************
+
+
+    // *** BODY ***
+
+    // Update Scope to While Body
     currentSymbolTable = symbolTableManager.nextScope()
+
+    // Enter Scope
+    val allocateWhileBody: IndexedSeq[Instruction] = enterScopeAndAllocateStack()
 
     // Body Instruction list
     val bodyInstructions: IndexedSeq[Instruction] = generateStatement(whileNode.stat)
 
     // Leave Scope
-    val deallocateInstruction: IndexedSeq[Instruction] = leaveScopeAndDeallocateStack()
+    val deallocateWhileBody: IndexedSeq[Instruction] = leaveScopeAndDeallocateStack()
 
-    (allocateInstruction :+ initConditionBranch) ++ (bodyLabel +: bodyInstructions) ++
-      (conditionLabel +: condInstructions :+ bodyBranch) ++ deallocateInstruction
+    // ************
+
+
+    // *** SUMMARY ***
+
+    val totalBodyInstructions: IndexedSeq[Instruction] = bodyLabel +: (allocateWhileBody ++ bodyInstructions ++ deallocateWhileBody)
+
+    val totalConditionInstructions = (conditionLabel +: condInstructions :+ bodyBranch)
+
+    initConditionBranch +: (totalBodyInstructions ++ totalConditionInstructions)
   }
 
   def generateBegin(begin: BeginNode): IndexedSeq[Instruction] = {
