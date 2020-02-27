@@ -51,7 +51,7 @@ object CodeGenerator {
     currentSymbolTable = symbolTableManager.nextScope()
 
     // Enter Scope
-    val allocateInstrucitons = enterScopeAndAllocateStack()
+    val allocateInstructions = enterScopeAndAllocateStack()
 
     // Main directive and pushing LR
     val mainHeaderInstructions: IndexedSeq[Instruction] = IndexedSeq[Instruction](Label("main"), pushLR)
@@ -62,11 +62,11 @@ object CodeGenerator {
     // Leave Scope
     val deallocateInstructions: Seq[Instruction] = leaveScopeAndDeallocateStack()
 
-    val mainEnderInstructions = IndexedSeq(zeroReturn, popPC, new EndFunction)
+    val mainEndInstructions = IndexedSeq(zeroReturn, popPC, new EndFunction)
 
     // Total Main Instructions
-    val mainInstructions = mainHeaderInstructions ++ allocateInstrucitons ++
-      statInstructions ++ deallocateInstructions ++ mainEnderInstructions
+    val mainInstructions = mainHeaderInstructions ++ allocateInstructions ++
+      statInstructions ++ deallocateInstructions ++ mainEndInstructions
 
     // Program Instructions = Function Instructions + Main Instructions
     functionInstructions ++ mainInstructions
