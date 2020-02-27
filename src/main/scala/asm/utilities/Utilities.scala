@@ -111,11 +111,11 @@ object Utilities {
         // BLVS p_throw_overflow_error
         if (commonFunctions.add(PrintOverflowError))
             strings += (new Label("msg_throw_overflow_error") ->
-                new StringLiteral("OverflowError: the result is too small/large to store in a 4-byte signed-integer.\n", 82)
+                new StringLiteral("OverflowError: the result is too small/large to store in a 4-byte signed-integer.\\n", 82)
             )
         printRuntimeError // make sure print runtime error is added to common functions
         IndexedSeq[Instruction](
-            BranchLink(Some(Overflow), Label("p_throw_overflow_error"))
+            BranchLink(Some(Overflow), Label(PrintOverflowError.label))
         )
     }
 
@@ -124,7 +124,17 @@ object Utilities {
         commonFunctions.add(PrintRuntimeError)
         printString("") // just make sure print string is added to common functions
         IndexedSeq[Instruction](
-            BranchLink(Some(Overflow), Label("p_throw_runtime_error"))
+            BranchLink(Some(Overflow), Label(PrintRuntimeError.label))
+        )
+    }
+
+    def printCheckArrayBounds: IndexedSeq[Instruction] = {
+        if (commonFunctions.add(PrintCheckArrayBounds))
+            strings += (new Label("msg_check_array_bounds") ->
+                new StringLiteral("ArrayIndexOutOfBoundsError: negative index\\n\\0", 44))
+        printRuntimeError
+        IndexedSeq[Instruction](
+            BranchLink(None, Label(PrintCheckArrayBounds.label))
         )
     }
 
