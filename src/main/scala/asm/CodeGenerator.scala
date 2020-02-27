@@ -116,8 +116,8 @@ object CodeGenerator {
       case ExitNode(_, expr) => generateExit(expr)
 
       // Unsure as of what to do for the print generation.
-      case PrintNode(_, expr) => generatePrint(expr)
-      case PrintlnNode(_, expr) => generatePrint(expr)
+      case PrintNode(_, expr) => generatePrint(expr, printLn = false)
+      case PrintlnNode(_, expr) => generatePrint(expr, printLn = true)
 
       case ifNode: IfNode => generateIf(ifNode)
       case whileNode: WhileNode => generateWhile(whileNode)
@@ -513,10 +513,54 @@ object CodeGenerator {
       BranchLink(None, Label("exit")))
   }
 
-  def generatePrint(expr: ExprNode): IndexedSeq[Instruction] = {
-    // Need to distinguish between print branch links.
+  def generatePrint(expr: ExprNode, printLn: Boolean): IndexedSeq[Instruction] = {
+    // Generate instruction then add necessary move.
+    val preLabelInstructions = generateExpression(expr) ++ IndexedSeq[Instruction](
+      Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister()))
+    )
 
-    generateExpression(expr)
+    // TODO: Check if can be replaced with matching on Int_liternode... etc.
+    val printBranchType: IndexedSeq[Instruction]
+    = expr.getType(topSymbolTable, currentSymbolTable) match {
+      case scalar: SCALAR =>
+        if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
+          IndexedSeq[Instruction](
+            // TODO: Call printInt or something
+            BranchLink(None, Label("p_print_int"))
+          )
+        } else if (scalar == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
+          IndexedSeq[Instruction](
+            // TODO: Call printBool or something
+            BranchLink(None, Label("p_print_bool"))
+          )
+        }
+        else if (scalar == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
+          IndexedSeq[Instruction](
+            // TODO: Call printChar or something
+            BranchLink(None, Label("p_print_char"))
+          )
+        }
+        // Return empty list, or assert error or something.
+        // TODO: Check this
+        else IndexedSeq[Instruction]()
+      case STRING =>
+        IndexedSeq[Instruction](
+          // TODO: Call printString or something
+          BranchLink(None, Label("p_print_string"))
+        )
+      // Do same thing for arrays and pair prints.
+      case _:ARRAY | _:PAIR =>
+        IndexedSeq[Instruction](
+          // TODO: Call something that generates relevant label.
+          BranchLink(None, Label("p_print_reference"))
+        )
+    }
+
+    // Extra printLn label necessary for printLn obviously.
+    var printLineBranch = IndexedSeq[Instruction]()
+    if (printLn) printLineBranch = IndexedSeq[Instruction](BranchLink(None, Label("p_print_ln")))
+
+    preLabelInstructions ++ printBranchType ++ printLineBranch
   }
 
   def generateIf(ifNode: IfNode): IndexedSeq[Instruction] = {
