@@ -695,15 +695,16 @@ object CodeGenerator {
                      RM.peekVariableRegister(), new LoadableExpression(0)))
       case ident: IdentNode
       // Load identifier into first available variable register.
+        // TODO: Daniel Check as loading immediate instead of loadable expression.
                   => if (checkSingleByte(ident)) {
                       IndexedSeq[Instruction](new Load(None, Some(ByteType),
-                        RM.peekVariableRegister(),
-                        new LoadableExpression(getSize(
+                        RM.peekVariableRegister(), instructionSet.getSP,
+                        new Immediate(getSize(
                           ident.getType(topSymbolTable, currentSymbolTable)))))
                   } else {
                       IndexedSeq[Instruction](new Load(None, None,
-                        RM.peekVariableRegister(),
-                        new LoadableExpression(getSize(
+                        RM.peekVariableRegister(), instructionSet.getSP,
+                        new Immediate(getSize(
                           ident.getType(topSymbolTable, currentSymbolTable)))))}
       case arrayElem: ArrayElemNode => generateArrayElem(arrayElem)
       case unaryOperation: UnaryOperationNode => generateUnary(unaryOperation)
