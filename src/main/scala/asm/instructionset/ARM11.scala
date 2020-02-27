@@ -178,7 +178,7 @@ object ARM11 extends InstructionSet {
           loadable match {
             case Label(label) => label
             case expression: LoadableExpression => expression.num.toString
-            case _ => assert(false, "Loadable not accounted for")
+            case _ => assert(assertion = false, "Loadable not accounted for")
           }}"
 
     // Invalid LDR case
@@ -284,10 +284,26 @@ object ARM11 extends InstructionSet {
   
   def print(op: FlexibleSndOp): String = op match {
     case immediate: Immediate        => print(immediate)
-    case register: ShiftedRegister   => print(register.register)/* + ", " + register.shift NOT IMPLEMENTED*/
+    // Temp fix for multiply.
+    case shiftedRegister: ShiftedRegister =>
+      if (shiftedRegister.shift.isDefined)
+        print(shiftedRegister.register) + ", " + printString(shiftedRegister.shiftType) +
+                                          " #" + print(shiftedRegister.shift)
+      else
+        print(shiftedRegister.register)
     case _ =>
       assert(assertion = false, "print for FlexibleSndOp type is undefined")
       ""
+  }
+
+  def print(int: Option[Int]): String = int match {
+    case Some(int) => int.toString
+    case _ => ""
+  }
+
+  def printString(string: Option[String]): String = string match {
+    case Some(string) => string.toString
+    case _ => ""
   }
 
   def conditionFlagToString(conditionFlag: Boolean): String =
@@ -319,8 +335,8 @@ object ARM11 extends InstructionSet {
       condition.get match {
         case Equal        => "EQ"
         case NotEqual     => "NE"
-        case HigherSame   => "HS"
-        case Lower        => "LO"
+        case HigherSame   => "CS"
+        case Lower        => "CC"
         case Negative     => "MI"
         case NonNegative  => "PL"
         case Overflow     => "VS"
