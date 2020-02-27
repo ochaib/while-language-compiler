@@ -16,6 +16,7 @@ object CodeGenerator {
   var RM: RegisterManager = _
   var topSymbolTable: SymbolTable = _
   var currentSymbolTable: SymbolTable = _
+  var bytesAllocatedSoFar: Int = 0
 
   // Keep track of number of branches.
   val labelGenerator: LabelGenerator = LabelGenerator()
@@ -46,6 +47,9 @@ object CodeGenerator {
     assert(instructionSet != null, "Instruction set needs to be defined.")
     assert(RM != null, "Register manager needs to be defined.")
 
+    // Enter the top symbol table
+    symbolTableManager.enterScope()
+
     // Generated code for functions
     val functionInstructions: IndexedSeq[Instruction] = program.functions.flatMap(generateFunction)
 
@@ -65,6 +69,9 @@ object CodeGenerator {
     val deallocateInstructions: Seq[Instruction] = leaveScopeAndDeallocateStack()
 
     val mainEndInstructions = IndexedSeq(zeroReturn, popPC, new EndFunction)
+
+    // Leave top symbol table
+    symbolTableManager.leaveScope()
 
     // Total Main Instructions
     val mainInstructions = mainHeaderInstructions ++ allocateInstructions ++
@@ -340,7 +347,7 @@ object CodeGenerator {
       // Current offset of identifier related to pair.
       new Load(None, None, peekedReg, instructionSet.getSP,
                // TODO: ANOTHER CHANGE FOR GETOFFSET HERE
-               new Immediate(symbolTableManager.getOffset(pairElem.getType(topSymbolTable, currentSymbolTable))))
+               new Immediate(symbolTableManager.getOffset(pairElem.getKey)))
     )
 
     var asmType: Option[ASMType] = None
@@ -482,9 +489,16 @@ object CodeGenerator {
   }
 
   def generateReturn(expr: ExprNode): IndexedSeq[Instruction] = {
-    IndexedSeq[Instruction](
-      Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())),
-      popPC)
+    if (bytesAllocatedSoFar == 0)
+      IndexedSeq[Instruction](
+        Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())),
+        popPC)
+    else
+      IndexedSeq[Instruction](
+        Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())),
+        Add(None, conditionFlag = false, instructionSet.getSP,
+          instructionSet.getSP, new Immediate(bytesAllocatedSoFar)),
+        popPC)
   }
 
   def generateExit(expr: ExprNode): IndexedSeq[Instruction] = {
@@ -709,7 +723,7 @@ object CodeGenerator {
                       IndexedSeq[Instruction](new Load(None, None,
                         RM.peekVariableRegister(), instructionSet.getSP,
                         // TODO: HERE IS THE CHANGE FOR SYMBOLTABLE STACK
-                        new Immediate(symbolTableManager.getOffset(ident.getType(topSymbolTable, currentSymbolTable)))))}
+                        new Immediate(symbolTableManager.getOffset(ident.getKey))))}
       case arrayElem: ArrayElemNode => generateArrayElem(arrayElem)
       case unaryOperation: UnaryOperationNode => generateUnary(unaryOperation)
       case binaryOperation: BinaryOperationNode => generateBinary(binaryOperation)
@@ -954,39 +968,46 @@ object CodeGenerator {
   def enterScopeAndAllocateStack(): IndexedSeq[Instruction] = {
     symbolTableManager.enterScope()
     if (getScopeStackSize(currentSymbolTable) == 0) IndexedSeq()
-    else
+    else {
+      bytesAllocatedSoFar += getScopeStackSize(currentSymbolTable)
       IndexedSeq(Subtract(None, conditionFlag = false,
         instructionSet.getSP, instructionSet.getSP, new Immediate(getScopeStackSize(currentSymbolTable))))
+    }
   }
 
   def leaveScopeAndDeallocateStack(): IndexedSeq[Instruction] = {
-    symbolTableManager.leaveScope()
+    currentSymbolTable = symbolTableManager.leaveScope()
     if (getScopeStackSize(currentSymbolTable) == 0) IndexedSeq()
-    else
+    // If all the bytes allocated so far have been freed, a return must have already taken place
+    else if (bytesAllocatedSoFar != 0) {
+      bytesAllocatedSoFar -= getScopeStackSize(currentSymbolTable)
       IndexedSeq(Add(None, conditionFlag = false,
         instructionSet.getSP, instructionSet.getSP, new Immediate(getScopeStackSize(currentSymbolTable))))
+    }
+    else IndexedSeq()
   }
 
-  case class SymbolTableManager(private val topLevelTable: SymbolTable) {
+  case class SymbolTableManager(private val initScope: SymbolTable) {
     // Scope information
-    private var currentScopeParent: SymbolTable = topLevelTable
+    private var currentScopeParent: SymbolTable = _
+    private var currentScope: SymbolTable = initScope
     private var currentScopeIndex: Int = -1
     private var indexStack: List[Int] = List[Int]()
-    private var currentScope: SymbolTable = _
+    private var scopeStack: List[SymbolTable] = List[SymbolTable]()
 
     // Variable offset information
     private var currentOffset: Int = -1
     // Map that maps offset to respective ident, is modified when getNextOffset is called.
-    private var identOffsetMap: Map[IDENTIFIER, Int] = Map[IDENTIFIER, Int]()
+    private var identOffsetMap: Map[String, Int] = Map[String, Int]()
     // Stack that keeps track of identMap, on ENTRY (NOT NEXT) to a new scope the current identOffsetMap is pushed to
     // the stack, an empty identOffsetMap replaces it. When LEAVING a scope the identOffsetMap is discarded and
     // the one for the next scope is popped.
-    var identMapStack: mutable.Stack[Map[IDENTIFIER, Int]] = mutable.Stack[Map[IDENTIFIER, Int]]()
+    var identMapStack: mutable.Stack[Map[String, Int]] = mutable.Stack[Map[String, Int]]()
 
     // Returns the next scope under the current scope level
     def nextScope(): SymbolTable = {
       // Check you can go to next scope
-      assert(currentScopeIndex + 1 < currentScopeParent.children.length, s"Cannot go to next scope.")
+      assert(currentScopeParent.children != null && currentScopeIndex + 1 < currentScopeParent.children.length, s"Cannot go to next scope.")
       // Increment Scope
       currentScopeIndex += 1
       // Update current scope
@@ -999,7 +1020,7 @@ object CodeGenerator {
     private def idIsVariableOrType(id: IDENTIFIER): Boolean = id.isInstanceOf[VARIABLE] || id.isInstanceOf[TYPE]
 
     def getNextOffset(key: String): Int = {
-      val currentIdOption = currentScope.lookup(key)
+      val currentIdOption = currentScopeParent.lookup(key)
       assert (currentIdOption.isDefined, "key must be defined in the scope")
       assert (idIsVariableOrType(currentIdOption.get), "key ID must be a variable or type")
       val offsetSize: Int = currentIdOption.get match {
@@ -1011,38 +1032,48 @@ object CodeGenerator {
       }
       currentOffset -= offsetSize
       // Add offset for IDENTIFIER to current scope map.
-      identOffsetMap + (currentIdOption.get -> currentOffset)
+      identOffsetMap + (key -> currentOffset)
       currentOffset
     }
 
     // Returns current identifier offset
-    def getOffset(id: IDENTIFIER): Int = {
+    def getOffset(key: String): Int = {
       // Retrieve offset for current identifier or return 0.
-      identOffsetMap getOrElse(id, 0)
+      identOffsetMap getOrElse(key, 0)
     }
 
     // Enters the current scope
     def enterScope(): Unit = {
-      assert(currentScopeParent.children.isDefinedAt(currentScopeIndex))
-      currentScopeParent = currentScopeParent.children.apply(currentScopeIndex)
+      currentScopeParent = currentScope
       // Push
       indexStack = currentScopeIndex :: indexStack
       // Push identOffsetMap to identMapStack:
       identMapStack.push(identOffsetMap)
       // Reset identOffsetMap for next stack.
-      identOffsetMap = Map[IDENTIFIER, Int]()
+      identOffsetMap = Map[String, Int]()
+      scopeStack = currentScope :: scopeStack
       currentScopeIndex = -1
+      currentScope = null
     }
 
     // Leaves the current scope
-    def leaveScope(): Unit = {
+    def leaveScope(): SymbolTable = {
       assert(indexStack.nonEmpty, "Scope is at the top level already")
+      assert(scopeStack.nonEmpty, "Scope is at the top level already")
       currentScopeParent = currentScopeParent.encSymbolTable
       // Pop
       currentScopeIndex = indexStack.head
       // Pop identOffsetMap off identMapStack and set it to current identOffsetMap
       identOffsetMap = identMapStack.pop()
       indexStack = indexStack.tail
+      currentScope = scopeStack.head
+      scopeStack = scopeStack.tail
+      currentScope
+    }
+
+    def returnToTopScope(): Unit = {
+      while (scopeStack.size > 1)
+        leaveScope()
     }
   }
 
