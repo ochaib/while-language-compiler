@@ -694,11 +694,17 @@ object CodeGenerator {
                   => IndexedSeq[Instruction](new Load(None, None,
                      RM.peekVariableRegister(), new LoadableExpression(0)))
       case ident: IdentNode
-      // Get offset from symbol table for the ident and replace it in the immediate.
-                  => IndexedSeq[Instruction](new Load(None, None,
-                     RM.peekVariableRegister(),
-                     new LoadableExpression(getSize(
-                         ident.getType(topSymbolTable, currentSymbolTable)))))
+      // Load identifier into first available variable register.
+                  => if (checkSingleByte(ident)) {
+                      IndexedSeq[Instruction](new Load(None, Some(ByteType),
+                        RM.peekVariableRegister(),
+                        new LoadableExpression(getSize(
+                          ident.getType(topSymbolTable, currentSymbolTable)))))
+                  } else {
+                      IndexedSeq[Instruction](new Load(None, None,
+                        RM.peekVariableRegister(),
+                        new LoadableExpression(getSize(
+                          ident.getType(topSymbolTable, currentSymbolTable)))))}
       case arrayElem: ArrayElemNode => generateArrayElem(arrayElem)
       case unaryOperation: UnaryOperationNode => generateUnary(unaryOperation)
       case binaryOperation: BinaryOperationNode => generateBinary(binaryOperation)
