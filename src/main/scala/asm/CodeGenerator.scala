@@ -45,46 +45,40 @@ object CodeGenerator {
     assert(RM != null, "Register manager needs to be defined.")
 
     // Generated code for functions
-    val functions: IndexedSeq[Instruction] = program.functions.flatMap(generateFunction)
+    val functionInstructions: IndexedSeq[Instruction] = program.functions.flatMap(generateFunction)
 
     // Update the current symbol table for main method
     currentSymbolTable = symbolTableManager.nextScope()
 
+    // Enter Scope
+    val allocateInstrucitons = enterScopeAndAllocateStack()
+
+    // Main directive and pushing LR
+    val mainHeaderInstructions: IndexedSeq[Instruction] = IndexedSeq[Instruction](Label("main"), pushLR)
+
     // Generated code for stats
-    val stats: IndexedSeq[Instruction] = generateStatement(program.stat)
+    val statInstructions: IndexedSeq[Instruction] = generateStatement(program.stat)
 
-    // Generated instructions to encompass everything generated.
-    val generatedInstructions: IndexedSeq[Instruction] = (functions
-      ++ {
-      // If there is no stack size no need to add it to the instructions
-      if (getScopeStackSize(currentSymbolTable) == 0)
-        IndexedSeq[Instruction](Label("main"), pushLR)
-      else
-        IndexedSeq[Instruction](Label("main"), pushLR,
-          Subtract(None, conditionFlag = false,
-          instructionSet.getSP, instructionSet.getSP, new Immediate(getScopeStackSize(currentSymbolTable))))
-      } ++ stats)
+    // Leave Scope
+    val deallocateInstructions: Seq[Instruction] = leaveScopeAndDeallocateStack()
 
-    val endInstructions = {
-      if (getScopeStackSize(currentSymbolTable) == 0)
-        IndexedSeq(zeroReturn, popPC, new EndFunction)
-      else
-        IndexedSeq[Instruction](
-          Add(None, conditionFlag = false, instructionSet.getSP,
-            instructionSet.getSP, new Immediate(getScopeStackSize(currentSymbolTable))),
-          zeroReturn, popPC, new EndFunction)
-    }
+    val mainEnderInstructions = IndexedSeq(zeroReturn, popPC, new EndFunction)
 
-    // Leave the current scope
-    // symbolTableManager.leaveScope()
+    // Total Main Instructions
+    val mainInstructions = mainHeaderInstructions ++ allocateInstrucitons ++
+      statInstructions ++ deallocateInstructions ++ mainEnderInstructions
 
-    generatedInstructions ++ endInstructions
+    // Program Instructions = Function Instructions + Main Instructions
+    functionInstructions ++ mainInstructions
   }
 
   def generateFunction(func: FuncNode): IndexedSeq[Instruction] = {
 
     // Update the current symbol table to function block
     currentSymbolTable = symbolTableManager.nextScope()
+
+    // Enter function scope
+    val allocateInstructions = enterScopeAndAllocateStack()
 
     var labelPushLR = IndexedSeq[Instruction](Label(s"f_${func.identNode.ident}"), pushLR)
     if (func.paramList.isDefined)
@@ -95,9 +89,12 @@ object CodeGenerator {
     // Generate instructions for statement.
     val statInstructions = generateStatement(func.stat)
 
+    // Leave function scope
+    val deallocateInstructions = leaveScopeAndDeallocateStack()
+
     var popEndInstruction = IndexedSeq[Instruction](popPC, new EndFunction)
 
-    labelPushLR ++ statInstructions ++ popEndInstruction
+    labelPushLR ++ allocateInstructions ++ statInstructions ++ deallocateInstructions ++ popEndInstruction
   }
 
 //  def generateParamList(paramList: ParamListNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
