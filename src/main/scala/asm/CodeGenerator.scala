@@ -933,12 +933,13 @@ object CodeGenerator {
 
   def leaveScopeAndDeallocateStack(): IndexedSeq[Instruction] = {
     currentSymbolTable = symbolTableManager.leaveScope()
-    bytesAllocatedSoFar -= getScopeStackSize(currentSymbolTable)
     if (getScopeStackSize(currentSymbolTable) == 0) IndexedSeq()
     // If all the bytes allocated so far have been freed, a return must have already taken place
-    else if (bytesAllocatedSoFar != 0)
+    else if (bytesAllocatedSoFar != 0) {
+      bytesAllocatedSoFar -= getScopeStackSize(currentSymbolTable)
       IndexedSeq(Add(None, conditionFlag = false,
         instructionSet.getSP, instructionSet.getSP, new Immediate(getScopeStackSize(currentSymbolTable))))
+    }
     else IndexedSeq()
   }
 
