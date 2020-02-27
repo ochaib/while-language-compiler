@@ -7,6 +7,8 @@ import asm.utilities._
 import ast.nodes._
 import ast.symboltable._
 
+import scala.collection.mutable
+
 object CodeGenerator {
 
   var symbolTableManager: SymbolTableManager = _
@@ -337,7 +339,8 @@ object CodeGenerator {
     val loadOffset = IndexedSeq[Instruction](
       // Current offset of identifier related to pair.
       new Load(None, None, peekedReg, instructionSet.getSP,
-               new Immediate(symbolTableManager.getCurrentOffset))
+               // TODO: ANOTHER CHANGE FOR GETOFFSET HERE
+               new Immediate(symbolTableManager.getOffset(pairElem.getType(topSymbolTable, currentSymbolTable))))
     )
 
     var asmType: Option[ASMType] = None
@@ -690,16 +693,23 @@ object CodeGenerator {
       case Str_literNode(_, str)
                   => IndexedSeq[Instruction](new Load(None, None,
                      RM.peekVariableRegister(), Label(str)))
-      // May replace with zeroReturn.
+      // All that is necessary for Pair_liter expression generation.
       case Pair_literNode(_)
                   => IndexedSeq[Instruction](new Load(None, None,
                      RM.peekVariableRegister(), new LoadableExpression(0)))
       case ident: IdentNode
-      // Get offset from symbol table for the ident and replace it in the immediate.
-                  => IndexedSeq[Instruction](new Load(None, None,
-                     RM.peekVariableRegister(),
-                     new LoadableExpression(getSize(
-                         ident.getType(topSymbolTable, currentSymbolTable)))))
+      // Load identifier into first available variable register.
+        // TODO: Daniel Check as loading immediate instead of loadable expression.
+                  => if (checkSingleByte(ident)) {
+                      IndexedSeq[Instruction](new Load(None, Some(ByteType),
+                        RM.peekVariableRegister(), instructionSet.getSP,
+                        new Immediate(getSize(
+                          ident.getType(topSymbolTable, currentSymbolTable)))))
+                  } else {
+                      IndexedSeq[Instruction](new Load(None, None,
+                        RM.peekVariableRegister(), instructionSet.getSP,
+                        // TODO: HERE IS THE CHANGE FOR SYMBOLTABLE STACK
+                        new Immediate(symbolTableManager.getOffset(ident.getType(topSymbolTable, currentSymbolTable)))))}
       case arrayElem: ArrayElemNode => generateArrayElem(arrayElem)
       case unaryOperation: UnaryOperationNode => generateUnary(unaryOperation)
       case binaryOperation: BinaryOperationNode => generateBinary(binaryOperation)
@@ -714,7 +724,7 @@ object CodeGenerator {
           ExclusiveOr(None, conditionFlag = false, RM.peekVariableRegister(),
                       RM.peekVariableRegister(), new Immediate(1)))
 
-      // Negate is not currently adding sign to the immediate to be loaded.
+      // Negate according to reference compiler.
       case NegateNode(_, expr) =>
         generateExpression(expr) ++
         IndexedSeq[Instruction](
@@ -736,28 +746,48 @@ object CodeGenerator {
     val varReg1 = RM.nextVariableRegister()
     val varReg2 = RM.peekVariableRegister()
     RM.freeVariableRegister(varReg1)
+    val r1 = instructionSet.getArgumentRegisters(1)
 
     binaryOperation match {
       case MultiplyNode(_, argOne, argTwo) =>
         generateExpression(argOne) ++ generateExpression(argTwo) ++
-        IndexedSeq[Instruction](SMull(None, conditionFlag = false, varReg1,
-                                      varReg2, varReg1, varReg2))
+        IndexedSeq[Instruction](
+          SMull(None, conditionFlag = false, varReg1, varReg2, varReg1, varReg2),
+          // Need to be shifted by 31, ASR 31
+          Compare(None, varReg2, new ShiftedRegister(varReg1, 31)),
+          // TODO: Trigger p_throw_overflow_error
+          BranchLink(Some(NotEqual), Label("p_throw_overflow_error")))
       case DivideNode(_, argOne, argTwo) =>
         generateExpression(argOne) ++ generateExpression(argTwo) ++
-        IndexedSeq[Instruction](BranchLink(None, Label("p_check_divide_by_zero")),
-                                BranchLink(None, Label("__aeabi_idiv")))
+          // TODO: Call function to generate labels below.
+          IndexedSeq[Instruction](
+            Move(None, instructionSet.getReturn, new ShiftedRegister(varReg1)),
+            Move(None, r1, new ShiftedRegister(varReg2)),
+            BranchLink(None, Label("p_check_divide_by_zero")),
+            BranchLink(None, Label("__aeabi_idiv")),
+            Move(None, varReg1, new ShiftedRegister(instructionSet.getReturn)))
       case ModNode(_, argOne, argTwo) =>
         generateExpression(argOne) ++ generateExpression(argTwo) ++
-        IndexedSeq[Instruction](BranchLink(None, Label("p_check_divide_by_zero")),
-                                BranchLink(None, Label("__aeabi_idiv")))
+        // TODO: Call function to generate labels below.
+        IndexedSeq[Instruction](
+          Move(None, instructionSet.getReturn, new ShiftedRegister(varReg1)),
+          Move(None, r1, new ShiftedRegister(varReg2)),
+          BranchLink(None, Label("p_check_divide_by_zero")),
+          BranchLink(None, Label("__aeabi_idiv")),
+          Move(None, varReg1, new ShiftedRegister(r1)))
       case PlusNode(_, argOne, argTwo) =>
-        generateExpression(argOne) ++ generateExpression(argTwo) ++
-        IndexedSeq[Instruction](Add(None, conditionFlag = false, varReg1,
-                                    varReg1, new ShiftedRegister(varReg2)))
+        // Should be ADDS, conditionFlag set to true.
+      generateExpression(argOne) ++ generateExpression(argTwo) ++
+        IndexedSeq[Instruction](
+          Add(None, conditionFlag = true, varReg1, varReg1, new ShiftedRegister(varReg2)),
+          // TODO: Call function to generate overflow error label.
+          BranchLink(Some(Overflow), Label("p_throw_overflow_error")))
       case MinusNode(_, argOne, argTwo) =>
         generateExpression(argOne) ++ generateExpression(argTwo) ++
-        IndexedSeq[Instruction](Subtract(None, conditionFlag = false, varReg1,
-                                         varReg1, new ShiftedRegister(varReg2)))
+        IndexedSeq[Instruction](
+          Subtract(None, conditionFlag = true, varReg1, varReg1, new ShiftedRegister(varReg2)),
+          // TODO: Call function to generate overflow error label.
+          BranchLink(Some(Overflow), Label("p_throw_overflow_error")))
 
       case GreaterThanNode(_, argOne, argTwo) =>
         generateExpression(argOne) ++ generateExpression(argTwo) ++
@@ -855,8 +885,9 @@ object CodeGenerator {
       BranchLink(condition=None, label=Flush.label),
       popPC
     )
-    
   }
+
+
 
   def printFreePair: IndexedSeq[Instruction] = {
     val returnReg: Register = instructionSet.getReturn
@@ -871,6 +902,17 @@ object CodeGenerator {
       Pop(None, List(returnReg)), BranchLink(None, Label("free")), popPC
     )
   }
+    def printReadChar: IndexedSeq[Instruction] = {
+    IndexedSeq[Instruction](
+      pushLR, Move(None, instructionSet.getArgumentRegisters(1), new ShiftedRegister(instructionSet.getReturn)),
+      // TODO: Change this.
+      new Load(None, None, instructionSet.getReturn, Label("msg_read_char")),
+      Add(None, conditionFlag = false, instructionSet.getReturn, instructionSet.getReturn, new Immediate(4)),
+//      BranchLink(None, Label("scanf")),
+      popPC
+    )
+  }
+
 
   def getSize(_type: TYPE): Int = {
     _type match {
@@ -931,6 +973,13 @@ object CodeGenerator {
 
     // Variable offset information
     private var currentOffset: Int = -1
+    // Map that maps offset to respective ident, is modified when getNextOffset is called.
+    private var identOffsetMap: Map[IDENTIFIER, Int] = Map[IDENTIFIER, Int]()
+    // Stack that keeps track of identMap, on ENTRY (NOT NEXT) to a new scope the current identOffsetMap is pushed to
+    // the stack, an empty identOffsetMap replaces it. When LEAVING a scope the identOffsetMap is discarded and
+    // the one for the next scope is popped.
+    var identMapStack: mutable.Stack[Map[IDENTIFIER, Int]] = mutable.Stack[Map[IDENTIFIER, Int]]()
+
     // Returns the next scope under the current scope level
     def nextScope(): SymbolTable = {
       // Check you can go to next scope
@@ -958,12 +1007,15 @@ object CodeGenerator {
           -1
       }
       currentOffset -= offsetSize
+      // Add offset for IDENTIFIER to current scope map.
+      identOffsetMap + (currentIdOption.get -> currentOffset)
       currentOffset
     }
 
     // Returns current identifier offset
-    def getCurrentOffset: Int = {
-      currentOffset
+    def getOffset(id: IDENTIFIER): Int = {
+      // Retrieve offset for current identifier or return 0.
+      identOffsetMap getOrElse(id, 0)
     }
 
     // Enters the current scope
@@ -972,14 +1024,21 @@ object CodeGenerator {
       currentScopeParent = currentScopeParent.children.apply(currentScopeIndex)
       // Push
       indexStack = currentScopeIndex :: indexStack
+      // Push identOffsetMap to identMapStack:
+      identMapStack.push(identOffsetMap)
+      // Reset identOffsetMap for next stack.
+      identOffsetMap = Map[IDENTIFIER, Int]()
       currentScopeIndex = -1
     }
+
     // Leaves the current scope
     def leaveScope(): Unit = {
       assert(indexStack.nonEmpty, "Scope is at the top level already")
       currentScopeParent = currentScopeParent.encSymbolTable
       // Pop
       currentScopeIndex = indexStack.head
+      // Pop identOffsetMap off identMapStack and set it to current identOffsetMap
+      identOffsetMap = identMapStack.pop()
       indexStack = indexStack.tail
     }
   }
