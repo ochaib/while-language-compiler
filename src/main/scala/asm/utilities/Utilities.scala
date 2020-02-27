@@ -172,4 +172,60 @@ object Utilities {
         )
     }
 
+
+    def generateCommonFunction(func: CommonFunction): IndexedSeq[Instruction] = func match {
+        case PrintLn => IndexedSeq[Instruction](
+            pushLR,
+            Add(condition=None, conditionFlag=false, dest=instructionSet.getReturn, src1=instructionSet.getReturn, src2=new Immediate(4)),
+            BranchLink(condition=None, label=Puts.label),
+            Move(condition=None, dest=instructionSet.getReturn, src=new Immediate(0)),
+            BranchLink(condition=None, label=Flush.label),
+            popPC
+        )
+        case PrintRuntimeError => IndexedSeq[Instruction](
+            BranchLink(condition=None, PrintString.label),
+            Move(condition=None, dest=instructionSet.getReturn, src=new Immediate(-1)),
+            BranchLink(None, Exit.label)
+        )
+        case PrintString => IndexedSeq[Instruction](
+            pushLR,
+            new Load(condition=None, asmType=None, dest=instructionSet.getArgumentRegisters(1), src=instructionSet.getReturn),
+            Add(condition=None, conditionFlag=false, dest=instructionSet.getArgumentRegisters(2), src1=instructionSet.getReturn, src2=new Immediate(4)),
+            BranchLink(condition=None, label=Printf.label),
+            Move(condition=None, dest=instructionSet.getReturn, src=new Immediate(0)),
+            BranchLink(condition=None, label=Flush.label),
+            popPC
+        )
+        case PrintFreePair => IndexedSeq[Instruction](
+            pushLR,
+            Compare(condition=None, operand1=instructionSet.getReturn, operand2=new Immediate(0)),
+            new Load(condition=Some(Equal), asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_free_pair")),
+            Branch(condition=Some(Equal), label=PrintRuntimeError.label),
+            Push(condition=None, List(instructionSet.getReturn)),
+            new Load(condition=None, asmType=None, dest=instructionSet.getReturn, src=instructionSet.getReturn),
+            BranchLink(condition=None, label=Free.label),
+            new Load(condition=None, asmType=None, dest=instructionSet.getReturn, src=instructionSet.getSP),
+            new Load(condition=None, asmType=None, dest=instructionSet.getReturn, src=instructionSet.getReturn, flexOffset=new Immediate(4)),
+            BranchLink(condition=None, label=Free.label),
+            Pop(condition=None, List(instructionSet.getReturn)),
+            BranchLink(None, label=Free.label),
+            popPC
+        )
+        case PrintReadChar => IndexedSeq[Instruction](
+            pushLR,
+            Move(condition=None, dest=instructionSet.getArgumentRegisters(1), src=new ShiftedRegister(instructionSet.getReturn)),
+            new Load(condition=None, asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_read_char")),
+            new Add(condition=None, conditionFlag=false, dest=instructionSet.getReturn, src1=instructionSet.getReturn, src2=new Immediate(4)),
+            BranchLink(condition=None, label=Scanf.label),
+            popPC
+        )
+        case PrintCheckNullPointer => IndexedSeq[Instruction](
+            pushLR,
+            Compare(condition=None, operand1=instructionSet.getReturn, operand2=new Immediate(0)),
+            new Load(condition=Some(Equal), asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_check_null_pointer")),
+            BranchLink(condition=Some(Equal), PrintRuntimeError.label),
+            popPC
+        )
+    }
+
 }
