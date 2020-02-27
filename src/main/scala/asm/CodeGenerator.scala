@@ -851,17 +851,7 @@ object CodeGenerator {
         == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable))
   }
 
-  // TODO: migrate this to a common function
-  def checkNullPointer: IndexedSeq[Instruction] = {
-    IndexedSeq[Instruction](
-      pushLR, Compare(None, instructionSet.getReturn, new Immediate(0)),
-      // TODO: Should be msg=n instead of the string itself.
-//      new Load(Equal, None, instructionSet.getReturn, new Immediate("NullReferenceError: dereference a null reference\n\0")),
-      BranchLink(Some(Equal), Label("p_throw_runtime_error")), popPC
-    )
-  }
-
-  // TODO: when done move this to utilities
+    // TODO: when done move this to utilities
   def generateCommonFunction(func: CommonFunction): IndexedSeq[Instruction] = func match {
     case PrintLn => IndexedSeq[Instruction](
       pushLR,
@@ -906,6 +896,13 @@ object CodeGenerator {
       new Load(condition=None, asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_read_char")),
       new Add(condition=None, conditionFlag=false, dest=instructionSet.getReturn, src1=instructionSet.getReturn, src2=new Immediate(4)),
       BranchLink(condition=None, label=Scanf.label),
+      popPC
+    )
+    case PrintCheckNullPointer => IndexedSeq[Instruction](
+      pushLR,
+      Compare(condition=None, operand1=instructionSet.getReturn, operand2=new Immediate(0)),
+      new Load(condition=Some(Equal), asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_check_null_pointer")),
+      BranchLink(condition=Some(Equal), PrintRuntimeError.label),
       popPC
     )
   }

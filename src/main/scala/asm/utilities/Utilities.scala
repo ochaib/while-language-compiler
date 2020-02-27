@@ -128,6 +128,16 @@ object Utilities {
         )
     }
 
+    def printCheckNullPointer: IndexedSeq[Instruction] = {
+        if (commonFunctions.add(PrintCheckNullPointer))
+            strings += (Label("msg_check_null_pointer") ->
+                new StringLiteral("NullReferenceError: dereference a null reference\n\0", 50)
+            )
+        IndexedSeq[Instruction](
+            BranchLink(condition=None, label=PrintCheckNullPointer.label)
+        )
+    }
+
     def printOverflowError: IndexedSeq[Instruction] = {
         // BLVS p_throw_overflow_error
         if (commonFunctions.add(PrintOverflowError))

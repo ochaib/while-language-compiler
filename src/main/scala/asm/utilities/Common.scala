@@ -13,6 +13,7 @@ case object PrintBool extends CommonFunction { val label: Label = new Label("p_p
 case object PrintInt extends CommonFunction { val label: Label = new Label("p_print_int") }
 case object PrintFreePair extends CommonFunction { val label: Label = new Label("p_free_pair") }
 case object PrintReadChar extends CommonFunction { val label: Label = new Label("p_read_char") }
+case object PrintCheckNullPointer extends CommonFunction { val label: Label = new Label("p_check_null_pointer") }
 
 // error funcs
 case object PrintOverflowError extends CommonFunction { val label: Label = new Label("p_throw_overflow_error") }
