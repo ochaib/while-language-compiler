@@ -742,6 +742,7 @@ object CodeGenerator {
     val varReg1 = RM.nextVariableRegister()
     val varReg2 = RM.peekVariableRegister()
     RM.freeVariableRegister(varReg1)
+    val r1 = instructionSet.getArgumentRegisters(1)
 
     binaryOperation match {
       case MultiplyNode(_, argOne, argTwo) =>
@@ -750,20 +751,35 @@ object CodeGenerator {
                                       varReg2, varReg1, varReg2))
       case DivideNode(_, argOne, argTwo) =>
         generateExpression(argOne) ++ generateExpression(argTwo) ++
-        IndexedSeq[Instruction](BranchLink(None, Label("p_check_divide_by_zero")),
-                                BranchLink(None, Label("__aeabi_idiv")))
+          // TODO: Call function to generate labels below.
+          IndexedSeq[Instruction](
+            Move(None, instructionSet.getReturn, new ShiftedRegister(varReg1)),
+            Move(None, r1, new ShiftedRegister(varReg2)),
+            BranchLink(None, Label("p_check_divide_by_zero")),
+            BranchLink(None, Label("__aeabi_idiv")),
+            Move(None, varReg1, new ShiftedRegister(instructionSet.getReturn)))
       case ModNode(_, argOne, argTwo) =>
         generateExpression(argOne) ++ generateExpression(argTwo) ++
-        IndexedSeq[Instruction](BranchLink(None, Label("p_check_divide_by_zero")),
-                                BranchLink(None, Label("__aeabi_idiv")))
+        // TODO: Call function to generate labels below.
+        IndexedSeq[Instruction](
+          Move(None, instructionSet.getReturn, new ShiftedRegister(varReg1)),
+          Move(None, r1, new ShiftedRegister(varReg2)),
+          BranchLink(None, Label("p_check_divide_by_zero")),
+          BranchLink(None, Label("__aeabi_idiv")),
+          Move(None, varReg1, new ShiftedRegister(r1)))
       case PlusNode(_, argOne, argTwo) =>
-        generateExpression(argOne) ++ generateExpression(argTwo) ++
-        IndexedSeq[Instruction](Add(None, conditionFlag = false, varReg1,
-                                    varReg1, new ShiftedRegister(varReg2)))
+        // Should be ADDS, conditionFlag set to true.
+      generateExpression(argOne) ++ generateExpression(argTwo) ++
+        IndexedSeq[Instruction](
+          Add(None, conditionFlag = true, varReg1, varReg1, new ShiftedRegister(varReg2)),
+          // TODO: Call function to generate overflow error label.
+          BranchLink(Some(Overflow), Label("p_throw_overflow_error")))
       case MinusNode(_, argOne, argTwo) =>
         generateExpression(argOne) ++ generateExpression(argTwo) ++
-        IndexedSeq[Instruction](Subtract(None, conditionFlag = false, varReg1,
-                                         varReg1, new ShiftedRegister(varReg2)))
+        IndexedSeq[Instruction](
+          Subtract(None, conditionFlag = true, varReg1, varReg1, new ShiftedRegister(varReg2)),
+          // TODO: Call function to generate overflow error label.
+          BranchLink(Some(Overflow), Label("p_throw_overflow_error")))
 
       case GreaterThanNode(_, argOne, argTwo) =>
         generateExpression(argOne) ++ generateExpression(argTwo) ++

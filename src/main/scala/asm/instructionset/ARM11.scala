@@ -178,7 +178,7 @@ object ARM11 extends InstructionSet {
           loadable match {
             case Label(label) => label
             case expression: LoadableExpression => expression.num.toString
-            case _ => assert(false, "Loadable not accounted for")
+            case _ => assert(assertion = false, "Loadable not accounted for")
           }}"
 
     // Invalid LDR case
