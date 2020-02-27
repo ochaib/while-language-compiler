@@ -922,6 +922,10 @@ object CodeGenerator {
       BranchLink(condition=None, Flush.label),
       popPC
     )
+    case PrintOverflowError => IndexedSeq[Instruction](
+      new Load(condition=None, asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_throw_overflow_error")),
+      BranchLink(condition=None, label=PrintRuntimeError.label)
+    )
   }
 
   def checkSingleByte(expr: ExprNode): Boolean = {
