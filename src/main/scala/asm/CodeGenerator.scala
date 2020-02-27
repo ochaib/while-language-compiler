@@ -347,7 +347,7 @@ object CodeGenerator {
 
     // Check if B is necessary for load, store etc.
     // May need to be ByteType
-    if (checkSingleByte(pairElem)) asmType = Some(SignedByte)
+    if (checkSingleByte(pairElem)) asmType = Some(ByteType)
 
     // TODO: Add Null pointer check here.
     val nullPtrIns = genNullPointerInstructions
