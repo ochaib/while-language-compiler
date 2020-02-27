@@ -935,10 +935,11 @@ object CodeGenerator {
     currentSymbolTable = symbolTableManager.leaveScope()
     bytesAllocatedSoFar -= getScopeStackSize(currentSymbolTable)
     if (getScopeStackSize(currentSymbolTable) == 0) IndexedSeq()
-    else {
+    // If all the bytes allocated so far have been freed, a return must have already taken place
+    else if (bytesAllocatedSoFar != 0)
       IndexedSeq(Add(None, conditionFlag = false,
         instructionSet.getSP, instructionSet.getSP, new Immediate(getScopeStackSize(currentSymbolTable))))
-    }
+    else IndexedSeq()
   }
 
   case class SymbolTableManager(private val initScope: SymbolTable) {
