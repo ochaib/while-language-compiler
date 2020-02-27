@@ -287,7 +287,8 @@ object ARM11 extends InstructionSet {
     // Temp fix for multiply.
     case shiftedRegister: ShiftedRegister =>
       if (shiftedRegister.shift.isDefined)
-        print(shiftedRegister.register) + ", ASR #" + print(shiftedRegister.shift)
+        print(shiftedRegister.register) + ", " + printString(shiftedRegister.shiftType) +
+                                          " #" + print(shiftedRegister.shift)
       else
         print(shiftedRegister.register)
     case _ =>
@@ -297,6 +298,11 @@ object ARM11 extends InstructionSet {
 
   def print(int: Option[Int]): String = int match {
     case Some(int) => int.toString
+    case _ => ""
+  }
+
+  def printString(string: Option[String]): String = string match {
+    case Some(string) => string.toString
     case _ => ""
   }
 

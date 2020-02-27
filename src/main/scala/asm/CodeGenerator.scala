@@ -216,8 +216,7 @@ object CodeGenerator {
           // TODO: Add label for p_check_array_bounds
           BranchLink(None, Label("p_check_array_bounds")),
           Add(None, conditionFlag = false, varReg, varReg, new Immediate(4)),
-          // TODO: This should also be shifted by 2
-          Add(None, conditionFlag = false, varReg, varReg, new ShiftedRegister(RM.peekVariableRegister()))
+          Add(None, conditionFlag = false, varReg, varReg, new ShiftedRegister(RM.peekVariableRegister(), "LSL", 2))
         )
       )
     }
@@ -754,7 +753,7 @@ object CodeGenerator {
         IndexedSeq[Instruction](
           SMull(None, conditionFlag = false, varReg1, varReg2, varReg1, varReg2),
           // Need to be shifted by 31, ASR 31
-          Compare(None, varReg2, new ShiftedRegister(varReg1, 31)),
+          Compare(None, varReg2, new ShiftedRegister(varReg1, "ASR", 31)),
           // TODO: Trigger p_throw_overflow_error
           BranchLink(Some(NotEqual), Label("p_throw_overflow_error")))
       case DivideNode(_, argOne, argTwo) =>
