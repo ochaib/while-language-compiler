@@ -136,9 +136,11 @@ object CodeGenerator {
 
   def generateAssignLHS(lhs: AssignLHSNode): IndexedSeq[Instruction] = {
     lhs match {
-      case ident: IdentNode => generateExpression(ident)
-      case arrayElem: ArrayElemNode => generateArrayElem(arrayElem)
-      case pairElem: PairElemNode => generatePairElem(pairElem)
+      case ident: IdentNode
+        // Need to pass offset here too.
+        => IndexedSeq[Instruction](new Store(None, None, RM.peekVariableRegister(), instructionSet.getSP))
+      case arrayElem: ArrayElemNode => generateArrayElemLHS(arrayElem)
+      case pairElem: PairElemNode => generatePairElemLHS(pairElem)
     }
   }
 
@@ -159,10 +161,70 @@ object CodeGenerator {
       new Immediate(symbolTableManager.getNextOffset(ident.getKey))))
   }
 
-  // TODO: THIS
+  // THIS, COMES FROM EXPR
   def generateArrayElem(arrayElem: ArrayElemNode): IndexedSeq[Instruction] = {
-    generateExpression(arrayElem.identNode) ++
-      arrayElem.exprNodes.flatMap(generateExpression) ++ IndexedSeq[Instruction]()
+    val varReg = RM.nextVariableRegister()
+
+    // Must now retrieve elements in array corresponding to each
+    val arrayElemInstructions = retrieveArrayElements(arrayElem, varReg)
+
+    val loadRes: IndexedSeq[Instruction] = IndexedSeq[Instruction](new Load(None, None, varReg, varReg))
+
+    RM.freeVariableRegister(varReg)
+
+    arrayElemInstructions ++ loadRes
+  }
+
+  // THIS COMES FROM ASSIGNLHS
+  def generateArrayElemLHS(arrayElem: ArrayElemNode): IndexedSeq[Instruction] = {
+    val varReg1 = RM.nextVariableRegister()
+    val varReg2 = RM.nextVariableRegister()
+
+    // Must now retrieve elements in array corresponding to each
+    val arrayElemInstructions = retrieveArrayElements(arrayElem, varReg2)
+
+    var asmType: Option[ASMType] = None
+
+    // Check if B is necessary for load, store etc.
+    // May need to be ByteType
+    if (checkSingleByte(arrayElem)) asmType = Some(SignedByte)
+
+    val storeResult = IndexedSeq[Instruction](
+      new Store(None, asmType, varReg1, varReg2)
+    )
+
+    // Since we are done with variable registers above we can free them.
+    RM.freeVariableRegister(varReg2)
+    RM.freeVariableRegister(varReg1)
+
+    // Return generated instructions.
+    arrayElemInstructions ++ storeResult
+  }
+
+  def retrieveArrayElements(arrayElem: ArrayElemNode, varReg: Register): IndexedSeq[Instruction] = {
+    val preExpr = IndexedSeq[Instruction](
+      Add(None, conditionFlag = false, varReg, instructionSet.getSP,
+          new Immediate(getSize(arrayElem.identNode.getType(topSymbolTable, currentSymbolTable))))
+    )
+
+    // Produce following instructions for every expression in the array.
+    val exprInstructions: IndexedSeq[Instruction] = {
+      arrayElem.exprNodes.flatMap(e => generateExpression(e) ++
+        IndexedSeq[Instruction](
+          new Load(None, None, varReg, varReg),
+          Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())),
+          Move(None, instructionSet.getArgumentRegisters(1), new ShiftedRegister(varReg)),
+          // TODO: Add label for p_check_array_bounds
+          BranchLink(None, Label("p_check_array_bounds")),
+          Add(None, conditionFlag = false, varReg, varReg, new Immediate(4)),
+          // TODO: This should also be shifted by 2
+          Add(None, conditionFlag = false, varReg, varReg, new ShiftedRegister(RM.peekVariableRegister()))
+        )
+      )
+    }
+
+    // Return generated instructions.
+    preExpr ++ exprInstructions
   }
 
   def generateAssignRHS(rhs: AssignRHSNode): IndexedSeq[Instruction] = {
@@ -265,6 +327,46 @@ object CodeGenerator {
     exprInstructions ++ coreInstructions :+ finalStore
   }
 
+  def generatePairElemLHS(pairElem: PairElemNode): IndexedSeq[Instruction] = {
+    // Register than had rhs evaluated instructions.
+    val varReg = RM.nextVariableRegister()
+    val peekedReg = RM.peekVariableRegister()
+
+    // TODO: Check if loadOffset below can be replaced with:
+    // TODO: val offset: Int = pairElem match {
+    // TODO:  case fst: FstNode => generateExpression(fst.expr)
+    // TODO:  case snd: SndNode => generateExpression(snd.expr) }
+
+    val loadOffset = IndexedSeq[Instruction](
+      // Current offset of identifier related to pair.
+      new Load(None, None, peekedReg, instructionSet.getSP,
+               new Immediate(symbolTableManager.getCurrentOffset))
+    )
+
+    var asmType: Option[ASMType] = None
+
+    // Check if B is necessary for load, store etc.
+    // May need to be ByteType
+    if (checkSingleByte(pairElem)) asmType = Some(SignedByte)
+
+    // TODO: Add Null pointer check here.
+    val nullPtrIns = genNullPointerInstructions
+
+    val offset: Int = pairElem match {
+      case fst: FstNode => 0
+      case snd: SndNode => 4
+    }
+
+    val loadStore = IndexedSeq[Instruction](
+      new Load(None, None, peekedReg, peekedReg, new Immediate(offset)),
+      new Store(None, asmType, varReg, peekedReg)
+    )
+    // Free register now.
+    RM.freeVariableRegister(varReg)
+
+    loadOffset ++ nullPtrIns ++ loadStore
+  }
+
   def generatePairElem(pairElem: PairElemNode): IndexedSeq[Instruction] = {
     pairElem match {
       case fst: FstNode => generateExpression(fst.expression) ++ generatePEHelper(fst, isSnd = false)
@@ -273,8 +375,7 @@ object CodeGenerator {
   }
 
   def generatePEHelper(pairElemNode: PairElemNode, isSnd: Boolean): IndexedSeq[Instruction] = {
-    val peInstructions = IndexedSeq[Instruction](
-      BranchLink(None, Label("p_check_null_pointer")))
+    val peInstructions = genNullPointerInstructions
 
     var asmType: Option[ASMType] = None
 
@@ -296,6 +397,13 @@ object CodeGenerator {
 
     // Should set a flag that triggers checkNullPointer at top level.
     peInstructions ++ loads
+  }
+
+  def genNullPointerInstructions: IndexedSeq[Instruction] = {
+    IndexedSeq[Instruction](
+      Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())),
+      // Create label here and trigger the checkNullPointer at the bottom.
+      BranchLink(None, Label("p_check_null_pointer")))
   }
 
   def generateCall(call: CallNode): IndexedSeq[Instruction] = {
@@ -759,6 +867,11 @@ object CodeGenerator {
           -1
       }
       currentOffset -= offsetSize
+      currentOffset
+    }
+
+    // Returns current identifier offset
+    def getCurrentOffset: Int = {
       currentOffset
     }
 
