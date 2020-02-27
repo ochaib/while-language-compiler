@@ -888,13 +888,13 @@ object CodeGenerator {
     case PrintFreePair => IndexedSeq[Instruction](
       pushLR,
       Compare(condition=None, operand1=instructionSet.getReturn, operand2=new Immediate(0)),
-      new Load(condition=Some(Equal), asmType=None, dest=instructionSet.getReturn, src=Label("msg_free_pair")),
+      new Load(condition=Some(Equal), asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_free_pair")),
       Branch(condition=Some(Equal), label=PrintRuntimeError.label),
       Push(condition=None, List(instructionSet.getReturn)),
       new Load(condition=None, asmType=None, dest=instructionSet.getReturn, src=instructionSet.getReturn),
       BranchLink(condition=None, label=Free.label),
       new Load(condition=None, asmType=None, dest=instructionSet.getReturn, src=instructionSet.getSP),
-      new Load(condition=None, asmType=None, dest=returnReg, src=returnReg, flexOffset=new Immediate(4)),
+      new Load(condition=None, asmType=None, dest=instructionSet.getReturn, src=instructionSet.getReturn, flexOffset=new Immediate(4)),
       BranchLink(condition=None, label=Free.label),
       Pop(condition=None, List(instructionSet.getReturn)),
       BranchLink(None, label=Free.label),
@@ -903,8 +903,8 @@ object CodeGenerator {
     case PrintReadChar => IndexedSeq[Instruction](
       pushLR,
       Move(condition=None, dest=instructionSet.getArgumentRegisters(1), src=new ShiftedRegister(instructionSet.getReturn)),
-      new Load(condition=None, asmType=None, dest=instructionSet.getReturn, src=Label("msg_read_char")),
-      new Add(condition=None, src1=instructionSet.getReturn, src2=new Immediate(4)),
+      new Load(condition=None, asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_read_char")),
+      new Add(condition=None, conditionFlag=false, dest=instructionSet.getReturn, src1=instructionSet.getReturn, src2=new Immediate(4)),
       BranchLink(condition=None, label=Scanf.label),
       popPC
     )
