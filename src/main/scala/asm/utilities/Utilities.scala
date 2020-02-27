@@ -110,7 +110,7 @@ object Utilities {
     def printFreePair: IndexedSeq[Instruction] = {
         // BL p_free_pair
         if (commonFunctions.add(PrintFreePair))
-            strings += (Label("msg_free_pair") -> 
+            strings += (Label("msg_free_pair") ->
                 new StringLiteral("NullReferenceError: dereference a null reference\\n\\0", 50)
             )
         IndexedSeq[Instruction](

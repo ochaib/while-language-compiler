@@ -29,3 +29,4 @@ object Printf { val label: Label = new Label("printf") }
 object Malloc { val label: Label = new Label("malloc") }
 object Exit { val label: Label = new Label("exit") }
 object Scanf { val label: Label = new Label("scanf") }
+object Free { val label: Label = new Label("free") }
