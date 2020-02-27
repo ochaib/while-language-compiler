@@ -837,21 +837,6 @@ object CodeGenerator {
     }
   }
 
-  def checkSingleByte(expr: ExprNode): Boolean = {
-    (expr.getType(topSymbolTable, currentSymbolTable)
-      == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable)) ||
-      (expr.getType(topSymbolTable, currentSymbolTable)
-        == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable))
-  }
-
-  def checkSingleByte(expr: PairElemNode): Boolean = {
-    (expr.getType(topSymbolTable, currentSymbolTable)
-      == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable)) ||
-      (expr.getType(topSymbolTable, currentSymbolTable)
-        == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable))
-  }
-
-    // TODO: when done move this to utilities
   def generateCommonFunction(func: CommonFunction): IndexedSeq[Instruction] = func match {
     case PrintLn => IndexedSeq[Instruction](
       pushLR,
@@ -905,6 +890,20 @@ object CodeGenerator {
       BranchLink(condition=Some(Equal), PrintRuntimeError.label),
       popPC
     )
+  }
+
+  def checkSingleByte(expr: ExprNode): Boolean = {
+    (expr.getType(topSymbolTable, currentSymbolTable)
+      == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable)) ||
+      (expr.getType(topSymbolTable, currentSymbolTable)
+        == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable))
+  }
+
+  def checkSingleByte(expr: PairElemNode): Boolean = {
+    (expr.getType(topSymbolTable, currentSymbolTable)
+      == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable)) ||
+      (expr.getType(topSymbolTable, currentSymbolTable)
+        == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable))
   }
 
   def getSize(_type: TYPE): Int = {
