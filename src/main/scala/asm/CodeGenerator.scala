@@ -356,7 +356,8 @@ object CodeGenerator {
     if (checkSingleByte(pairElem)) asmType = Some(ByteType)
 
     // TODO: Add Null pointer check here.
-    val nullPtrIns = genNullPointerInstructions
+    val nullPtrIns =
+      Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())) +: Utilities.printCheckNullPointer
 
     val offset: Int = pairElem match {
       case fst: FstNode => 0
@@ -381,7 +382,8 @@ object CodeGenerator {
   }
 
   def generatePEHelper(pairElemNode: PairElemNode, isSnd: Boolean): IndexedSeq[Instruction] = {
-    val peInstructions = genNullPointerInstructions
+    val peInstructions =
+      Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())) +: Utilities.printCheckNullPointer
 
     var asmType: Option[ASMType] = None
 
@@ -403,13 +405,6 @@ object CodeGenerator {
 
     // Should set a flag that triggers checkNullPointer at top level.
     peInstructions ++ loads
-  }
-
-  def genNullPointerInstructions: IndexedSeq[Instruction] = {
-    IndexedSeq[Instruction](
-      Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())),
-      // Create label here and trigger the checkNullPointer at the bottom.
-      BranchLink(None, Label("p_check_null_pointer")))
   }
 
   def generateCall(call: CallNode): IndexedSeq[Instruction] = {
@@ -913,6 +908,31 @@ object CodeGenerator {
       Move(condition=None, dest=instructionSet.getReturn, src=new Immediate(0)),
       BranchLink(condition=None, label=Flush.label),
       popPC
+    )
+    case PrintCheckArrayBounds => IndexedSeq[Instruction](
+      pushLR,
+      Compare(condition=None, operand1=instructionSet.getReturn, operand2=new Immediate(0)),
+      new Load(condition=Some(LessThan), asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_negative_index")),
+      BranchLink(condition=Some(LessThan), label=PrintRuntimeError.label),
+      new Load(condition=None, asmType=None, dest=instructionSet.getArgumentRegisters(1), src=instructionSet.getArgumentRegisters(1)),
+      Compare(condition=None, operand1=instructionSet.getReturn, operand2=new ShiftedRegister(instructionSet.getArgumentRegisters(1))),
+      new Load(condition=Some(HigherSame), asmType=None, dest=instructionSet.getReturn, loadable=Label("mg_index_too_large")),
+      BranchLink(condition=Some(HigherSame), PrintRuntimeError.label),
+      popPC
+    )
+    case PrintInt => IndexedSeq[Instruction](
+      pushLR,
+      Move(condition=None, dest=instructionSet.getArgumentRegisters(1), src=new ShiftedRegister(instructionSet.getReturn)),
+      new Load(condition=None, asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_print_int")),
+      new Add(condition=None, conditionFlag=false, dest=instructionSet.getReturn, src1=instructionSet.getReturn, src2=new Immediate(4)),
+      BranchLink(condition=None, Printf.label),
+      Move(condition=None, dest=instructionSet.getArgumentRegisters(1), src=new Immediate(0)),
+      BranchLink(condition=None, Flush.label),
+      popPC
+    )
+    case PrintOverflowError => IndexedSeq[Instruction](
+      new Load(condition=None, asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_throw_overflow_error")),
+      BranchLink(condition=None, label=PrintRuntimeError.label)
     )
   }
 
