@@ -859,6 +859,29 @@ object CodeGenerator {
     )
   }
 
+  def checkArrayBounds: IndexedSeq[Instruction] = {
+    IndexedSeq[Instruction](
+      pushLR, Compare(None, instructionSet.getReturn, new Immediate(0)),
+      new Load(Some(LessThan), None, instructionSet.getReturn, Label("msg_negative_index")),
+      BranchLink(Some(LessThan), Label("p_throw_runtime_error")),
+      new Load(None, None, instructionSet.getArgumentRegisters(1), instructionSet.getArgumentRegisters(1)),
+      Compare(None, instructionSet.getReturn, new ShiftedRegister(instructionSet.getArgumentRegisters(1))),
+      new Load(Some(HigherSame), None, instructionSet.getReturn, Label("msg_index_too_large")),
+      BranchLink(Some(HigherSame), Label("p_throw_runtime_error")), popPC
+    )
+  }
+
+  def printReadChar: IndexedSeq[Instruction] = {
+    IndexedSeq[Instruction](
+      pushLR, Move(None, instructionSet.getArgumentRegisters(1), new ShiftedRegister(instructionSet.getReturn)),
+      // TODO: Change this.
+      new Load(None, None, instructionSet.getReturn, Label("msg_read_char")),
+      Add(None, conditionFlag = false, instructionSet.getReturn, instructionSet.getReturn, new Immediate(4)),
+//      BranchLink(None, Label("scanf")),
+      popPC
+    )
+  }
+
   def printLn: IndexedSeq[Instruction] = {
     IndexedSeq[Instruction](
       pushLR,

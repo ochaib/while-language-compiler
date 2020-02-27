@@ -329,8 +329,8 @@ object ARM11 extends InstructionSet {
       condition.get match {
         case Equal        => "EQ"
         case NotEqual     => "NE"
-        case HigherSame   => "HS"
-        case Lower        => "LO"
+        case HigherSame   => "CS"
+        case Lower        => "CC"
         case Negative     => "MI"
         case NonNegative  => "PL"
         case Overflow     => "VS"
