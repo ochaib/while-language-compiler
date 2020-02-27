@@ -846,17 +846,16 @@ object CodeGenerator {
       Move(condition=None, dest=instructionSet.getReturn, src=new Immediate(-1)),
       BranchLink(None, Exit.label)
     )
-  }
-
-  def printString: IndexedSeq[Instruction] = {
-    IndexedSeq[Instruction](
-      pushLR, new Load(None, None, instructionSet.getArgumentRegisters(1), instructionSet.getReturn),
-      Add(None, conditionFlag = false, instructionSet.getArgumentRegisters(2), instructionSet.getReturn, new Immediate(4)),
-      // ImmString
-//      new Load(None, None, instructionSet.getReturn, Label("%.*s\0")),
-      BranchLink(None, Label("printf")), Move(None, instructionSet.getReturn, new Immediate(0)),
-      BranchLink(None, Label("fflush")), popPC
+    case PrintString => IndexedSeq[Instruction](
+      pushLR,
+      new Load(condition=None, asmType=None, dest=instructionSet.getArgumentRegisters(1), src=instructionSet.getReturn),
+      Add(condition=None, conditionFlag=false, dest=instructionSet.getArgumentRegisters(2), src1=instructionSet.getReturn, src2=new Immediate(4)),
+      BranchLink(condition=None, label=Printf.label),
+      Move(condition=None, dest=instructionSet.getReturn, src=new Immediate(0)),
+      BranchLink(condition=None, label=Flush.label),
+      popPC
     )
+    
   }
 
   def printFreePair: IndexedSeq[Instruction] = {
