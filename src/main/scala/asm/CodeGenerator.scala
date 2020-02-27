@@ -170,9 +170,10 @@ object CodeGenerator {
   // THIS, COMES FROM EXPR
   def generateArrayElem(arrayElem: ArrayElemNode): IndexedSeq[Instruction] = {
     val varReg = RM.nextVariableRegister()
+    val varReg2 = RM.peekVariableRegister()
 
     // Must now retrieve elements in array corresponding to each
-    val arrayElemInstructions = retrieveArrayElements(arrayElem, varReg)
+    val arrayElemInstructions = retrieveArrayElements(arrayElem, varReg, varReg2)
 
     val loadRes: IndexedSeq[Instruction] = IndexedSeq[Instruction](new Load(None, None, varReg, varReg))
 
@@ -187,7 +188,7 @@ object CodeGenerator {
     val varReg2 = RM.nextVariableRegister()
 
     // Must now retrieve elements in array corresponding to each
-    val arrayElemInstructions = retrieveArrayElements(arrayElem, varReg2)
+    val arrayElemInstructions = retrieveArrayElements(arrayElem, varReg2, varReg1)
 
     var asmType: Option[ASMType] = None
 
@@ -207,10 +208,10 @@ object CodeGenerator {
     arrayElemInstructions ++ storeResult
   }
 
-  def retrieveArrayElements(arrayElem: ArrayElemNode, varReg: Register): IndexedSeq[Instruction] = {
+  def retrieveArrayElements(arrayElem: ArrayElemNode, varReg: Register, varReg2: Register): IndexedSeq[Instruction] = {
     val preExpr = IndexedSeq[Instruction](
       Add(None, conditionFlag = false, varReg, instructionSet.getSP,
-          new Immediate(getSize(arrayElem.identNode.getType(topSymbolTable, currentSymbolTable))))
+          new Immediate(symbolTableManager.getOffset(arrayElem.identNode.getKey)))
     )
 
     // Produce following instructions for every expression in the array.
@@ -218,12 +219,12 @@ object CodeGenerator {
       arrayElem.exprNodes.flatMap(e => generateExpression(e) ++
         IndexedSeq[Instruction](
           new Load(None, None, varReg, varReg),
-          Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())),
+          Move(None, instructionSet.getReturn, new ShiftedRegister(varReg2)),
           Move(None, instructionSet.getArgumentRegisters(1), new ShiftedRegister(varReg)),
           // TODO: Add label for p_check_array_bounds
           BranchLink(None, Label("p_check_array_bounds")),
           Add(None, conditionFlag = false, varReg, varReg, new Immediate(4)),
-          Add(None, conditionFlag = false, varReg, varReg, new ShiftedRegister(RM.peekVariableRegister(), "LSL", 2))
+          Add(None, conditionFlag = false, varReg, varReg, new ShiftedRegister(varReg2, "LSL", 2))
         )
       )
     }
@@ -275,7 +276,8 @@ object CodeGenerator {
       new Load(None, None, varReg2, new LoadableExpression(arrayLength)),
       new Store(None, None, varReg2, varReg1)
     )
-    // Since we are done with varReg1 above we can free it back to available registers.
+    // Since we are done with varReg1 and varReg2 above we can free it back to available registers.
+    RM.freeVariableRegister(varReg2)
     RM.freeVariableRegister(varReg1)
 
     preExprInstructions ++ postExprInstructions
@@ -705,7 +707,7 @@ object CodeGenerator {
                      new Immediate(char)))
       case Str_literNode(_, str)
                   => IndexedSeq[Instruction](new Load(None, None,
-                     RM.peekVariableRegister(), Label(str)))
+                     RM.peekVariableRegister(), Utilities.addString(str)))
       // All that is necessary for Pair_liter expression generation.
       case Pair_literNode(_)
                   => IndexedSeq[Instruction](new Load(None, None,
