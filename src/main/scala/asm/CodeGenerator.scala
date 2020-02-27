@@ -885,24 +885,26 @@ object CodeGenerator {
       BranchLink(condition=None, label=Flush.label),
       popPC
     )
-  }
-
-
-
-  def printFreePair: IndexedSeq[Instruction] = {
-    val returnReg: Register = instructionSet.getReturn
-
-    IndexedSeq[Instruction](
-      pushLR, Compare(None, returnReg, new Immediate(0)),
-      new Load(Some(Equal), None, returnReg, Label("NullReferenceError: dereference a null reference\\n\\0")),
-      Branch(Some(Equal), Label("p_throw_runtime_error")),
-      Push(None, List(returnReg)), new Load(None, None, returnReg, returnReg),
-      BranchLink(None, Label("free")), new Load(None, None, returnReg, instructionSet.getSP),
-      new Load(None, None, returnReg, returnReg, new Immediate(4)), BranchLink(None, Label("free")),
-      Pop(None, List(returnReg)), BranchLink(None, Label("free")), popPC
+    case PrintFreePair => IndexedSeq[Instruction](
+      pushLR,
+      Compare(condition=None, operand1=instructionSet.getReturn, operand2=new Immediate(0)),
+      new Load(condition=Some(Equal), asmType=None, dest=instructionSet.getReturn, src=Label("msg_free_pair")),
+      Branch(condition=Some(Equal), label=PrintRuntimeError.label),
+      Push(condition=None, List(instructionSet.getReturn)),
+      new Load(condition=None, asmType=None, dest=instructionSet.getReturn, src=instructionSet.getReturn),
+      BranchLink(condition=None, label=Free.label),
+      new Load(condition=None, asmType=None, dest=instructionSet.getReturn, src=instructionSet.getSP),
+      new Load(condition=None, asmType=None, dest=returnReg, src=returnReg, flexOffset=new Immediate(4)),
+      BranchLink(condition=None, label=Free.label),
+      Pop(condition=None, List(instructionSet.getReturn)),
+      BranchLink(None, label=Free.label),
+      popPC
     )
   }
-    def printReadChar: IndexedSeq[Instruction] = {
+
+
+
+  def printReadChar: IndexedSeq[Instruction] = {
     IndexedSeq[Instruction](
       pushLR, Move(None, instructionSet.getArgumentRegisters(1), new ShiftedRegister(instructionSet.getReturn)),
       // TODO: Change this.
