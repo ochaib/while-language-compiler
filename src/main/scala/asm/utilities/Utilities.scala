@@ -138,7 +138,7 @@ object Utilities {
         )
     }
 
-    def printOverflowError: IndexedSeq[Instruction] = {
+    def printOverflowError(condition: Option[Condition]): IndexedSeq[Instruction] = {
         // BLVS p_throw_overflow_error
         if (commonFunctions.add(PrintOverflowError))
             strings += (new Label("msg_throw_overflow_error") ->
@@ -146,7 +146,7 @@ object Utilities {
             )
         printRuntimeError // make sure print runtime error is added to common functions
         IndexedSeq[Instruction](
-            BranchLink(Some(Overflow), label = PrintOverflowError.label)
+            BranchLink(condition, label = PrintOverflowError.label)
         )
     }
 
