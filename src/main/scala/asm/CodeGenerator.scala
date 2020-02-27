@@ -510,6 +510,7 @@ object CodeGenerator {
       BranchLink(None, Label("exit")))
   }
 
+  // TODO: replace
   def generatePrint(expr: ExprNode, printLn: Boolean): IndexedSeq[Instruction] = {
     // Generate instruction then add necessary move.
     val preLabelInstructions = generateExpression(expr) ++ IndexedSeq[Instruction](
@@ -820,6 +821,7 @@ object CodeGenerator {
         == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable))
   }
 
+  // TODO: migrate this to a common function
   def checkNullPointer: IndexedSeq[Instruction] = {
     IndexedSeq[Instruction](
       pushLR, Compare(None, instructionSet.getReturn, new Immediate(0)),
@@ -829,22 +831,20 @@ object CodeGenerator {
     )
   }
 
-  def printLn: IndexedSeq[Instruction] = {
-    IndexedSeq[Instruction](
+  // TODO: when done move this to utilities
+  def generateCommonFunction(func: CommonFunction): IndexedSeq[Instruction] = func match {
+    case PrintLn => IndexedSeq[Instruction](
       pushLR,
-      // TODO: Should be msg=n instead of the string itself.
-//       new Load(None, None, instructionSet.getReturn, Label("\0")),
-      // Maybe instead of 4, size of msg?
-      Add(None, conditionFlag = false, instructionSet.getReturn, instructionSet.getReturn, new Immediate(4)),
-      BranchLink(None, Label("puts")), Move(None, instructionSet.getReturn, new Immediate(0)),
-      BranchLink(None, Label("fflush")), popPC
+      Add(condition=None, conditionFlag=false, dest=instructionSet.getReturn, src1=instructionSet.getReturn, src2=new Immediate(4)),
+      BranchLink(condition=None, label=Puts.label),
+      Move(condition=None, dest=instructionSet.getReturn, src=new Immediate(0)),
+      BranchLink(condition=None, label=Flush.label),
+      popPC
     )
-  }
-
-  def runTimeError: IndexedSeq[Instruction] = {
-    IndexedSeq[Instruction](
-      BranchLink(None, Label("p_print_string")), Move(None, instructionSet.getReturn, new Immediate(-1)),
-      BranchLink(None, Label("exit"))
+    case PrintRuntimeError => IndexedSeq[Instruction](
+      BranchLink(condition=None, PrintString.label),
+      Move(condition=None, dest=instructionSet.getReturn, src=new Immediate(-1)),
+      BranchLink(None, Exit.label)
     )
   }
 
