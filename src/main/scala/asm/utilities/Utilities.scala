@@ -115,7 +115,7 @@ object Utilities {
             )
         printRuntimeError // make sure print runtime error is added to common functions
         IndexedSeq[Instruction](
-            BranchLink(Some(Overflow), Label(PrintOverflowError.label))
+            BranchLink(Some(Overflow), label = PrintOverflowError.label)
         )
     }
 
@@ -124,7 +124,7 @@ object Utilities {
         commonFunctions.add(PrintRuntimeError)
         printString("") // just make sure print string is added to common functions
         IndexedSeq[Instruction](
-            BranchLink(Some(Overflow), Label(PrintRuntimeError.label))
+            BranchLink(Some(Overflow), PrintRuntimeError.label)
         )
     }
 
@@ -134,7 +134,7 @@ object Utilities {
                 new StringLiteral("ArrayIndexOutOfBoundsError: negative index\\n\\0", 44))
         printRuntimeError
         IndexedSeq[Instruction](
-            BranchLink(None, Label(PrintCheckArrayBounds.label))
+            BranchLink(None, PrintCheckArrayBounds.label)
         )
     }
 
