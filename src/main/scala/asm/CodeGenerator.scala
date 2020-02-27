@@ -900,21 +900,15 @@ object CodeGenerator {
       BranchLink(None, label=Free.label),
       popPC
     )
-  }
-
-
-
-  def printReadChar: IndexedSeq[Instruction] = {
-    IndexedSeq[Instruction](
-      pushLR, Move(None, instructionSet.getArgumentRegisters(1), new ShiftedRegister(instructionSet.getReturn)),
-      // TODO: Change this.
-      new Load(None, None, instructionSet.getReturn, Label("msg_read_char")),
-      Add(None, conditionFlag = false, instructionSet.getReturn, instructionSet.getReturn, new Immediate(4)),
-//      BranchLink(None, Label("scanf")),
+    case PrintReadChar => IndexedSeq[Instruction](
+      pushLR,
+      Move(condition=None, dest=instructionSet.getArgumentRegisters(1), src=new ShiftedRegister(instructionSet.getReturn)),
+      new Load(condition=None, asmType=None, dest=instructionSet.getReturn, src=Label("msg_read_char")),
+      new Add(condition=None, src1=instructionSet.getReturn, src2=new Immediate(4)),
+      BranchLink(condition=None, label=Scanf.label),
       popPC
     )
   }
-
 
   def getSize(_type: TYPE): Int = {
     _type match {

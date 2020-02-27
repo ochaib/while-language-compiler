@@ -118,6 +118,16 @@ object Utilities {
         )
     }
 
+    def printReadChar: IndexedSeq[Instruction] = {
+        if (commonFunctions.add(PrintReadChar))
+            strings += (Label("msg_read_char") ->
+                new StringLiteral(" %c\\0", 4)
+            )
+        IndexedSeq[Instruction](
+            BranchLink(condition=None, label=PrintReadChar.label)
+        )
+    }
+
     def printOverflowError: IndexedSeq[Instruction] = {
         // BLVS p_throw_overflow_error
         if (commonFunctions.add(PrintOverflowError))
