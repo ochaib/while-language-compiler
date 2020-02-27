@@ -632,17 +632,14 @@ object CodeGenerator {
       (conditionLabel +: condInstructions :+ bodyBranch) ++ deallocateInstruction
   }
 
-  // TODO: Daniel Check This Is Correct
   def generateBegin(begin: BeginNode): IndexedSeq[Instruction] = {
     // We must first enter the new scope, then generate the statements inside the scope,
     // then finally close the scope.
-    val allocateInstruction: IndexedSeq[Instruction] = enterScopeAndAllocateStack()
 
+    // TODO NO TOUCHING SCOPES WITHOUT ASKING DANIEL
     val generatedInstructions = generateStatement(begin.stat)
 
-    val deallocateInstruction: IndexedSeq[Instruction] = leaveScopeAndDeallocateStack()
-
-    allocateInstruction ++ generatedInstructions ++ deallocateInstruction
+    generatedInstructions
   }
 
   def generateExpression(expr: ExprNode): IndexedSeq[Instruction] = {
