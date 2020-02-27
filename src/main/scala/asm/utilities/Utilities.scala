@@ -107,6 +107,17 @@ object Utilities {
         )
     }
 
+    def printFreePair: IndexedSeq[Instruction] = {
+        // BL p_free_pair
+        if (commonFunctions.add(PrintFreePair))
+            strings += (Label("msg_free_pair") -> 
+                new StringLiteral("NullReferenceError: dereference a null reference\\n\\0", 50)
+            )
+        IndexedSeq[Instruction](
+            BranchLink(condition=None, label=PrintFreePair.label)
+        )
+    }
+
     def printOverflowError: IndexedSeq[Instruction] = {
         // BLVS p_throw_overflow_error
         if (commonFunctions.add(PrintOverflowError))
@@ -129,9 +140,12 @@ object Utilities {
     }
 
     def printCheckArrayBounds: IndexedSeq[Instruction] = {
-        if (commonFunctions.add(PrintCheckArrayBounds))
-            strings += (new Label("msg_check_array_bounds") ->
+        if (commonFunctions.add(PrintCheckArrayBounds)) {
+            strings += (new Label("msg_negative_index") ->
                 new StringLiteral("ArrayIndexOutOfBoundsError: negative index\\n\\0", 44))
+            strings += (new Label("msg_index_too_large") ->
+                new StringLiteral("ArrayIndexOutOfBoundsError: index too large\\n\\0", 45))
+        }
         printRuntimeError
         IndexedSeq[Instruction](
             BranchLink(None, PrintCheckArrayBounds.label)

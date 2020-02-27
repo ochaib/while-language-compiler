@@ -5,10 +5,15 @@ import asm.instructions.Label
 class StringLiteral(string: String, length: Int)
 
 sealed abstract class CommonFunction { val label: Label }
+
+// print funcs
 case object PrintString extends CommonFunction { val label: Label = new Label("p_print_string") }
 case object PrintLn extends CommonFunction { val label: Label = new Label("p_print_ln") }
 case object PrintBool extends CommonFunction { val label: Label = new Label("p_print_bool") }
 case object PrintInt extends CommonFunction { val label: Label = new Label("p_print_int") }
+case object PrintFreePair extends CommonFunction { val label: Label = new Label("p_free_pair") }
+
+// error funcs
 case object PrintOverflowError extends CommonFunction { val label: Label = new Label("p_throw_overflow_error") }
 case object PrintRuntimeError extends CommonFunction { val label: Label = new Label("p_throw_runtime_error") }
 case object PrintCheckArrayBounds extends CommonFunction { val label: Label = new Label("p_check_array_bounds") }
