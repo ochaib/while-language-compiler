@@ -45,46 +45,40 @@ object CodeGenerator {
     assert(RM != null, "Register manager needs to be defined.")
 
     // Generated code for functions
-    val functions: IndexedSeq[Instruction] = program.functions.flatMap(generateFunction)
+    val functionInstructions: IndexedSeq[Instruction] = program.functions.flatMap(generateFunction)
 
     // Update the current symbol table for main method
     currentSymbolTable = symbolTableManager.nextScope()
 
+    // Enter Scope
+    val allocateInstructions = enterScopeAndAllocateStack()
+
+    // Main directive and pushing LR
+    val mainHeaderInstructions: IndexedSeq[Instruction] = IndexedSeq[Instruction](Label("main"), pushLR)
+
     // Generated code for stats
-    val stats: IndexedSeq[Instruction] = generateStatement(program.stat)
+    val statInstructions: IndexedSeq[Instruction] = generateStatement(program.stat)
 
-    // Generated instructions to encompass everything generated.
-    val generatedInstructions: IndexedSeq[Instruction] = (functions
-      ++ {
-      // If there is no stack size no need to add it to the instructions
-      if (getScopeStackSize(currentSymbolTable) == 0)
-        IndexedSeq[Instruction](Label("main"), pushLR)
-      else
-        IndexedSeq[Instruction](Label("main"), pushLR,
-          Subtract(None, conditionFlag = false,
-          instructionSet.getSP, instructionSet.getSP, new Immediate(getScopeStackSize(currentSymbolTable))))
-      } ++ stats)
+    // Leave Scope
+    val deallocateInstructions: Seq[Instruction] = leaveScopeAndDeallocateStack()
 
-    val endInstructions = {
-      if (getScopeStackSize(currentSymbolTable) == 0)
-        IndexedSeq(zeroReturn, popPC, new EndFunction)
-      else
-        IndexedSeq[Instruction](
-          Add(None, conditionFlag = false, instructionSet.getSP,
-            instructionSet.getSP, new Immediate(getScopeStackSize(currentSymbolTable))),
-          zeroReturn, popPC, new EndFunction)
-    }
+    val mainEndInstructions = IndexedSeq(zeroReturn, popPC, new EndFunction)
 
-    // Leave the current scope
-    // symbolTableManager.leaveScope()
+    // Total Main Instructions
+    val mainInstructions = mainHeaderInstructions ++ allocateInstructions ++
+      statInstructions ++ deallocateInstructions ++ mainEndInstructions
 
-    generatedInstructions ++ endInstructions
+    // Program Instructions = Function Instructions + Main Instructions
+    functionInstructions ++ mainInstructions
   }
 
   def generateFunction(func: FuncNode): IndexedSeq[Instruction] = {
 
     // Update the current symbol table to function block
     currentSymbolTable = symbolTableManager.nextScope()
+
+    // Enter function scope
+    val allocateInstructions = enterScopeAndAllocateStack()
 
     var labelPushLR = IndexedSeq[Instruction](Label(s"f_${func.identNode.ident}"), pushLR)
     if (func.paramList.isDefined)
@@ -95,9 +89,12 @@ object CodeGenerator {
     // Generate instructions for statement.
     val statInstructions = generateStatement(func.stat)
 
+    // Leave function scope
+    val deallocateInstructions = leaveScopeAndDeallocateStack()
+
     var popEndInstruction = IndexedSeq[Instruction](popPC, new EndFunction)
 
-    labelPushLR ++ statInstructions ++ popEndInstruction
+    labelPushLR ++ allocateInstructions ++ statInstructions ++ deallocateInstructions ++ popEndInstruction
   }
 
 //  def generateParamList(paramList: ParamListNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
@@ -568,11 +565,6 @@ object CodeGenerator {
     val elseLabel: Label = labelGenerator.generate()
     val fiLabel: Label = labelGenerator.generate()
 
-    // Enter Scope
-    val allocateInstruction: IndexedSeq[Instruction] = enterScopeAndAllocateStack()
-    // First if block
-    currentSymbolTable = symbolTableManager.nextScope()
-
     // Condition
     val condInstructions: IndexedSeq[Instruction] = generateExpression(ifNode.conditionExpr) :+
       Compare(None, RM.peekVariableRegister(), new Immediate(0))
@@ -580,34 +572,58 @@ object CodeGenerator {
     // elseBranch
     val elseBranchInstructions: IndexedSeq[Instruction] = IndexedSeq(Branch(Some(Equal), elseLabel))
 
+    // *** THEN ***
+
+    // Then Scope
+    currentSymbolTable = symbolTableManager.nextScope()
+
+    // Enter Then Scope
+    val allocateThenInstruction: IndexedSeq[Instruction] = enterScopeAndAllocateStack()
+
     // Then
     val thenInstructions = generateStatement(ifNode.thenStat)
+
+    // Leave Then Scope
+    val deallocateThenInstruction: IndexedSeq[Instruction] = leaveScopeAndDeallocateStack()
+
+    // ***********
 
     // fiBranch
     val fiBranchInstructions: IndexedSeq[Instruction] = IndexedSeq(Branch(None, fiLabel))
 
+    // *** ELSE ***
+
     // Second if block
     currentSymbolTable = symbolTableManager.nextScope()
+
+    // Enter Else Scope
+    val allocateElseInstruction: IndexedSeq[Instruction] = enterScopeAndAllocateStack()
 
     // Else
     val elseInstructions = elseLabel +: generateStatement(ifNode.elseStat)
 
     // Leave Scope
-    val deallocateInstruction: IndexedSeq[Instruction] = leaveScopeAndDeallocateStack()
+    val deallocateElseInstruction: IndexedSeq[Instruction] = leaveScopeAndDeallocateStack()
 
-    allocateInstruction ++ condInstructions ++ elseBranchInstructions ++ thenInstructions ++
-      fiBranchInstructions ++ elseInstructions ++ (fiLabel +: deallocateInstruction)
+    // ***********
+
+    // *** SUMMARY ***
+
+    val totalThenInstructions = allocateThenInstruction ++ thenInstructions ++ deallocateThenInstruction
+
+    val totalElseInstructions = allocateElseInstruction ++ elseInstructions ++ deallocateElseInstruction
+
+    condInstructions ++ elseBranchInstructions ++ totalThenInstructions ++
+      fiBranchInstructions ++ totalElseInstructions :+ fiLabel
   }
 
   def generateWhile(whileNode: WhileNode): IndexedSeq[Instruction] = {
-    var instructions: IndexedSeq[Instruction] = IndexedSeq[Instruction]()
     // Labels
     val conditionLabel: Label = labelGenerator.generate()
     val bodyLabel: Label = labelGenerator.generate()
 
 
-    // Enter Scope
-    val allocateInstruction: IndexedSeq[Instruction] = enterScopeAndAllocateStack()
+    // *** CONDITION ***
 
     // Initial condition check
     val initConditionBranch: Instruction = Branch(None, conditionLabel)
@@ -619,17 +635,33 @@ object CodeGenerator {
     // Branch to start of body
     val bodyBranch: Instruction = Branch(Some(Equal), bodyLabel)
 
-    // Update Scope to while block
+    // ************
+
+
+    // *** BODY ***
+
+    // Update Scope to While Body
     currentSymbolTable = symbolTableManager.nextScope()
+
+    // Enter Scope
+    val allocateWhileBody: IndexedSeq[Instruction] = enterScopeAndAllocateStack()
 
     // Body Instruction list
     val bodyInstructions: IndexedSeq[Instruction] = generateStatement(whileNode.stat)
 
     // Leave Scope
-    val deallocateInstruction: IndexedSeq[Instruction] = leaveScopeAndDeallocateStack()
+    val deallocateWhileBody: IndexedSeq[Instruction] = leaveScopeAndDeallocateStack()
 
-    (allocateInstruction :+ initConditionBranch) ++ (bodyLabel +: bodyInstructions) ++
-      (conditionLabel +: condInstructions :+ bodyBranch) ++ deallocateInstruction
+    // ************
+
+
+    // *** SUMMARY ***
+
+    val totalBodyInstructions: IndexedSeq[Instruction] = bodyLabel +: (allocateWhileBody ++ bodyInstructions ++ deallocateWhileBody)
+
+    val totalConditionInstructions = (conditionLabel +: condInstructions :+ bodyBranch)
+
+    initConditionBranch +: (totalBodyInstructions ++ totalConditionInstructions)
   }
 
   def generateBegin(begin: BeginNode): IndexedSeq[Instruction] = {
