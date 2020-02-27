@@ -339,27 +339,26 @@ object CodeGenerator {
     val varReg = RM.nextVariableRegister()
     val peekedReg = RM.peekVariableRegister()
 
-    // TODO: Check if loadOffset below can be replaced with:
-    // TODO: val offset: Int = pairElem match {
-    // TODO:  case fst: FstNode => generateExpression(fst.expr)
-    // TODO:  case snd: SndNode => generateExpression(snd.expr) }
+    // Check if loadOffset below can be replaced with:
+    // val offset: Int = pairElem match {
+    //    case fst: FstNode => generateExpression(fst.expr)
+    //    case snd: SndNode => generateExpression(snd.expr) }
 
     val loadOffset = IndexedSeq[Instruction](
       // Current offset of identifier related to pair.
       new Load(None, None, peekedReg, instructionSet.getSP,
-               // TODO: ANOTHER CHANGE FOR GETOFFSET HERE
                new Immediate(symbolTableManager.getOffset(pairElem.getKey)))
     )
+
+    // TODO: Add Null pointer check here.
+    val nullPtrIns = Move(None, instructionSet.getReturn,
+                          new ShiftedRegister(RM.peekVariableRegister())) +: Utilities.printCheckNullPointer
 
     var asmType: Option[ASMType] = None
 
     // Check if B is necessary for load, store etc.
     // May need to be ByteType
     if (checkSingleByte(pairElem)) asmType = Some(ByteType)
-
-    // TODO: Add Null pointer check here.
-    val nullPtrIns =
-      Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())) +: Utilities.printCheckNullPointer
 
     val offset: Int = pairElem match {
       case fst: FstNode => 0
@@ -385,7 +384,8 @@ object CodeGenerator {
 
   def generatePEHelper(pairElemNode: PairElemNode, isSnd: Boolean): IndexedSeq[Instruction] = {
     val peInstructions =
-      Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())) +: Utilities.printCheckNullPointer
+      Move(None, instructionSet.getReturn,
+           new ShiftedRegister(RM.peekVariableRegister())) +: Utilities.printCheckNullPointer
 
     var asmType: Option[ASMType] = None
 
@@ -682,7 +682,7 @@ object CodeGenerator {
     // We must first enter the new scope, then generate the statements inside the scope,
     // then finally close the scope.
 
-    // TODO NO TOUCHING SCOPES WITHOUT ASKING DANIEL
+    // TODO DANIEL CHECK IF WE MUST NEXTSCOPE
     val generatedInstructions = generateStatement(begin.stat)
 
     generatedInstructions
@@ -709,16 +709,15 @@ object CodeGenerator {
                      RM.peekVariableRegister(), new LoadableExpression(0)))
       case ident: IdentNode
       // Load identifier into first available variable register.
-        // TODO: Daniel Check as loading immediate instead of loadable expression.
                   => if (checkSingleByte(ident)) {
                       IndexedSeq[Instruction](new Load(None, Some(ByteType),
                         RM.peekVariableRegister(), instructionSet.getSP,
-                        new Immediate(getSize(
-                          ident.getType(topSymbolTable, currentSymbolTable)))))
+                        new Immediate(symbolTableManager.getOffset(ident.getKey))))
+//                        new Immediate(getSize(
+//                          ident.getType(topSymbolTable, currentSymbolTable)))))
                   } else {
                       IndexedSeq[Instruction](new Load(None, None,
                         RM.peekVariableRegister(), instructionSet.getSP,
-                        // TODO: HERE IS THE CHANGE FOR SYMBOLTABLE STACK
                         new Immediate(symbolTableManager.getOffset(ident.getKey))))}
       case arrayElem: ArrayElemNode => generateArrayElem(arrayElem)
       case unaryOperation: UnaryOperationNode => generateUnary(unaryOperation)
