@@ -901,6 +901,17 @@ object CodeGenerator {
       BranchLink(condition=None, label=Flush.label),
       popPC
     )
+    case PrintCheckArrayBounds => IndexedSeq[Instruction](
+      pushLR,
+      Compare(condition=None, operand1=instructionSet.getReturn, operand2=new Immediate(0)),
+      new Load(condition=Some(LessThan), asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_negative_index")),
+      BranchLink(condition=Some(LessThan), label=PrintRuntimeError.label),
+      new Load(condition=None, asmType=None, dest=instructionSet.getArgumentRegisters(1), src=instructionSet.getArgumentRegisters(1)),
+      Compare(condition=None, operand1=instructionSet.getReturn, operand2=new ShiftedRegister(instructionSet.getArgumentRegisters(1))),
+      new Load(condition=Some(HigherSame), asmType=None, dest=instructionSet.getReturn, loadable=Label("mg_index_too_large")),
+      BranchLink(condition=Some(HigherSame), PrintRuntimeError.label),
+      popPC
+    )
   }
 
   def checkSingleByte(expr: ExprNode): Boolean = {
