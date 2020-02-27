@@ -24,7 +24,10 @@ class Immediate private(
   }
 }
 
-class ShiftedRegister(val register: Register /* Unimplemented ARM fields */) extends FlexibleSndOp
+class ShiftedRegister(val register: Register,  val shift: Option[Int]) extends FlexibleSndOp {
+  def this(register: Register) = this(register, None)
+  def this(register: Register, shift: Int) = this(register, Some(shift))
+}
 
 class LoadableExpression(val num: Int) extends Loadable
 

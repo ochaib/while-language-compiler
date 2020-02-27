@@ -284,10 +284,20 @@ object ARM11 extends InstructionSet {
   
   def print(op: FlexibleSndOp): String = op match {
     case immediate: Immediate        => print(immediate)
-    case register: ShiftedRegister   => print(register.register)/* + ", " + register.shift NOT IMPLEMENTED*/
+    // Temp fix for multiply.
+    case shiftedRegister: ShiftedRegister =>
+      if (shiftedRegister.shift.isDefined)
+        print(shiftedRegister.register) + ", ASR #" + print(shiftedRegister.shift)
+      else
+        print(shiftedRegister.register)
     case _ =>
       assert(assertion = false, "print for FlexibleSndOp type is undefined")
       ""
+  }
+
+  def print(int: Option[Int]): String = int match {
+    case Some(int) => int.toString
+    case _ => ""
   }
 
   def conditionFlagToString(conditionFlag: Boolean): String =

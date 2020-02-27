@@ -749,8 +749,8 @@ object CodeGenerator {
         generateExpression(argOne) ++ generateExpression(argTwo) ++
         IndexedSeq[Instruction](
           SMull(None, conditionFlag = false, varReg1, varReg2, varReg1, varReg2),
-          // TODO: Add ASR 31
-          Compare(None, varReg2, new ShiftedRegister(varReg1)),
+          // Need to be shifted by 31, ASR 31
+          Compare(None, varReg2, new ShiftedRegister(varReg1, 31)),
           // TODO: Trigger p_throw_overflow_error
           BranchLink(Some(NotEqual), Label("p_throw_overflow_error")))
       case DivideNode(_, argOne, argTwo) =>
