@@ -912,6 +912,16 @@ object CodeGenerator {
       BranchLink(condition=Some(HigherSame), PrintRuntimeError.label),
       popPC
     )
+    case PrintInt => IndexedSeq[Instruction](
+      pushLR,
+      Move(condition=None, dest=instructionSet.getArgumentRegisters(1), src=new ShiftedRegister(instructionSet.getReturn)),
+      new Load(condition=None, asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_print_int")),
+      new Add(condition=None, conditionFlag=false, dest=instructionSet.getReturn, src1=instructionSet.getReturn, src2=new Immediate(4)),
+      BranchLink(condition=None, Printf.label),
+      Move(condition=None, dest=instructionSet.getArgumentRegisters(1), src=new Immediate(0)),
+      BranchLink(condition=None, Flush.label),
+      popPC
+    )
   }
 
   def checkSingleByte(expr: ExprNode): Boolean = {
