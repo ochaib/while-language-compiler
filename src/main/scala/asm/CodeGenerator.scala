@@ -513,6 +513,7 @@ object CodeGenerator {
       BranchLink(None, Label("exit")))
   }
 
+  // TODO: replace
   def generatePrint(expr: ExprNode, printLn: Boolean): IndexedSeq[Instruction] = {
     // Generate instruction then add necessary move.
     val preLabelInstructions = generateExpression(expr) ++ IndexedSeq[Instruction](
@@ -836,6 +837,72 @@ object CodeGenerator {
     }
   }
 
+  def generateCommonFunction(func: CommonFunction): IndexedSeq[Instruction] = func match {
+    case PrintLn => IndexedSeq[Instruction](
+      pushLR,
+      Add(condition=None, conditionFlag=false, dest=instructionSet.getReturn, src1=instructionSet.getReturn, src2=new Immediate(4)),
+      BranchLink(condition=None, label=Puts.label),
+      Move(condition=None, dest=instructionSet.getReturn, src=new Immediate(0)),
+      BranchLink(condition=None, label=Flush.label),
+      popPC
+    )
+    case PrintRuntimeError => IndexedSeq[Instruction](
+      BranchLink(condition=None, PrintString.label),
+      Move(condition=None, dest=instructionSet.getReturn, src=new Immediate(-1)),
+      BranchLink(None, Exit.label)
+    )
+    case PrintString => IndexedSeq[Instruction](
+      pushLR,
+      new Load(condition=None, asmType=None, dest=instructionSet.getArgumentRegisters(1), src=instructionSet.getReturn),
+      Add(condition=None, conditionFlag=false, dest=instructionSet.getArgumentRegisters(2), src1=instructionSet.getReturn, src2=new Immediate(4)),
+      BranchLink(condition=None, label=Printf.label),
+      Move(condition=None, dest=instructionSet.getReturn, src=new Immediate(0)),
+      BranchLink(condition=None, label=Flush.label),
+      popPC
+    )
+    case PrintFreePair => IndexedSeq[Instruction](
+      pushLR,
+      Compare(condition=None, operand1=instructionSet.getReturn, operand2=new Immediate(0)),
+      new Load(condition=Some(Equal), asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_free_pair")),
+      Branch(condition=Some(Equal), label=PrintRuntimeError.label),
+      Push(condition=None, List(instructionSet.getReturn)),
+      new Load(condition=None, asmType=None, dest=instructionSet.getReturn, src=instructionSet.getReturn),
+      BranchLink(condition=None, label=Free.label),
+      new Load(condition=None, asmType=None, dest=instructionSet.getReturn, src=instructionSet.getSP),
+      new Load(condition=None, asmType=None, dest=instructionSet.getReturn, src=instructionSet.getReturn, flexOffset=new Immediate(4)),
+      BranchLink(condition=None, label=Free.label),
+      Pop(condition=None, List(instructionSet.getReturn)),
+      BranchLink(None, label=Free.label),
+      popPC
+    )
+    case PrintReadChar => IndexedSeq[Instruction](
+      pushLR,
+      Move(condition=None, dest=instructionSet.getArgumentRegisters(1), src=new ShiftedRegister(instructionSet.getReturn)),
+      new Load(condition=None, asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_read_char")),
+      new Add(condition=None, conditionFlag=false, dest=instructionSet.getReturn, src1=instructionSet.getReturn, src2=new Immediate(4)),
+      BranchLink(condition=None, label=Scanf.label),
+      popPC
+    )
+    case PrintCheckNullPointer => IndexedSeq[Instruction](
+      pushLR,
+      Compare(condition=None, operand1=instructionSet.getReturn, operand2=new Immediate(0)),
+      new Load(condition=Some(Equal), asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_check_null_pointer")),
+      BranchLink(condition=Some(Equal), PrintRuntimeError.label),
+      popPC
+    )
+    case PrintBool => IndexedSeq[Instruction](
+      pushLR,
+      Compare(condition=None, operand1=instructionSet.getReturn, operand2=new Immediate(0)),
+      new Load(condition=Some(NotEqual), asmType=None, dest=instructionSet.getReturn, loadable=new Label("msg_print_bool_true")),
+      new Load(condition=Some(Equal), asmType=None, dest=instructionSet.getReturn, loadable=new Label("msg_print_bool_false")),
+      new Add(condition=None, conditionFlag=false, dest=instructionSet.getReturn, src1=instructionSet.getReturn, src2=new Immediate(4)),
+      BranchLink(condition=None, label=Printf.label),
+      Move(condition=None, dest=instructionSet.getReturn, src=new Immediate(0)),
+      BranchLink(condition=None, label=Flush.label),
+      popPC
+    )
+  }
+
   def checkSingleByte(expr: ExprNode): Boolean = {
     (expr.getType(topSymbolTable, currentSymbolTable)
       == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable)) ||
@@ -848,82 +915,6 @@ object CodeGenerator {
       == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable)) ||
       (expr.getType(topSymbolTable, currentSymbolTable)
         == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable))
-  }
-
-  def checkNullPointer: IndexedSeq[Instruction] = {
-    IndexedSeq[Instruction](
-      pushLR, Compare(None, instructionSet.getReturn, new Immediate(0)),
-      // TODO: Should be msg=n instead of the string itself.
-//      new Load(Equal, None, instructionSet.getReturn, new Immediate("NullReferenceError: dereference a null reference\n\0")),
-      BranchLink(Some(Equal), Label("p_throw_runtime_error")), popPC
-    )
-  }
-
-  def checkArrayBounds: IndexedSeq[Instruction] = {
-    IndexedSeq[Instruction](
-      pushLR, Compare(None, instructionSet.getReturn, new Immediate(0)),
-      new Load(Some(LessThan), None, instructionSet.getReturn, Label("msg_negative_index")),
-      BranchLink(Some(LessThan), Label("p_throw_runtime_error")),
-      new Load(None, None, instructionSet.getArgumentRegisters(1), instructionSet.getArgumentRegisters(1)),
-      Compare(None, instructionSet.getReturn, new ShiftedRegister(instructionSet.getArgumentRegisters(1))),
-      new Load(Some(HigherSame), None, instructionSet.getReturn, Label("msg_index_too_large")),
-      BranchLink(Some(HigherSame), Label("p_throw_runtime_error")), popPC
-    )
-  }
-
-  def printReadChar: IndexedSeq[Instruction] = {
-    IndexedSeq[Instruction](
-      pushLR, Move(None, instructionSet.getArgumentRegisters(1), new ShiftedRegister(instructionSet.getReturn)),
-      // TODO: Change this.
-      new Load(None, None, instructionSet.getReturn, Label("msg_read_char")),
-      Add(None, conditionFlag = false, instructionSet.getReturn, instructionSet.getReturn, new Immediate(4)),
-//      BranchLink(None, Label("scanf")),
-      popPC
-    )
-  }
-
-  def printLn: IndexedSeq[Instruction] = {
-    IndexedSeq[Instruction](
-      pushLR,
-      // TODO: Should be msg=n instead of the string itself.
-//       new Load(None, None, instructionSet.getReturn, Label("\0")),
-      // Maybe instead of 4, size of msg?
-      Add(None, conditionFlag = false, instructionSet.getReturn, instructionSet.getReturn, new Immediate(4)),
-      BranchLink(None, Label("puts")), Move(None, instructionSet.getReturn, new Immediate(0)),
-      BranchLink(None, Label("fflush")), popPC
-    )
-  }
-
-  def runTimeError: IndexedSeq[Instruction] = {
-    IndexedSeq[Instruction](
-      BranchLink(None, Label("p_print_string")), Move(None, instructionSet.getReturn, new Immediate(-1)),
-      BranchLink(None, Label("exit"))
-    )
-  }
-
-  def printString: IndexedSeq[Instruction] = {
-    IndexedSeq[Instruction](
-      pushLR, new Load(None, None, instructionSet.getArgumentRegisters(1), instructionSet.getReturn),
-      Add(None, conditionFlag = false, instructionSet.getArgumentRegisters(2), instructionSet.getReturn, new Immediate(4)),
-      // ImmString
-//      new Load(None, None, instructionSet.getReturn, Label("%.*s\0")),
-      BranchLink(None, Label("printf")), Move(None, instructionSet.getReturn, new Immediate(0)),
-      BranchLink(None, Label("fflush")), popPC
-    )
-  }
-
-  def printFreePair: IndexedSeq[Instruction] = {
-    val returnReg: Register = instructionSet.getReturn
-
-    IndexedSeq[Instruction](
-      pushLR, Compare(None, returnReg, new Immediate(0)),
-      new Load(Some(Equal), None, returnReg, Label("NullReferenceError: dereference a null reference\\n\\0")),
-      Branch(Some(Equal), Label("p_throw_runtime_error")),
-      Push(None, List(returnReg)), new Load(None, None, returnReg, returnReg),
-      BranchLink(None, Label("free")), new Load(None, None, returnReg, instructionSet.getSP),
-      new Load(None, None, returnReg, returnReg, new Immediate(4)), BranchLink(None, Label("free")),
-      Pop(None, List(returnReg)), BranchLink(None, Label("free")), popPC
-    )
   }
 
   def getSize(_type: TYPE): Int = {

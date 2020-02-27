@@ -107,15 +107,46 @@ object Utilities {
         )
     }
 
+    def printFreePair: IndexedSeq[Instruction] = {
+        // BL p_free_pair
+        if (commonFunctions.add(PrintFreePair))
+            strings += (Label("msg_free_pair") ->
+                new StringLiteral("NullReferenceError: dereference a null reference\\n\\0", 50)
+            )
+        IndexedSeq[Instruction](
+            BranchLink(condition=None, label=PrintFreePair.label)
+        )
+    }
+
+    def printReadChar: IndexedSeq[Instruction] = {
+        if (commonFunctions.add(PrintReadChar))
+            strings += (Label("msg_read_char") ->
+                new StringLiteral(" %c\\0", 4)
+            )
+        IndexedSeq[Instruction](
+            BranchLink(condition=None, label=PrintReadChar.label)
+        )
+    }
+
+    def printCheckNullPointer: IndexedSeq[Instruction] = {
+        if (commonFunctions.add(PrintCheckNullPointer))
+            strings += (Label("msg_check_null_pointer") ->
+                new StringLiteral("NullReferenceError: dereference a null reference\\n\\0", 50)
+            )
+        IndexedSeq[Instruction](
+            BranchLink(condition=None, label=PrintCheckNullPointer.label)
+        )
+    }
+
     def printOverflowError: IndexedSeq[Instruction] = {
         // BLVS p_throw_overflow_error
         if (commonFunctions.add(PrintOverflowError))
             strings += (new Label("msg_throw_overflow_error") ->
-                new StringLiteral("OverflowError: the result is too small/large to store in a 4-byte signed-integer.\n", 82)
+                new StringLiteral("OverflowError: the result is too small/large to store in a 4-byte signed-integer.\\n", 82)
             )
         printRuntimeError // make sure print runtime error is added to common functions
         IndexedSeq[Instruction](
-            BranchLink(Some(Overflow), Label("p_throw_overflow_error"))
+            BranchLink(Some(Overflow), label = PrintOverflowError.label)
         )
     }
 
@@ -124,7 +155,20 @@ object Utilities {
         commonFunctions.add(PrintRuntimeError)
         printString("") // just make sure print string is added to common functions
         IndexedSeq[Instruction](
-            BranchLink(Some(Overflow), Label("p_throw_runtime_error"))
+            BranchLink(Some(Overflow), PrintRuntimeError.label)
+        )
+    }
+
+    def printCheckArrayBounds: IndexedSeq[Instruction] = {
+        if (commonFunctions.add(PrintCheckArrayBounds)) {
+            strings += (new Label("msg_negative_index") ->
+                new StringLiteral("ArrayIndexOutOfBoundsError: negative index\\n\\0", 44))
+            strings += (new Label("msg_index_too_large") ->
+                new StringLiteral("ArrayIndexOutOfBoundsError: index too large\\n\\0", 45))
+        }
+        printRuntimeError
+        IndexedSeq[Instruction](
+            BranchLink(None, PrintCheckArrayBounds.label)
         )
     }
 
