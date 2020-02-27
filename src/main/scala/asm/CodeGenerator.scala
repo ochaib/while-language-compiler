@@ -474,7 +474,11 @@ object CodeGenerator {
   }
 
   def generateFree(expr: ExprNode): IndexedSeq[Instruction] = {
-    generateExpression(expr) ++ IndexedSeq[Instruction](BranchLink(None, Label("p_free_pair")))
+    // Need to generate p_free_pair here.
+    generateExpression(expr) ++ IndexedSeq[Instruction](
+      Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())),
+      // TODO: Call printFreePair or something
+      BranchLink(None, Label("p_free_pair")))
   }
 
   def generateReturn(expr: ExprNode): IndexedSeq[Instruction] = {
@@ -490,8 +494,8 @@ object CodeGenerator {
     val regUsedByGenExp: Register = RM.peekVariableRegister()
     // So that it can actually be used by generateExpression.
     RM.freeVariableRegister(regUsedByGenExp)
-    var int = 0
 
+    var int = 0
     val intLoad: IndexedSeq[Instruction] = expr match {
       // Check if the expression is negate node, i.e. int to be exited with is negative.
       case NegateNode(_, intExpr) =>
@@ -584,16 +588,17 @@ object CodeGenerator {
       (conditionLabel +: condInstructions :+ bodyBranch) ++ deallocateInstruction
   }
 
+  // TODO: Daniel Check This Is Correct
   def generateBegin(begin: BeginNode): IndexedSeq[Instruction] = {
     // We must first enter the new scope, then generate the statements inside the scope,
     // then finally close the scope.
-//    symbolTableManager.enterScope()
+    val allocateInstruction: IndexedSeq[Instruction] = enterScopeAndAllocateStack()
 
     val generatedInstructions = generateStatement(begin.stat)
 
-//    symbolTableManager.leaveScope()
+    val deallocateInstruction: IndexedSeq[Instruction] = leaveScopeAndDeallocateStack()
 
-    generatedInstructions
+    allocateInstruction ++ generatedInstructions ++ deallocateInstruction
   }
 
   def generateExpression(expr: ExprNode): IndexedSeq[Instruction] = {
@@ -755,7 +760,7 @@ object CodeGenerator {
     IndexedSeq[Instruction](
       pushLR,
       // TODO: Should be msg=n instead of the string itself.
-      // new Load(None, None, instructionSet.getReturn, new Immediate("\0")),
+//       new Load(None, None, instructionSet.getReturn, Label("\0")),
       // Maybe instead of 4, size of msg?
       Add(None, conditionFlag = false, instructionSet.getReturn, instructionSet.getReturn, new Immediate(4)),
       BranchLink(None, Label("puts")), Move(None, instructionSet.getReturn, new Immediate(0)),
@@ -775,9 +780,23 @@ object CodeGenerator {
       pushLR, new Load(None, None, instructionSet.getArgumentRegisters(1), instructionSet.getReturn),
       Add(None, conditionFlag = false, instructionSet.getArgumentRegisters(2), instructionSet.getReturn, new Immediate(4)),
       // ImmString
-//      new Load(None, None, instructionSet.getReturn, new Immediate("%.*s\0")),
+//      new Load(None, None, instructionSet.getReturn, Label("%.*s\0")),
       BranchLink(None, Label("printf")), Move(None, instructionSet.getReturn, new Immediate(0)),
       BranchLink(None, Label("fflush")), popPC
+    )
+  }
+
+  def printFreePair: IndexedSeq[Instruction] = {
+    val returnReg: Register = instructionSet.getReturn
+
+    IndexedSeq[Instruction](
+      pushLR, Compare(None, returnReg, new Immediate(0)),
+      new Load(Some(Equal), None, returnReg, Label("NullReferenceError: dereference a null reference\\n\\0")),
+      Branch(Some(Equal), Label("p_throw_runtime_error")),
+      Push(None, List(returnReg)), new Load(None, None, returnReg, returnReg),
+      BranchLink(None, Label("free")), new Load(None, None, returnReg, instructionSet.getSP),
+      new Load(None, None, returnReg, returnReg, new Immediate(4)), BranchLink(None, Label("free")),
+      Pop(None, List(returnReg)), BranchLink(None, Label("free")), popPC
     )
   }
 
