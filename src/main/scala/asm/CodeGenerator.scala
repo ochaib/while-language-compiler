@@ -350,7 +350,8 @@ object CodeGenerator {
     if (checkSingleByte(pairElem)) asmType = Some(ByteType)
 
     // TODO: Add Null pointer check here.
-    val nullPtrIns = genNullPointerInstructions
+    val nullPtrIns =
+      Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())) +: Utilities.printCheckNullPointer
 
     val offset: Int = pairElem match {
       case fst: FstNode => 0
@@ -375,7 +376,8 @@ object CodeGenerator {
   }
 
   def generatePEHelper(pairElemNode: PairElemNode, isSnd: Boolean): IndexedSeq[Instruction] = {
-    val peInstructions = genNullPointerInstructions
+    val peInstructions =
+      Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())) +: Utilities.printCheckNullPointer
 
     var asmType: Option[ASMType] = None
 
@@ -397,13 +399,6 @@ object CodeGenerator {
 
     // Should set a flag that triggers checkNullPointer at top level.
     peInstructions ++ loads
-  }
-
-  def genNullPointerInstructions: IndexedSeq[Instruction] = {
-    IndexedSeq[Instruction](
-      Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())),
-      // Create label here and trigger the checkNullPointer at the bottom.
-      BranchLink(None, Label("p_check_null_pointer")))
   }
 
   def generateCall(call: CallNode): IndexedSeq[Instruction] = {
