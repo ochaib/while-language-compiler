@@ -923,9 +923,9 @@ object CodeGenerator {
 
   def enterScopeAndAllocateStack(): IndexedSeq[Instruction] = {
     symbolTableManager.enterScope()
-    bytesAllocatedSoFar += getScopeStackSize(currentSymbolTable)
     if (getScopeStackSize(currentSymbolTable) == 0) IndexedSeq()
     else {
+      bytesAllocatedSoFar += getScopeStackSize(currentSymbolTable)
       IndexedSeq(Subtract(None, conditionFlag = false,
         instructionSet.getSP, instructionSet.getSP, new Immediate(getScopeStackSize(currentSymbolTable))))
     }
