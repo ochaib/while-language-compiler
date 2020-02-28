@@ -29,7 +29,9 @@ object Utilities {
     as it will not be calculated correctly otherwise */
     def addString(s: String, length: Option[Int]=None): Label = {
         val len: Int = length match {
-            case None => s.length
+            // we don't count the \\ as it is just creating an escape sequence
+            // we subtract 2 because the string is double quoted which accounts for 2 chars
+            case None => (for (c<-s if c!='\\') yield c).length - 2
             case Some(l) => l
         }
         val dataLabel: Label = Label("msg_" + strings.size)
