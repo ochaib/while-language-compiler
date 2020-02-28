@@ -907,13 +907,15 @@ object CodeGenerator {
 
     val binOpInstructions: IndexedSeq[Instruction] = binaryOperation match {
       case MultiplyNode(_, argOne, argTwo) =>
-        generateExpression(argOne) ++ generateExpression(argTwo) ++
+        firstArgument = argOne
+        secondArgument = argTwo
           IndexedSeq[Instruction](
             SMull(None, conditionFlag = false, varReg1, varReg2, varReg1, varReg2),
             // Need to be shifted by 31, ASR 31
             Compare(None, varReg2, new ShiftedRegister(varReg1, "ASR", 31))) ++ Utilities.printOverflowError(Some(NotEqual))
       case DivideNode(_, argOne, argTwo) =>
-        generateExpression(argOne) ++ generateExpression(argTwo) ++
+        firstArgument = argOne
+        secondArgument = argTwo
           IndexedSeq[Instruction](
             Move(None, instructionSet.getReturn, new ShiftedRegister(varReg1)),
             Move(None, r1, new ShiftedRegister(varReg2))
@@ -921,7 +923,8 @@ object CodeGenerator {
           BranchLink(None, DivMod.label),
           Move(None, varReg1, new ShiftedRegister(instructionSet.getReturn)))
       case ModNode(_, argOne, argTwo) =>
-        generateExpression(argOne) ++ generateExpression(argTwo) ++
+        firstArgument = argOne
+        secondArgument = argTwo
           IndexedSeq[Instruction](
             Move(None, instructionSet.getReturn, new ShiftedRegister(varReg1)),
             Move(None, r1, new ShiftedRegister(varReg2))
@@ -930,35 +933,41 @@ object CodeGenerator {
           Move(None, varReg1, new ShiftedRegister(r1)))
       case PlusNode(_, argOne, argTwo) =>
         // Should be ADDS, conditionFlag set to true.
-        generateExpression(argOne) ++ generateExpression(argTwo) ++
+        firstArgument = argOne
+        secondArgument = argTwo
           IndexedSeq[Instruction](
             Add(None, conditionFlag = true, varReg1, varReg1, new ShiftedRegister(varReg2))
           ) ++ Utilities.printOverflowError(Some(Overflow))
       case MinusNode(_, argOne, argTwo) =>
-        generateExpression(argOne) ++ generateExpression(argTwo) ++
+        firstArgument = argOne
+        secondArgument = argTwo
           IndexedSeq[Instruction](
             Subtract(None, conditionFlag = true, varReg1, varReg1, new ShiftedRegister(varReg2))
           ) ++ Utilities.printOverflowError(Some(Overflow))
       case GreaterThanNode(_, argOne, argTwo) =>
-        generateExpression(argOne) ++ generateExpression(argTwo) ++
+        firstArgument = argOne
+        secondArgument = argTwo
           IndexedSeq[Instruction](
             Compare(None, varReg1, new ShiftedRegister(varReg2)),
             Move(Some(GreaterThan), varReg1, new Immediate(1)),
             Move(Some(LessEqual), varReg1, new Immediate(0)))
       case GreaterEqualNode(_, argOne, argTwo) =>
-        generateExpression(argOne) ++ generateExpression(argTwo) ++
+        firstArgument = argOne
+        secondArgument = argTwo
           IndexedSeq[Instruction](
             Compare(None, varReg1, new ShiftedRegister(varReg2)),
             Move(Some(GreaterEqual), varReg1, new Immediate(1)),
             Move(Some(LessThan), varReg1, new Immediate(0)))
       case LessThanNode(_, argOne, argTwo) =>
-        generateExpression(argOne) ++ generateExpression(argTwo) ++
+        firstArgument = argOne
+        secondArgument = argTwo
           IndexedSeq[Instruction](
             Compare(None, varReg1, new ShiftedRegister(varReg2)),
             Move(Some(LessThan), varReg1, new Immediate(1)),
             Move(Some(GreaterEqual), varReg1, new Immediate(0)))
       case LessEqualNode(_, argOne, argTwo) =>
-        generateExpression(argOne) ++ generateExpression(argTwo) ++
+        firstArgument = argOne
+        secondArgument = argTwo
           IndexedSeq[Instruction](
             Compare(None, varReg1, new ShiftedRegister(varReg2)),
             Move(Some(LessEqual), varReg1, new Immediate(1)),
@@ -971,18 +980,21 @@ object CodeGenerator {
             Move(Some(Equal), varReg1, new Immediate(1)),
             Move(Some(NotEqual), varReg1, new Immediate(0)))
       case NotEqualNode(_, argOne, argTwo) =>
-        generateExpression(argOne) ++ generateExpression(argTwo) ++
+        firstArgument = argOne
+        secondArgument = argTwo
           IndexedSeq[Instruction](
             Compare(None, varReg1, new ShiftedRegister(varReg2)),
             Move(Some(NotEqual), varReg1, new Immediate(1)),
             Move(Some(Equal), varReg1, new Immediate(0)))
 
       case LogicalAndNode(_, argOne, argTwo) =>
-        generateExpression(argOne) ++ generateExpression(argTwo) ++
+        firstArgument = argOne
+        secondArgument = argTwo
           IndexedSeq[Instruction](And(None, conditionFlag = false, varReg1,
             varReg1, new ShiftedRegister(varReg2)))
       case LogicalOrNode(_, argOne, argTwo) =>
-        generateExpression(argOne) ++ generateExpression(argTwo) ++
+        firstArgument = argOne
+        secondArgument = argTwo
           IndexedSeq[Instruction](Or(None, conditionFlag = false, varReg1,
             varReg1, new ShiftedRegister(varReg2)))
     }
