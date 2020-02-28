@@ -85,8 +85,31 @@ object CodeGenerator {
     functionInstructions ++ mainInstructions ++ commonFunctions
   }
 
+  var paramOffsetMap: Map[String, Int] = Map[String, Int]()
+  var currentParamOffset: Int = 0
+
+  def addParamToMap(param: ParamNode): Unit = {
+    //if (param.getType(topSymbolTable, currentSymbolTable) != STRING) {
+      paramOffsetMap = paramOffsetMap + (param.identNode.getKey -> currentParamOffset)
+      currentParamOffset += getSize(param.getType(topSymbolTable, currentSymbolTable))
+    //}
+  }
+
+  def createParamMap(paramListNode: ParamListNode): Unit = {
+    paramOffsetMap = Map[String, Int]()
+    currentParamOffset = 4
+    for (param: ParamNode <- paramListNode.paramList) {
+      addParamToMap(param)
+    }
+  }
+
+  def getParamOffset(key: String): Int = paramOffsetMap(key)
+
   def generateFunction(func: FuncNode): IndexedSeq[Instruction] = {
 
+    if (func.paramList.isDefined) {
+      createParamMap(func.paramList.get)
+    }
     // Update the current symbol table to function block
     currentSymbolTable = symbolTableManager.nextScope()
 
@@ -108,8 +131,17 @@ object CodeGenerator {
     var popEndInstruction = IndexedSeq[Instruction](popPC, new EndFunction)
 
     // TODO: HAVE TO GO BACK TO MAIN
+    currentParamOffset = 0
+    paramOffsetMap = Map()
 
     labelPushLR ++ allocateInstructions ++ statInstructions ++ deallocateInstructions ++ popEndInstruction
+  }
+
+  def getOffset(key: String): Int = {
+    if (currentSymbolTable.lookup(key).isDefined && currentSymbolTable.lookup(key).get.isInstanceOf[PARAM])
+      getParamOffset(key) - bytesAllocatedSoFar
+    else
+      symbolTableManager.getOffset(key) - bytesAllocatedSoFar + getScopeStackSize(currentSymbolTable)
   }
 
 //  def generateParamList(paramList: ParamListNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
@@ -218,7 +250,7 @@ object CodeGenerator {
   def retrieveArrayElements(arrayElem: ArrayElemNode, varReg: Register, varReg2: Register): IndexedSeq[Instruction] = {
     val preExpr = IndexedSeq[Instruction](
       Add(None, conditionFlag = false, varReg, instructionSet.getSP,
-          new Immediate(symbolTableManager.getOffset(arrayElem.identNode.getKey)))
+          new Immediate(getOffset(arrayElem.identNode.getKey)))
     )
 
     // Produce following instructions for every expression in the array.
@@ -481,7 +513,7 @@ object CodeGenerator {
       // Offset from symbol table for ident.
       case ident: IdentNode => IndexedSeq[Instruction](Add(None, conditionFlag = false, varReg1,
         // CONFIRMED THAT I SHOULD BE GETTING OFFSET HERE
-        instructionSet.getSP, new Immediate(symbolTableManager.getOffset(ident.getKey))))
+        instructionSet.getSP, new Immediate(getOffset(ident.getKey))))
         //        instructionSet.getSP, new Immediate(getSize(ident.getType(topSymbolTable, currentSymbolTable)))))
         // No offset if not reading variable.
       case _ => IndexedSeq[Instruction](Add(None, conditionFlag = false, varReg1,
@@ -563,7 +595,7 @@ object CodeGenerator {
       case ArrayElemNode(_, _, _) => Utilities.printReference
       case i: IdentNode =>
         new Load(None, None, RM.peekVariableRegister(), instructionSet.getSP,
-          new Immediate(symbolTableManager.getOffset(i.getKey)),
+          new Immediate(getOffset(i.getKey)),
           registerWriteBack=false) +: (i.getType(topSymbolTable, currentSymbolTable) match {
             case scalar: SCALAR =>
               if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
@@ -600,7 +632,7 @@ object CodeGenerator {
         new Load(
           condition=None, asmType=None,
           RM.peekVariableRegister, instructionSet.getSP,
-          new Immediate(symbolTableManager.getOffset(i.getKey)),
+          new Immediate(getOffset(i.getKey)),
           registerWriteBack = false) +: (i.getType(topSymbolTable, currentSymbolTable) match {
             case scalar: SCALAR => {
               if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
@@ -635,7 +667,7 @@ object CodeGenerator {
         (new Load(
           condition=None, asmType=None,
           RM.peekVariableRegister, instructionSet.getSP,
-          new Immediate(symbolTableManager.getOffset(i.getKey)),
+          new Immediate(getOffset(i.getKey)),
           registerWriteBack = false
         ) +: generateBinary(i)) ++ (i.getType(topSymbolTable, currentSymbolTable) match {
             case scalar: SCALAR => {
@@ -672,7 +704,7 @@ object CodeGenerator {
         (new Load(
           condition=None, asmType=None,
           RM.peekVariableRegister, instructionSet.getSP,
-          new Immediate(symbolTableManager.getOffset(i.getKey)),
+          new Immediate(getOffset(i.getKey)),
           registerWriteBack = false
         ) +: generateUnary(i)) ++ (i.getType(topSymbolTable, currentSymbolTable) match {
             case scalar: SCALAR => {
@@ -857,7 +889,7 @@ object CodeGenerator {
           => if (checkSingleByte(ident)) {
               IndexedSeq[Instruction](new Load(None, Some(SignedByte),
                 RM.peekVariableRegister(), instructionSet.getSP,
-                new Immediate(symbolTableManager.getOffset(ident.getKey)),
+                new Immediate(getOffset(ident.getKey)),
                 registerWriteBack = false))
         //                        new Immediate(symbolTableManager.getOffset(ident.getKey))))
         //                        new Immediate(getSize(
@@ -865,7 +897,7 @@ object CodeGenerator {
           } else {
               IndexedSeq[Instruction](new Load(None, None,
                 RM.peekVariableRegister(), instructionSet.getSP,
-                new Immediate(symbolTableManager.getOffset(ident.getKey)),
+                new Immediate(getOffset(ident.getKey)),
                 registerWriteBack = false))}
       case arrayElem: ArrayElemNode => generateArrayElem(arrayElem)
       case unaryOperation: UnaryOperationNode => generateUnary(unaryOperation)
