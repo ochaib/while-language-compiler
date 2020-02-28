@@ -138,10 +138,10 @@ object CodeGenerator {
   }
 
   def getOffset(key: String): Int = {
-    if (currentSymbolTable.lookup(key).isDefined && currentSymbolTable.lookup(key).get.isInstanceOf[PARAM])
+    if (paramOffsetMap.get(key).isDefined || currentSymbolTable.lookup(key).isDefined && currentSymbolTable.lookup(key).get.isInstanceOf[PARAM])
       getParamOffset(key) + bytesAllocatedSoFar
     else
-      symbolTableManager.getOffset(key) + bytesAllocatedSoFar - getScopeStackSize(currentSymbolTable)
+      symbolTableManager.getOffset(key)// + bytesAllocatedSoFar - getScopeStackSize(currentSymbolTable)
   }
 
 //  def generateParamList(paramList: ParamListNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
