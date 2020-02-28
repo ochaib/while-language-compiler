@@ -925,7 +925,7 @@ object CodeGenerator {
             Move(None, instructionSet.getReturn, new ShiftedRegister(varReg1)),
             Move(None, r1, new ShiftedRegister(varReg2))
           ) ++ Utilities.printDivideByZero ++ IndexedSeq[Instruction](
-          BranchLink(None, DivMod.label),
+          BranchLink(None, Div.label),
           Move(None, varReg1, new ShiftedRegister(instructionSet.getReturn)))
       case ModNode(_, argOne, argTwo) =>
         firstArgument = argOne
