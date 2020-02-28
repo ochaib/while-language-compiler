@@ -1048,6 +1048,7 @@ object CodeGenerator {
         } else {
           allocateInstructions = allocateInstructions :+ Subtract(None, conditionFlag = false, instructionSet.getSP, instructionSet.getSP, new Immediate(bytesToAllocate))
           bytesAllocatedSoFar += bytesToAllocate
+          bytesToAllocate = 0
         }
       }
       allocateInstructions
