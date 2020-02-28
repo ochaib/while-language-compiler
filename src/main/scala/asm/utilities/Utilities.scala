@@ -141,8 +141,9 @@ object Utilities {
     def printOverflowError: IndexedSeq[Instruction] = {
         // BLVS p_throw_overflow_error
         if (commonFunctions.add(PrintOverflowError))
-            strings += (new Label("msg_throw_overflow_error") ->
-                new StringLiteral("OverflowError: the result is too small/large to store in a 4-byte signed-integer.\\n", 82)
+            strings += (Label("msg_throw_overflow_error") ->
+                new StringLiteral("OverflowError: the result is too small/large " +
+                                  "to store in a 4-byte signed-integer.\\n", 82)
             )
         printRuntimeError // make sure print runtime error is added to common functions
         IndexedSeq[Instruction](
@@ -161,14 +162,25 @@ object Utilities {
 
     def printCheckArrayBounds: IndexedSeq[Instruction] = {
         if (commonFunctions.add(PrintCheckArrayBounds)) {
-            strings += (new Label("msg_negative_index") ->
+            strings += (Label("msg_negative_index") ->
                 new StringLiteral("ArrayIndexOutOfBoundsError: negative index\\n\\0", 44))
-            strings += (new Label("msg_index_too_large") ->
+            strings += (Label("msg_index_too_large") ->
                 new StringLiteral("ArrayIndexOutOfBoundsError: index too large\\n\\0", 45))
         }
         printRuntimeError
         IndexedSeq[Instruction](
             BranchLink(None, PrintCheckArrayBounds.label)
+        )
+    }
+
+    def printDivideByZero: IndexedSeq[Instruction] = {
+        if (commonFunctions.add(PrintDivideByZero)) {
+            strings += (Label("msg_divide_by_zero") ->
+              new StringLiteral("DivideByZeroError: divide or modulo by zero\\n\\0", 45))
+        }
+        printRuntimeError
+        IndexedSeq[Instruction](
+            BranchLink(None, PrintDivideByZero.label)
         )
     }
 

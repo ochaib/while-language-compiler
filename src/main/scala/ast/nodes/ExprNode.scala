@@ -64,7 +64,7 @@ case class Pair_literNode(token: Token) extends ExprNode(token) {
   override def toTreeString: String = console.color("null", fg=Console.MAGENTA)
 }
 
-class ParenExprNode(token: Token, expr: ExprNode) extends ExprNode(token) {
+case class ParenExprNode(token: Token, expr: ExprNode) extends ExprNode(token) {
 
   override def getType(topST: SymbolTable, ST: SymbolTable): TYPE = expr.getType(topST, ST)
 
