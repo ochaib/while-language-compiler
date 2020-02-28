@@ -675,6 +675,9 @@ object CodeGenerator {
     // We must first enter the new scope, then generate the statements inside the scope,
     // then finally close the scope.
 
+    // Update the current symbol table to the begin scope
+    currentSymbolTable = symbolTableManager.nextScope()
+
     // Enter Scope
     val allocateInstructions: IndexedSeq[Instruction] = enterScopeAndAllocateStack()
 
