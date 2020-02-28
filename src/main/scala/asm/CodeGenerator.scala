@@ -623,15 +623,17 @@ object CodeGenerator {
             case _: ARRAY | _: PAIR => Utilities.printReference
           })
       case i: BinaryOperationNode =>
-        new Load(
+        (new Load(
           condition=None, asmType=None,
           RM.peekVariableRegister, instructionSet.getSP,
           new Immediate(symbolTableManager.getOffset(i.getKey)),
-          registerWriteBack = false) +: (i.getType(topSymbolTable, currentSymbolTable) match {
+          registerWriteBack = false
+        ) +: generateBinary(i)) ++ (i.getType(topSymbolTable, currentSymbolTable) match {
             case scalar: SCALAR => {
               if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
                 Utilities.printInt(0) // doesn't matter just need to trigger add printInt
                 IndexedSeq[Instruction](
+                  Move(condition=None, dest=instructionSet.getReturn, src=new ShiftedRegister(RM.peekVariableRegister)),
                   BranchLink(None, PrintInt.label)
                 )
               }
@@ -658,11 +660,12 @@ object CodeGenerator {
             case _: ARRAY | _: PAIR => Utilities.printReference
           })
       case i: UnaryOperationNode =>
-        new Load(
+        (new Load(
           condition=None, asmType=None,
           RM.peekVariableRegister, instructionSet.getSP,
           new Immediate(symbolTableManager.getOffset(i.getKey)),
-          registerWriteBack = false) +: (i.getType(topSymbolTable, currentSymbolTable) match {
+          registerWriteBack = false
+        ) +: generateUnary(i)) ++ (i.getType(topSymbolTable, currentSymbolTable) match {
             case scalar: SCALAR => {
               if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
                 Utilities.printInt(0) // doesn't matter just need to trigger add printInt
@@ -907,10 +910,10 @@ object CodeGenerator {
           Move(None, varReg1, new ShiftedRegister(r1)))
       case PlusNode(_, argOne, argTwo) =>
         // Should be ADDS, conditionFlag set to true.
-      generateExpression(argOne) ++ generateExpression(argTwo) ++
-        IndexedSeq[Instruction](
-          Add(None, conditionFlag = true, varReg1, varReg1, new ShiftedRegister(varReg2))
-        ) ++ Utilities.printOverflowError(Some(Overflow))
+        generateExpression(argOne) ++ generateExpression(argTwo) ++
+          IndexedSeq[Instruction](
+            Add(None, conditionFlag = true, varReg1, varReg1, new ShiftedRegister(varReg2))
+          ) ++ Utilities.printOverflowError(Some(Overflow))
       case MinusNode(_, argOne, argTwo) =>
         generateExpression(argOne) ++ generateExpression(argTwo) ++
         IndexedSeq[Instruction](
