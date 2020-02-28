@@ -385,8 +385,8 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
   override def visitChar_liter(ctx: WACCParser.Char_literContext): Char_literNode = {
     // ‘’’ ⟨character ⟩ ‘’’
     val charValue: Char = ctx.getChild(0).getText.charAt(1)
-
-    Char_literNode(ctx.start, charValue)
+    if (charValue == '\\') Char_literNode(ctx.start, ctx.getChild(0).getText.charAt(2))
+    else Char_literNode(ctx.start, charValue)
   }
 
   override def visitExprStringLiter(ctx: WACCParser.ExprStringLiterContext): ExprNode = {

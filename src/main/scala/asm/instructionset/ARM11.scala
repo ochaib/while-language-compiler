@@ -92,7 +92,7 @@ object ARM11 extends InstructionSet {
       Utilities.strings.map[String](Function.tupled(printStringLiteral _)).mkString("\n") +
       "\n\n.text\n\n" +
       ".global main\n" +
-      instructions.map(print).mkString("\n")
+      instructions.map(print).mkString("\n") + "\n"
   }
 
   def printStringLiteral(msgLabel: Label, stringLiteral: StringLiteral): String = {
