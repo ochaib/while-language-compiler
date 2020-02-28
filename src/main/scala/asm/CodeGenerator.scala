@@ -85,8 +85,31 @@ object CodeGenerator {
     functionInstructions ++ mainInstructions ++ commonFunctions
   }
 
+  var paramOffsetMap: Map[String, Int] = Map[String, Int]()
+  var currentParamOffset: Int = 0
+
+  def addParamToMap(param: ParamNode): Unit = {
+    //if (param.getType(topSymbolTable, currentSymbolTable) != STRING) {
+      paramOffsetMap = paramOffsetMap + (param.identNode.getKey -> currentParamOffset)
+      currentParamOffset += getSize(param.getType(topSymbolTable, currentSymbolTable))
+    //}
+  }
+
+  def createParamMap(paramListNode: ParamListNode): Unit = {
+    paramOffsetMap = Map[String, Int]()
+    currentParamOffset = 4
+    for (param: ParamNode <- paramListNode.paramList) {
+      addParamToMap(param)
+    }
+  }
+
+  def getParamOffset(key: String): Int = paramOffsetMap(key)
+
   def generateFunction(func: FuncNode): IndexedSeq[Instruction] = {
 
+    if (func.paramList.isDefined) {
+      createParamMap(func.paramList.get)
+    }
     // Update the current symbol table to function block
     currentSymbolTable = symbolTableManager.nextScope()
 
@@ -108,8 +131,17 @@ object CodeGenerator {
     val popEndInstruction = IndexedSeq[Instruction](popPC, new EndFunction)
 
     // TODO: HAVE TO GO BACK TO MAIN
+    currentParamOffset = 0
+    paramOffsetMap = Map()
 
     labelPushLR ++ allocateInstructions ++ statInstructions ++ deallocateInstructions ++ popEndInstruction
+  }
+
+  def getOffset(key: String): Int = {
+    if (paramOffsetMap.get(key).isDefined || currentSymbolTable.lookup(key).isDefined && currentSymbolTable.lookup(key).get.isInstanceOf[PARAM])
+      getParamOffset(key) + bytesAllocatedSoFar
+    else
+      symbolTableManager.getOffset(key)// + bytesAllocatedSoFar - getScopeStackSize(currentSymbolTable)
   }
 
 //  def generateParamList(paramList: ParamListNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
@@ -218,7 +250,7 @@ object CodeGenerator {
   def retrieveArrayElements(arrayElem: ArrayElemNode, varReg: Register, varReg2: Register): IndexedSeq[Instruction] = {
     val preExpr = IndexedSeq[Instruction](
       Add(None, conditionFlag = false, varReg, instructionSet.getSP,
-          new Immediate(symbolTableManager.getOffset(arrayElem.identNode.getKey)))
+          new Immediate(getOffset(arrayElem.identNode.getKey)))
     )
 
     // Produce following instructions for every expression in the array.
@@ -253,13 +285,12 @@ object CodeGenerator {
     val varReg1 = RM.nextVariableRegister()
     // Because we assume every expr in the array is of the same type.
     val arrayLength = arrayLiteral.exprNodes.length
-    // TODO Ossama check this
     var exprElemSize = {
       if (arrayLength != 0)
         getSize(arrayLiteral.exprNodes.head.getType(topSymbolTable, currentSymbolTable))
       else 0
     }
-    var intSize = 4
+    val intSize = 4
 
     // Calculations necessary to retrieve size of array for loading into return.
     val arraySize = intSize + arrayLength * exprElemSize
@@ -272,12 +303,12 @@ object CodeGenerator {
 
     var generatedExpressions: IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
-    var acc = getSize(GENERAL_ARRAY) + exprElemSize
+    var acc = exprElemSize
     // Generate expression instructions for each expression node in the array.
     arrayLiteral.exprNodes.foreach(expr => { generatedExpressions ++= generateExpression(expr) :+
       new Store(None, None, RM.peekVariableRegister(), varReg1,
         // Replaced hardcoded 4 with actual expression type.
-        new Immediate(acc));  acc = acc + getSize(expr.getType(topSymbolTable, currentSymbolTable))})
+        new Immediate(acc), registerWriteBack = false);  acc = acc + getSize(expr.getType(topSymbolTable, currentSymbolTable))})
 
     val varReg2 = RM.nextVariableRegister()
 
@@ -384,10 +415,21 @@ object CodeGenerator {
       case snd: SndNode => 4
     }
 
-    val loadStore = IndexedSeq[Instruction](
-      new Load(None, None, peekedReg, peekedReg, new Immediate(offset), registerWriteBack = false),
-      new Store(None, asmType, varReg, peekedReg)
-    )
+    val loadStore: IndexedSeq[Instruction] = pairElem match {
+      case fst: FstNode =>
+        IndexedSeq[Instruction](
+          new Load(None, None, peekedReg, peekedReg, new Immediate(offset), registerWriteBack = false),
+          new Store(None, asmType, varReg, peekedReg, new Immediate(symbolTableManager.getOffset(fst.expression.getKey)),
+            registerWriteBack = false)
+        )
+      case snd: SndNode =>
+        IndexedSeq[Instruction](
+          new Load(None, None, peekedReg, peekedReg, new Immediate(offset), registerWriteBack = false),
+          new Store(None, asmType, varReg, peekedReg, new Immediate(symbolTableManager.getOffset(snd.expression.getKey)),
+            registerWriteBack = false)
+        )
+
+    }
     // Free register now.
     RM.freeVariableRegister(varReg)
 
@@ -480,7 +522,8 @@ object CodeGenerator {
     val addInstruction: IndexedSeq[Instruction] = lhs match {
       // Offset from symbol table for ident.
       case ident: IdentNode => IndexedSeq[Instruction](Add(None, conditionFlag = false, varReg1,
-        instructionSet.getSP, new Immediate(symbolTableManager.getOffset(ident.getKey))))
+        // CONFIRMED THAT I SHOULD BE GETTING OFFSET HERE
+        instructionSet.getSP, new Immediate(getOffset(ident.getKey))))
         //        instructionSet.getSP, new Immediate(getSize(ident.getType(topSymbolTable, currentSymbolTable)))))
         // No offset if not reading variable.
       case _ => IndexedSeq[Instruction](Add(None, conditionFlag = false, varReg1,
@@ -553,7 +596,7 @@ object CodeGenerator {
         if (checkSingleByte(i)) asmType = Some(SignedByte)
         IndexedSeq[Instruction](
           new Load(None, asmType, RM.peekVariableRegister(), instructionSet.getSP,
-          new Immediate(symbolTableManager.getOffset(i.getKey)),
+          new Immediate(getOffset(i.getKey)),
           registerWriteBack=false)) ++ (i.getType(topSymbolTable, currentSymbolTable) match {
             case scalar: SCALAR =>
               if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
@@ -594,8 +637,8 @@ object CodeGenerator {
       case i: ParenExprNode =>
         new Load(
           condition=None, asmType=None,
-          RM.peekVariableRegister(), instructionSet.getSP,
-          new Immediate(symbolTableManager.getOffset(i.getKey)),
+          RM.peekVariableRegister, instructionSet.getSP,
+          new Immediate(getOffset(i.getKey)),
           registerWriteBack = false) +: (i.getType(topSymbolTable, currentSymbolTable) match {
             case scalar: SCALAR =>
               if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
@@ -795,12 +838,16 @@ object CodeGenerator {
 
 
     // *** BODY ***
+    val currentIdentOffsetMap = symbolTableManager.identOffsetMap
+    var prevIdentOffsetMap = symbolTableManager.identOffsetMap
 
     // Update Scope to While Body
     currentSymbolTable = symbolTableManager.nextScope()
 
     // Enter Scope
     val allocateWhileBody: IndexedSeq[Instruction] = enterScopeAndAllocateStack()
+
+    symbolTableManager.identOffsetMap = prevIdentOffsetMap
 
     // Body Instruction list
     val bodyInstructions: IndexedSeq[Instruction] = generateStatement(whileNode.stat)
@@ -810,6 +857,7 @@ object CodeGenerator {
 
     // ************
 
+    symbolTableManager.identOffsetMap = currentIdentOffsetMap
 
     // *** SUMMARY ***
 
@@ -863,14 +911,14 @@ object CodeGenerator {
           => if (checkSingleByte(ident)) {
               IndexedSeq[Instruction](new Load(None, Some(SignedByte),
                 RM.peekVariableRegister(), instructionSet.getSP,
-                new Immediate(symbolTableManager.getOffset(ident.getKey)),
+                new Immediate(getOffset(ident.getKey)),
                 registerWriteBack = false))
         //                        new Immediate(getSize(
         //                          ident.getType(topSymbolTable, currentSymbolTable)))))
           } else {
               IndexedSeq[Instruction](new Load(None, None,
                 RM.peekVariableRegister(), instructionSet.getSP,
-                new Immediate(symbolTableManager.getOffset(ident.getKey)),
+                new Immediate(getOffset(ident.getKey)),
                 registerWriteBack = false))}
       case arrayElem: ArrayElemNode => generateArrayElem(arrayElem)
       case unaryOperation: UnaryOperationNode => generateUnary(unaryOperation)
@@ -931,7 +979,7 @@ object CodeGenerator {
             Move(None, instructionSet.getReturn, new ShiftedRegister(varReg1)),
             Move(None, r1, new ShiftedRegister(varReg2))
           ) ++ Utilities.printDivideByZero ++ IndexedSeq[Instruction](
-          BranchLink(None, DivMod.label),
+          BranchLink(None, Div.label),
           Move(None, varReg1, new ShiftedRegister(instructionSet.getReturn)))
       case ModNode(_, argOne, argTwo) =>
         firstArgument = argOne
@@ -1068,7 +1116,7 @@ object CodeGenerator {
       BranchLink(condition=None, label=Free.label),
       new Load(condition=None, asmType=None, dest=instructionSet.getReturn, src=instructionSet.getSP),
       new Load(condition=None, asmType=None, dest=instructionSet.getReturn, src=instructionSet.getReturn,
-               flexOffset=new Immediate(4)),
+               flexOffset=new Immediate(4), registerWriteBack = false),
       BranchLink(condition=None, label=Free.label),
       Pop(condition=None, List(instructionSet.getReturn)),
       BranchLink(condition=None, label=Free.label),
@@ -1276,7 +1324,7 @@ object CodeGenerator {
     // Variable offset information
     private var currentOffset: Int = -1
     // Map that maps offset to respective ident, is modified when getNextOffset is called.
-    private var identOffsetMap: Map[String, Int] = Map[String, Int]()
+    var identOffsetMap: Map[String, Int] = Map[String, Int]()
     // Stack that keeps track of identMap, on ENTRY (NOT NEXT) to a new scope the current identOffsetMap is pushed to
     // the stack, an empty identOffsetMap replaces it. When LEAVING a scope the identOffsetMap is discarded and
     // the one for the next scope is popped.
