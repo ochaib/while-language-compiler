@@ -285,6 +285,8 @@ sealed class TypeCheckVisitor(entryNode: ASTNode, topSymbolTable: SymbolTable) e
     case Char_literNode(_, _) =>
     case Str_literNode(_, _) =>
     case Pair_literNode(_) =>
+    // Paren Added
+    case ParenExprNode(_, expr) => visit(expr)
   }
 
   def symbolTableCreatorWrapper(contents: Unit => Unit): Unit = {
@@ -319,7 +321,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode, topSymbolTable: SymbolTable) e
           if(functionDeclarationIsValid(token, funcType, identNode, paramList, stat)) {
             validFunctions = validFunctions :+ functionNode
           }
-        case _ => assert(false, "Undefined FuncNode constructor")
+        case _ => assert(assertion = false, "Undefined FuncNode constructor")
       }
     }
     for (functionNode <- validFunctions) {

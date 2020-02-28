@@ -50,6 +50,9 @@ object CodeGenerator {
     // Enter the top symbol table
     symbolTableManager.enterScope()
 
+    // Main directive and pushing LR
+    val mainHeaderInstructions: IndexedSeq[Instruction] = IndexedSeq[Instruction](Label("main"), pushLR)
+
     // Generated code for functions
     val functionInstructions: IndexedSeq[Instruction] = program.functions.flatMap(generateFunction)
 
@@ -58,9 +61,6 @@ object CodeGenerator {
 
     // Enter Scope
     val allocateInstructions = enterScopeAndAllocateStack()
-
-    // Main directive and pushing LR
-    val mainHeaderInstructions: IndexedSeq[Instruction] = IndexedSeq[Instruction](Label("main"), pushLR)
 
     // Generated code for stats
     val statInstructions: IndexedSeq[Instruction] = generateStatement(program.stat)
@@ -103,6 +103,8 @@ object CodeGenerator {
 
     var popEndInstruction = IndexedSeq[Instruction](popPC, new EndFunction)
 
+    // TODO: HAVE TO GO BACK TO MAIN
+
     labelPushLR ++ allocateInstructions ++ statInstructions ++ deallocateInstructions ++ popEndInstruction
   }
 
@@ -144,7 +146,9 @@ object CodeGenerator {
     lhs match {
       case ident: IdentNode
         // Need to pass offset here too.
-        => IndexedSeq[Instruction](new Store(None, None, RM.peekVariableRegister(), instructionSet.getSP))
+        => var asmType: Option[ASMType] = None
+           if (checkSingleByte(ident)) asmType = Some(ByteType)
+           IndexedSeq[Instruction](new Store(None, asmType, RM.peekVariableRegister(), instructionSet.getSP))
       case arrayElem: ArrayElemNode => generateArrayElemLHS(arrayElem)
       case pairElem: PairElemNode => generatePairElemLHS(pairElem)
     }
@@ -158,8 +162,7 @@ object CodeGenerator {
     // with ByteType triggering STRB instead of the usual STR.
     var asmType: Option[ASMType] = None
 
-    if (ident.getType(topSymbolTable, currentSymbolTable)
-              == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable))
+    if (checkSingleByte(ident))
       asmType = Some(ByteType)
 
     IndexedSeq[Instruction](new Store(None, asmType,
@@ -170,12 +173,14 @@ object CodeGenerator {
   // THIS, COMES FROM EXPR
   def generateArrayElem(arrayElem: ArrayElemNode): IndexedSeq[Instruction] = {
     val varReg = RM.nextVariableRegister()
+    val varReg2 = RM.peekVariableRegister()
 
     // Must now retrieve elements in array corresponding to each
-    val arrayElemInstructions = retrieveArrayElements(arrayElem, varReg)
+    val arrayElemInstructions = retrieveArrayElements(arrayElem, varReg, varReg2)
 
     val loadRes: IndexedSeq[Instruction] = IndexedSeq[Instruction](new Load(None, None, varReg, varReg))
 
+    // Now free register, push it back onto the register stack.
     RM.freeVariableRegister(varReg)
 
     arrayElemInstructions ++ loadRes
@@ -187,12 +192,11 @@ object CodeGenerator {
     val varReg2 = RM.nextVariableRegister()
 
     // Must now retrieve elements in array corresponding to each
-    val arrayElemInstructions = retrieveArrayElements(arrayElem, varReg2)
-
-    var asmType: Option[ASMType] = None
+    val arrayElemInstructions = retrieveArrayElements(arrayElem, varReg2, varReg1)
 
     // Check if B is necessary for load, store etc.
     // May need to be ByteType
+    var asmType: Option[ASMType] = None
     if (checkSingleByte(arrayElem)) asmType = Some(SignedByte)
 
     val storeResult = IndexedSeq[Instruction](
@@ -207,10 +211,10 @@ object CodeGenerator {
     arrayElemInstructions ++ storeResult
   }
 
-  def retrieveArrayElements(arrayElem: ArrayElemNode, varReg: Register): IndexedSeq[Instruction] = {
+  def retrieveArrayElements(arrayElem: ArrayElemNode, varReg: Register, varReg2: Register): IndexedSeq[Instruction] = {
     val preExpr = IndexedSeq[Instruction](
       Add(None, conditionFlag = false, varReg, instructionSet.getSP,
-          new Immediate(getSize(arrayElem.identNode.getType(topSymbolTable, currentSymbolTable))))
+          new Immediate(symbolTableManager.getOffset(arrayElem.identNode.getKey)))
     )
 
     // Produce following instructions for every expression in the array.
@@ -218,11 +222,11 @@ object CodeGenerator {
       arrayElem.exprNodes.flatMap(e => generateExpression(e) ++
         IndexedSeq[Instruction](
           new Load(None, None, varReg, varReg),
-          Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())),
-          Move(None, instructionSet.getArgumentRegisters(1), new ShiftedRegister(varReg))
+          Move(None, instructionSet.getReturn, new ShiftedRegister(varReg2)),
+          Move(None, instructionSet.getArgumentRegisters(1), new ShiftedRegister(varReg)),
         ) ++ Utilities.printCheckArrayBounds ++ IndexedSeq[Instruction](
           Add(None, conditionFlag = false, varReg, varReg, new Immediate(4)),
-          Add(None, conditionFlag = false, varReg, varReg, new ShiftedRegister(RM.peekVariableRegister(), "LSL", 2))
+          Add(None, conditionFlag = false, varReg, varReg, new ShiftedRegister(varReg2, "LSL", 2))
         )
       )
     }
@@ -274,7 +278,8 @@ object CodeGenerator {
       new Load(None, None, varReg2, new LoadableExpression(arrayLength)),
       new Store(None, None, varReg2, varReg1)
     )
-    // Since we are done with varReg1 above we can free it back to available registers.
+    // Since we are done with varReg1 and varReg2 above we can free it back to available registers.
+    RM.freeVariableRegister(varReg2)
     RM.freeVariableRegister(varReg1)
 
     preExprInstructions ++ postExprInstructions
@@ -306,7 +311,8 @@ object CodeGenerator {
   def generateNPElem(expr: ExprNode, varReg: Register, isSnd: Boolean): IndexedSeq[Instruction] = {
     // Size of type of expression.
     val exprSize = getSize(expr.getType(topSymbolTable, currentSymbolTable))
-    val pairSizeOffset = 4
+    var pairSizeOffset = 0
+    if (isSnd) pairSizeOffset = 4
 
     val exprInstructions = generateExpression(expr)
 
@@ -317,7 +323,8 @@ object CodeGenerator {
 
     // Check if B suffix is necessary (ByteType).
     if (checkSingleByte(expr)) {
-      coreInstructions = coreInstructions :+ new Store(None, Some(ByteType), RM.peekVariableRegister(), instructionSet.getReturn)
+      coreInstructions = coreInstructions :+ new Store(None, Some(ByteType), RM.peekVariableRegister(),
+                                                       instructionSet.getReturn)
     } else {
       coreInstructions = coreInstructions :+ new Store(None, None, RM.peekVariableRegister(), instructionSet.getReturn)
     }
@@ -336,17 +343,26 @@ object CodeGenerator {
     val varReg = RM.nextVariableRegister()
     val peekedReg = RM.peekVariableRegister()
 
-    // TODO: Check if loadOffset below can be replaced with:
-    // TODO: val offset: Int = pairElem match {
-    // TODO:  case fst: FstNode => generateExpression(fst.expr)
-    // TODO:  case snd: SndNode => generateExpression(snd.expr) }
+    // Check if loadOffset below can be replaced with:
+//     val loadOffset: IndexedSeq[Instruction] = pairElem match {
+//        case fst: FstNode => generateExpression(fst.expression)
+//        case snd: SndNode => generateExpression(snd.expression)
+//     }
+
+//    val immOff: Int = pairElem match {
+//      case fst: FstNode => 0
+//      case snd: SndNode => 1
+//    }
 
     val loadOffset = IndexedSeq[Instruction](
       // Current offset of identifier related to pair.
       new Load(None, None, peekedReg, instructionSet.getSP,
-               // TODO: ANOTHER CHANGE FOR GETOFFSET HERE
-               new Immediate(symbolTableManager.getOffset(pairElem.getKey)))
+               new Immediate(getSize(pairElem.getType(topSymbolTable, currentSymbolTable))), registerWriteBack = false)
+//               new Immediate(symbolTableManager.getOffset(pairElem.getKey)))
     )
+
+    val nullPtrIns = Move(None, instructionSet.getReturn,
+                          new ShiftedRegister(RM.peekVariableRegister())) +: Utilities.printCheckNullPointer
 
     var asmType: Option[ASMType] = None
 
@@ -354,17 +370,13 @@ object CodeGenerator {
     // May need to be ByteType
     if (checkSingleByte(pairElem)) asmType = Some(ByteType)
 
-    // TODO: Add Null pointer check here.
-    val nullPtrIns =
-      Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())) +: Utilities.printCheckNullPointer
-
     val offset: Int = pairElem match {
       case fst: FstNode => 0
       case snd: SndNode => 4
     }
 
     val loadStore = IndexedSeq[Instruction](
-      new Load(None, None, peekedReg, peekedReg, new Immediate(offset)),
+      new Load(None, None, peekedReg, peekedReg, new Immediate(offset), registerWriteBack = false),
       new Store(None, asmType, varReg, peekedReg)
     )
     // Free register now.
@@ -375,14 +387,24 @@ object CodeGenerator {
 
   def generatePairElem(pairElem: PairElemNode): IndexedSeq[Instruction] = {
     pairElem match {
-      case fst: FstNode => generateExpression(fst.expression) ++ generatePEHelper(fst, isSnd = false)
-      case snd: SndNode => generateExpression(snd.expression) ++ generatePEHelper(snd, isSnd = true)
+      case fst: FstNode =>
+        IndexedSeq[Instruction](
+          new Load(None, None, RM.peekVariableRegister(), instructionSet.getSP,
+          new Immediate(getSize(fst.getType(topSymbolTable, currentSymbolTable))),
+          registerWriteBack = false)
+        ) ++ generatePEHelper(fst, isSnd = false)
+      case snd: SndNode => IndexedSeq[Instruction](
+        new Load(None, None, RM.peekVariableRegister(), instructionSet.getSP,
+        new Immediate(getSize(snd.getType(topSymbolTable, currentSymbolTable))),
+        registerWriteBack = false)
+      ) ++ generatePEHelper(snd, isSnd = true)
     }
   }
 
   def generatePEHelper(pairElemNode: PairElemNode, isSnd: Boolean): IndexedSeq[Instruction] = {
     val peInstructions =
-      Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())) +: Utilities.printCheckNullPointer
+      Move(None, instructionSet.getReturn,
+           new ShiftedRegister(RM.peekVariableRegister())) +: Utilities.printCheckNullPointer
 
     var asmType: Option[ASMType] = None
 
@@ -398,7 +420,8 @@ object CodeGenerator {
     if (isSnd)
       loads = IndexedSeq[Instruction](
         new Load(None, None, RM.peekVariableRegister(), RM.peekVariableRegister(),
-          new Immediate(getSize(pairElemNode.getType(topSymbolTable, currentSymbolTable))), registerWriteBack = false),
+          new Immediate(4), registerWriteBack = false),
+//            new Immediate(symbolTableManager.getOffset(pairElemNode.getKey)), registerWriteBack = false),
         new Load(None, asmType, RM.peekVariableRegister(), RM.peekVariableRegister())
       )
 
@@ -415,11 +438,13 @@ object CodeGenerator {
       argInstructions = call.argList.get.exprNodes.flatMap(e =>
       { val exprSize = getSize(e.getType(topSymbolTable, currentSymbolTable))
         totalArgOffset += exprSize
+        // Distinguish between STR and STRB.
+        var asmType: Option[ASMType] = None
+        if (checkSingleByte(e)) asmType = Some(ByteType)
         generateExpression(e) :+
-        // May need to distinguish between STR and STRB.
         // Register write back should be allowed, hence the true.
-          new Store(None, None, RM.peekVariableRegister(), instructionSet.getSP,
-            new Immediate(-exprSize), true)
+          new Store(None, asmType, RM.peekVariableRegister(), instructionSet.getSP,
+                    new Immediate(-exprSize), registerWriteBack = true)
       })
 
     var labelAndBranch = IndexedSeq[Instruction](
@@ -446,7 +471,9 @@ object CodeGenerator {
     val addInstruction: IndexedSeq[Instruction] = lhs match {
       // Offset from symbol table for ident.
       case ident: IdentNode => IndexedSeq[Instruction](Add(None, conditionFlag = false, varReg1,
-        instructionSet.getSP, new Immediate(getSize(ident.getType(topSymbolTable, currentSymbolTable)))))
+        // TODO: CONFIRM THAT I SHOULD BE GETTING OFFSET HERE
+        instructionSet.getSP, new Immediate(symbolTableManager.getOffset(ident.getKey))))
+//        instructionSet.getSP, new Immediate(getSize(ident.getType(topSymbolTable, currentSymbolTable)))))
       // No offset if not reading variable.
       case _ => IndexedSeq[Instruction](Add(None, conditionFlag = false, varReg1,
         instructionSet.getSP, new Immediate(0)))
@@ -462,10 +489,9 @@ object CodeGenerator {
 
     lhsType match {
       case scalar if scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)
-        // Generate top level msg with " %c\\0" and with "p_read_int"
-        => generatedReadInstructions :+ BranchLink(None, Label("p_read_int")) // TODO: add read int to common functions
+        // TODO: add read int to common funcs
+        => generatedReadInstructions :+ BranchLink(None, Label("p_read_int"))
       case scalar if scalar == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable)
-        // Generate top level msg with " %c\\0" and with "p_read_char"
       => generatedReadInstructions ++ Utilities.printReadChar
       case _ => assert(assertion = false, "Undefined type for read.")
     }
@@ -499,7 +525,6 @@ object CodeGenerator {
     // Need next available register to move into r0, temporary fix below.
     val regUsedByGenExp: Register = RM.peekVariableRegister()
     // So that it can actually be used by generateExpression.
-    RM.freeVariableRegister(regUsedByGenExp)
 
     var int = 0
     val intLoad: IndexedSeq[Instruction] = expr match {
@@ -635,7 +660,7 @@ object CodeGenerator {
 
     val totalBodyInstructions: IndexedSeq[Instruction] = bodyLabel +: (allocateWhileBody ++ bodyInstructions ++ deallocateWhileBody)
 
-    val totalConditionInstructions = (conditionLabel +: condInstructions :+ bodyBranch)
+    val totalConditionInstructions = conditionLabel +: condInstructions :+ bodyBranch
 
     initConditionBranch +: (totalBodyInstructions ++ totalConditionInstructions)
   }
@@ -644,7 +669,7 @@ object CodeGenerator {
     // We must first enter the new scope, then generate the statements inside the scope,
     // then finally close the scope.
 
-    // TODO NO TOUCHING SCOPES WITHOUT ASKING DANIEL
+    // TODO DANIEL CHECK IF WE MUST NEXTSCOPE
     val generatedInstructions = generateStatement(begin.stat)
 
     generatedInstructions
@@ -664,38 +689,40 @@ object CodeGenerator {
                      new Immediate(char)))
       case Str_literNode(_, str)
                   => IndexedSeq[Instruction](new Load(None, None,
-                     RM.peekVariableRegister(), Label(str)))
+                     RM.peekVariableRegister(), Utilities.addString(str)))
       // All that is necessary for Pair_liter expression generation.
       case Pair_literNode(_)
                   => IndexedSeq[Instruction](new Load(None, None,
                      RM.peekVariableRegister(), new LoadableExpression(0)))
       case ident: IdentNode
       // Load identifier into first available variable register.
-        // TODO: Daniel Check as loading immediate instead of loadable expression.
                   => if (checkSingleByte(ident)) {
-                      IndexedSeq[Instruction](new Load(None, Some(ByteType),
+        // TODO: CHECK IF SIGNEDBYTE OR BYTETYPE
+                      IndexedSeq[Instruction](new Load(None, Some(SignedByte),
                         RM.peekVariableRegister(), instructionSet.getSP,
-                        new Immediate(getSize(
-                          ident.getType(topSymbolTable, currentSymbolTable)))))
+                        new Immediate(symbolTableManager.getOffset(ident.getKey))))
+        //                        new Immediate(symbolTableManager.getOffset(ident.getKey))))
+//                        new Immediate(getSize(
+//                          ident.getType(topSymbolTable, currentSymbolTable)))))
                   } else {
                       IndexedSeq[Instruction](new Load(None, None,
                         RM.peekVariableRegister(), instructionSet.getSP,
-                        // TODO: HERE IS THE CHANGE FOR SYMBOLTABLE STACK
-                        new Immediate(symbolTableManager.getOffset(ident.getKey))))}
+                        new Immediate(symbolTableManager.getOffset(ident.getKey)),
+                        registerWriteBack = false))}
       case arrayElem: ArrayElemNode => generateArrayElem(arrayElem)
       case unaryOperation: UnaryOperationNode => generateUnary(unaryOperation)
       case binaryOperation: BinaryOperationNode => generateBinary(binaryOperation)
+      case parenExpr: ParenExprNode => generateExpression(parenExpr.expr)
     }
   }
 
   def generateUnary(unaryOperation: UnaryOperationNode): IndexedSeq[Instruction] = {
     unaryOperation match {
-      // More must be done for these according to the reference compiler.
+      // Logical not node according to the reference compiler.
       case LogicalNotNode(_, expr) =>
         generateExpression(expr) ++ IndexedSeq[Instruction](
           ExclusiveOr(None, conditionFlag = false, RM.peekVariableRegister(),
                       RM.peekVariableRegister(), new Immediate(1)))
-
       // Negate according to reference compiler.
       case NegateNode(_, expr) =>
         generateExpression(expr) ++
@@ -704,9 +731,8 @@ object CodeGenerator {
                RM.peekVariableRegister(), new Immediate(0)),
         ) ++ Utilities.printOverflowError(Some(Overflow))
       case LenNode(_, expr) =>
-        val varReg = RM.peekVariableRegister()
         generateExpression(expr) ++ IndexedSeq[Instruction](
-          new Load(None, None, varReg, varReg)
+          new Load(None, None, RM.peekVariableRegister(), RM.peekVariableRegister())
         )
       // Finished implementation as nothing else must be done.
       case OrdNode(_, expr) => generateExpression(expr)
@@ -810,7 +836,8 @@ object CodeGenerator {
   def generateCommonFunction(func: CommonFunction): IndexedSeq[Instruction] = func match {
     case PrintLn => IndexedSeq[Instruction](
       pushLR,
-      Add(condition=None, conditionFlag=false, dest=instructionSet.getReturn, src1=instructionSet.getReturn, src2=new Immediate(4)),
+      Add(condition=None, conditionFlag=false, dest=instructionSet.getReturn,
+          src1=instructionSet.getReturn, src2=new Immediate(4)),
       BranchLink(condition=None, label=Puts.label),
       Move(condition=None, dest=instructionSet.getReturn, src=new Immediate(0)),
       BranchLink(condition=None, label=Flush.label),
@@ -823,8 +850,10 @@ object CodeGenerator {
     )
     case PrintString => IndexedSeq[Instruction](
       pushLR,
-      new Load(condition=None, asmType=None, dest=instructionSet.getArgumentRegisters(1), src=instructionSet.getReturn),
-      Add(condition=None, conditionFlag=false, dest=instructionSet.getArgumentRegisters(2), src1=instructionSet.getReturn, src2=new Immediate(4)),
+      new Load(condition=None, asmType=None, dest=instructionSet.getArgumentRegisters(1),
+               src=instructionSet.getReturn),
+      Add(condition=None, conditionFlag=false, dest=instructionSet.getArgumentRegisters(2),
+          src1=instructionSet.getReturn, src2=new Immediate(4)),
       BranchLink(condition=None, label=Printf.label),
       Move(condition=None, dest=instructionSet.getReturn, src=new Immediate(0)),
       BranchLink(condition=None, label=Flush.label),
@@ -839,33 +868,40 @@ object CodeGenerator {
       new Load(condition=None, asmType=None, dest=instructionSet.getReturn, src=instructionSet.getReturn),
       BranchLink(condition=None, label=Free.label),
       new Load(condition=None, asmType=None, dest=instructionSet.getReturn, src=instructionSet.getSP),
-      new Load(condition=None, asmType=None, dest=instructionSet.getReturn, src=instructionSet.getReturn, flexOffset=new Immediate(4)),
+      new Load(condition=None, asmType=None, dest=instructionSet.getReturn, src=instructionSet.getReturn,
+               flexOffset=new Immediate(4)),
       BranchLink(condition=None, label=Free.label),
       Pop(condition=None, List(instructionSet.getReturn)),
-      BranchLink(None, label=Free.label),
+      BranchLink(condition=None, label=Free.label),
       popPC
     )
     case PrintReadChar => IndexedSeq[Instruction](
       pushLR,
-      Move(condition=None, dest=instructionSet.getArgumentRegisters(1), src=new ShiftedRegister(instructionSet.getReturn)),
+      Move(condition=None, dest=instructionSet.getArgumentRegisters(1),
+           src=new ShiftedRegister(instructionSet.getReturn)),
       new Load(condition=None, asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_read_char")),
-      new Add(condition=None, conditionFlag=false, dest=instructionSet.getReturn, src1=instructionSet.getReturn, src2=new Immediate(4)),
+      Add(condition = None, conditionFlag = false, dest = instructionSet.getReturn,
+          src1 = instructionSet.getReturn, src2 = new Immediate(4)),
       BranchLink(condition=None, label=Scanf.label),
       popPC
     )
     case PrintCheckNullPointer => IndexedSeq[Instruction](
       pushLR,
       Compare(condition=None, operand1=instructionSet.getReturn, operand2=new Immediate(0)),
-      new Load(condition=Some(Equal), asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_check_null_pointer")),
+      new Load(condition=Some(Equal), asmType=None, dest=instructionSet.getReturn,
+               loadable=Label("msg_check_null_pointer")),
       BranchLink(condition=Some(Equal), PrintRuntimeError.label),
       popPC
     )
     case PrintBool => IndexedSeq[Instruction](
       pushLR,
       Compare(condition=None, operand1=instructionSet.getReturn, operand2=new Immediate(0)),
-      new Load(condition=Some(NotEqual), asmType=None, dest=instructionSet.getReturn, loadable=new Label("msg_print_bool_true")),
-      new Load(condition=Some(Equal), asmType=None, dest=instructionSet.getReturn, loadable=new Label("msg_print_bool_false")),
-      new Add(condition=None, conditionFlag=false, dest=instructionSet.getReturn, src1=instructionSet.getReturn, src2=new Immediate(4)),
+      new Load(condition=Some(NotEqual), asmType=None, dest=instructionSet.getReturn,
+               loadable=Label("msg_print_bool_true")),
+      new Load(condition=Some(Equal), asmType=None, dest=instructionSet.getReturn,
+               loadable=Label("msg_print_bool_false")),
+      Add(condition = None, conditionFlag = false, dest = instructionSet.getReturn,
+          src1 = instructionSet.getReturn, src2 = new Immediate(4)),
       BranchLink(condition=None, label=Printf.label),
       Move(condition=None, dest=instructionSet.getReturn, src=new Immediate(0)),
       BranchLink(condition=None, label=Flush.label),
@@ -874,27 +910,39 @@ object CodeGenerator {
     case PrintCheckArrayBounds => IndexedSeq[Instruction](
       pushLR,
       Compare(condition=None, operand1=instructionSet.getReturn, operand2=new Immediate(0)),
-      new Load(condition=Some(LessThan), asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_negative_index")),
+      new Load(condition=Some(LessThan), asmType=None, dest=instructionSet.getReturn,
+               loadable=Label("msg_negative_index")),
       BranchLink(condition=Some(LessThan), label=PrintRuntimeError.label),
-      new Load(condition=None, asmType=None, dest=instructionSet.getArgumentRegisters(1), src=instructionSet.getArgumentRegisters(1)),
-      Compare(condition=None, operand1=instructionSet.getReturn, operand2=new ShiftedRegister(instructionSet.getArgumentRegisters(1))),
-      new Load(condition=Some(HigherSame), asmType=None, dest=instructionSet.getReturn, loadable=Label("mg_index_too_large")),
+      new Load(condition=None, asmType=None, dest=instructionSet.getArgumentRegisters(1),
+               src=instructionSet.getArgumentRegisters(1)),
+      Compare(condition=None, operand1=instructionSet.getReturn,
+              operand2=new ShiftedRegister(instructionSet.getArgumentRegisters(1))),
+      new Load(condition=Some(HigherSame), asmType=None, dest=instructionSet.getReturn,
+               loadable=Label("msg_index_too_large")),
       BranchLink(condition=Some(HigherSame), PrintRuntimeError.label),
       popPC
     )
     case PrintInt => IndexedSeq[Instruction](
       pushLR,
-      Move(condition=None, dest=instructionSet.getArgumentRegisters(1), src=new ShiftedRegister(instructionSet.getReturn)),
+      Move(condition=None, dest=instructionSet.getArgumentRegisters(1),
+           src=new ShiftedRegister(instructionSet.getReturn)),
       new Load(condition=None, asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_print_int")),
-      new Add(condition=None, conditionFlag=false, dest=instructionSet.getReturn, src1=instructionSet.getReturn, src2=new Immediate(4)),
+      Add(condition = None, conditionFlag = false, dest = instructionSet.getReturn,
+          src1 = instructionSet.getReturn, src2 = new Immediate(4)),
       BranchLink(condition=None, Printf.label),
       Move(condition=None, dest=instructionSet.getArgumentRegisters(1), src=new Immediate(0)),
       BranchLink(condition=None, Flush.label),
       popPC
     )
     case PrintOverflowError => IndexedSeq[Instruction](
-      new Load(condition=None, asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_throw_overflow_error")),
+      new Load(condition=None, asmType=None, dest=instructionSet.getReturn,
+               loadable=Label("msg_throw_overflow_error")),
       BranchLink(condition=None, label=PrintRuntimeError.label)
+    )
+    case PrintDivideByZero => IndexedSeq[Instruction](
+      pushLR, Compare(None, instructionSet.getArgumentRegisters(1), new Immediate(0)),
+      new Load(Some(Equal), None, instructionSet.getReturn, loadable = Label("msg_divide_by_zero")),
+      BranchLink(Some(Equal), PrintRuntimeError.label), popPC
     )
   }
 
