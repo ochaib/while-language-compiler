@@ -285,13 +285,12 @@ object CodeGenerator {
     val varReg1 = RM.nextVariableRegister()
     // Because we assume every expr in the array is of the same type.
     val arrayLength = arrayLiteral.exprNodes.length
-    // TODO Ossama check this
     var exprElemSize = {
       if (arrayLength != 0)
         getSize(arrayLiteral.exprNodes.head.getType(topSymbolTable, currentSymbolTable))
       else 0
     }
-    var intSize = 4
+    val intSize = 4
 
     // Calculations necessary to retrieve size of array for loading into return.
     val arraySize = intSize + arrayLength * exprElemSize
@@ -304,12 +303,12 @@ object CodeGenerator {
 
     var generatedExpressions: IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
-    var acc = getSize(GENERAL_ARRAY) + exprElemSize
+    var acc = exprElemSize
     // Generate expression instructions for each expression node in the array.
     arrayLiteral.exprNodes.foreach(expr => { generatedExpressions ++= generateExpression(expr) :+
       new Store(None, None, RM.peekVariableRegister(), varReg1,
         // Replaced hardcoded 4 with actual expression type.
-        new Immediate(acc));  acc = acc + getSize(expr.getType(topSymbolTable, currentSymbolTable))})
+        new Immediate(acc), registerWriteBack = false);  acc = acc + getSize(expr.getType(topSymbolTable, currentSymbolTable))})
 
     val varReg2 = RM.nextVariableRegister()
 
@@ -416,10 +415,21 @@ object CodeGenerator {
       case snd: SndNode => 4
     }
 
-    val loadStore = IndexedSeq[Instruction](
-      new Load(None, None, peekedReg, peekedReg, new Immediate(offset), registerWriteBack = false),
-      new Store(None, asmType, varReg, peekedReg)
-    )
+    val loadStore: IndexedSeq[Instruction] = pairElem match {
+      case fst: FstNode =>
+        IndexedSeq[Instruction](
+          new Load(None, None, peekedReg, peekedReg, new Immediate(offset), registerWriteBack = false),
+          new Store(None, asmType, varReg, peekedReg, new Immediate(symbolTableManager.getOffset(fst.expression.getKey)),
+            registerWriteBack = false)
+        )
+      case snd: SndNode =>
+        IndexedSeq[Instruction](
+          new Load(None, None, peekedReg, peekedReg, new Immediate(offset), registerWriteBack = false),
+          new Store(None, asmType, varReg, peekedReg, new Immediate(symbolTableManager.getOffset(snd.expression.getKey)),
+            registerWriteBack = false)
+        )
+
+    }
     // Free register now.
     RM.freeVariableRegister(varReg)
 
@@ -828,12 +838,16 @@ object CodeGenerator {
 
 
     // *** BODY ***
+    val currentIdentOffsetMap = symbolTableManager.identOffsetMap
+    var prevIdentOffsetMap = symbolTableManager.identOffsetMap
 
     // Update Scope to While Body
     currentSymbolTable = symbolTableManager.nextScope()
 
     // Enter Scope
     val allocateWhileBody: IndexedSeq[Instruction] = enterScopeAndAllocateStack()
+
+    symbolTableManager.identOffsetMap = prevIdentOffsetMap
 
     // Body Instruction list
     val bodyInstructions: IndexedSeq[Instruction] = generateStatement(whileNode.stat)
@@ -843,6 +857,7 @@ object CodeGenerator {
 
     // ************
 
+    symbolTableManager.identOffsetMap = currentIdentOffsetMap
 
     // *** SUMMARY ***
 
@@ -964,7 +979,7 @@ object CodeGenerator {
             Move(None, instructionSet.getReturn, new ShiftedRegister(varReg1)),
             Move(None, r1, new ShiftedRegister(varReg2))
           ) ++ Utilities.printDivideByZero ++ IndexedSeq[Instruction](
-          BranchLink(None, DivMod.label),
+          BranchLink(None, Div.label),
           Move(None, varReg1, new ShiftedRegister(instructionSet.getReturn)))
       case ModNode(_, argOne, argTwo) =>
         firstArgument = argOne
@@ -1101,7 +1116,7 @@ object CodeGenerator {
       BranchLink(condition=None, label=Free.label),
       new Load(condition=None, asmType=None, dest=instructionSet.getReturn, src=instructionSet.getSP),
       new Load(condition=None, asmType=None, dest=instructionSet.getReturn, src=instructionSet.getReturn,
-               flexOffset=new Immediate(4)),
+               flexOffset=new Immediate(4), registerWriteBack = false),
       BranchLink(condition=None, label=Free.label),
       Pop(condition=None, List(instructionSet.getReturn)),
       BranchLink(condition=None, label=Free.label),
@@ -1309,7 +1324,7 @@ object CodeGenerator {
     // Variable offset information
     private var currentOffset: Int = -1
     // Map that maps offset to respective ident, is modified when getNextOffset is called.
-    private var identOffsetMap: Map[String, Int] = Map[String, Int]()
+    var identOffsetMap: Map[String, Int] = Map[String, Int]()
     // Stack that keeps track of identMap, on ENTRY (NOT NEXT) to a new scope the current identOffsetMap is pushed to
     // the stack, an empty identOffsetMap replaces it. When LEAVING a scope the identOffsetMap is discarded and
     // the one for the next scope is popped.
