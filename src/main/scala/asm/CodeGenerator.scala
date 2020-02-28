@@ -555,9 +555,14 @@ object CodeGenerator {
       case Pair_literNode(_) => Utilities.printReference
       case ArrayElemNode(_, _, _) => Utilities.printReference
       case i: IdentNode =>
-        new Load(None, None, RM.peekVariableRegister(), instructionSet.getSP,
+        var asmType: Option[ASMType] = None
+        if (checkSingleByte(i)) asmType = Some(SignedByte)
+        IndexedSeq[Instruction](
+          new Load(None, asmType, RM.peekVariableRegister(), instructionSet.getSP,
           new Immediate(symbolTableManager.getOffset(i.getKey)),
-          registerWriteBack=false) +: (i.getType(topSymbolTable, currentSymbolTable) match {
+          registerWriteBack=false),
+          Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister()))
+        ) ++ (i.getType(topSymbolTable, currentSymbolTable) match {
             case scalar: SCALAR =>
               if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
                 Utilities.printInt(0) // doesn't matter just need to trigger add printInt
@@ -587,6 +592,7 @@ object CodeGenerator {
             case _: ARRAY | _: PAIR => Utilities.printReference
           })
       case i: ParenExprNode =>
+        // TODO: MAY NEED TO REPLICATE IDENT CHANGES HERE
         new Load(
           condition=None, asmType=None,
           RM.peekVariableRegister(), instructionSet.getSP,
@@ -627,7 +633,9 @@ object CodeGenerator {
 //          new Immediate(symbolTableManager.getOffset(i.getKey)),
 //          registerWriteBack = false
 //        ) +:
-          generateBinary(i) ++ (i.getType(topSymbolTable, currentSymbolTable) match {
+          generateBinary(i) ++ IndexedSeq[Instruction](Move(None, instructionSet.getReturn,
+            new ShiftedRegister(RM.peekVariableRegister()))) ++
+            (i.getType(topSymbolTable, currentSymbolTable) match {
             case scalar: SCALAR =>
               if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
                 Utilities.printInt(0) // doesn't matter just need to trigger add printInt
@@ -664,7 +672,8 @@ object CodeGenerator {
 //          new Immediate(symbolTableManager.getOffset(i.getKey)),
 //          registerWriteBack = false
 //        ) +:
-          generateUnary(i) ++ (i.getType(topSymbolTable, currentSymbolTable) match {
+          generateUnary(i) ++ IndexedSeq[Instruction](Move(None, instructionSet.getReturn,
+            new ShiftedRegister(RM.peekVariableRegister()))) ++ (i.getType(topSymbolTable, currentSymbolTable) match {
             case scalar: SCALAR =>
               if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
                 Utilities.printInt(0) // doesn't matter just need to trigger add printInt
