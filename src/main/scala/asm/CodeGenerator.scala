@@ -559,28 +559,32 @@ object CodeGenerator {
           new Immediate(symbolTableManager.getOffset(i.getKey)),
           registerWriteBack=false) +: (i.getType(topSymbolTable, currentSymbolTable) match {
             case scalar: SCALAR =>
-              if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable))
+              if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
+                Utilities.printInt(0) // doesn't matter just need to trigger add printInt
                 IndexedSeq[Instruction](
                   BranchLink(None, PrintInt.label)
                 )
-              else if (scalar == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable))
+              }
+              else if (scalar == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
+                Utilities.printBool(true)
                 IndexedSeq[Instruction](
                   BranchLink(None, PrintBool.label)
                 )
-              else if (scalar == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable))
+              }
+              else if (scalar == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
+                Utilities.printChar('c')
                 IndexedSeq[Instruction](
                   BranchLink(condition = None, label = PutChar.label)
                 )
+              }
               else
                 IndexedSeq[Instruction](
                   BranchLink(None, Label("UNIMPLEMENTED PRINT !!! OH NO !!! THIS IS AN ISSUE !!! PLEASE IMPLEMENT FOR PAREN EXPR NODE !!!"))
                 )
-            case STRING => IndexedSeq[Instruction](
+            case STRING => Utilities.printString(""); IndexedSeq[Instruction](
               BranchLink(None, PrintString.label)
             )
-            case _: ARRAY | _: PAIR => IndexedSeq[Instruction](
-              BranchLink(None, PrintReference.label)
-            )
+            case _: ARRAY | _: PAIR => Utilities.printReference
           })
       case i: ParenExprNode =>
         new Load(
@@ -589,29 +593,33 @@ object CodeGenerator {
           new Immediate(symbolTableManager.getOffset(i.getKey)),
           registerWriteBack = false) +: (i.getType(topSymbolTable, currentSymbolTable) match {
             case scalar: SCALAR => {
-              if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable))
+              if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
+                Utilities.printInt(0) // doesn't matter just need to trigger add printInt
                 IndexedSeq[Instruction](
                   BranchLink(None, PrintInt.label)
                 )
-              else if (scalar == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable))
+              }
+              else if (scalar == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
+                Utilities.printBool(true)
                 IndexedSeq[Instruction](
                   BranchLink(None, PrintBool.label)
                 )
-              else if (scalar == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable))
+              }
+              else if (scalar == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
+                Utilities.printChar('c')
                 IndexedSeq[Instruction](
                   BranchLink(condition = None, label = PutChar.label)
                 )
+              }
               else
                 IndexedSeq[Instruction](
                   BranchLink(None, Label("UNIMPLEMENTED PRINT !!! OH NO !!! THIS IS AN ISSUE !!! PLEASE IMPLEMENT FOR PAREN EXPR NODE !!!"))
                 )
             }
-            case STRING => IndexedSeq[Instruction](
+            case STRING => Utilities.printString(""); IndexedSeq[Instruction](
               BranchLink(None, PrintString.label)
             )
-            case _: ARRAY | _: PAIR => IndexedSeq[Instruction](
-              BranchLink(None, PrintReference.label)
-            )
+            case _: ARRAY | _: PAIR => Utilities.printReference
           })
     }
 
