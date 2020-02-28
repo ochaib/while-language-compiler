@@ -55,6 +55,8 @@ case class Load private (
       Some(src),
       Instructions.checkFlexOffset(flexOffset),
       {
+        // if the flexOffset is 0 this constructor creates the same result as the constructor for
+        // LDR{cond}{B|Type} Rd, [Rn]
         if (Instructions.checkFlexOffset(flexOffset).isDefined)
           Some(registerWriteBack)
         else
