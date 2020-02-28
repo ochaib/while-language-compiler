@@ -5,7 +5,7 @@ from termcolor import colored
 from time import time
 from tqdm import tqdm
 MAX_POOL_SIZE=40 # be careful
-EMU_MAX_POOL_SIZE=1 # be EVEN MORE careful
+EMU_MAX_POOL_SIZE=5 # be EVEN MORE careful
 
 retcode = 0
 
