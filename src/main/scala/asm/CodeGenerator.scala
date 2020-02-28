@@ -538,13 +538,15 @@ object CodeGenerator {
   }
 
   def generatePrint(expr: ExprNode, printLn: Boolean): IndexedSeq[Instruction] = {
-    println("GENERATING PRINT")
     val instr = expr match {
       case Int_literNode(_, n) => Utilities.printInt(n.toInt)
       case Bool_literNode(_, b) => Utilities.printBool(b)
       case Char_literNode(_, c) => Utilities.printChar(c)
       case Str_literNode(_, s) => Utilities.printString(s)
-      case Pair_literNode(_) => Utilities.printReference
+      case Pair_literNode(_) => IndexedSeq[Instruction](
+        new Load(condition=None, asmType=None, dest=RM.peekVariableRegister, loadable=new LoadableExpression(0)),
+        Move(condition=None, dest=instructionSet.getReturn, src=new ShiftedRegister(RM.peekVariableRegister))
+      ) ++ Utilities.printReference
       case ArrayElemNode(_, _, _) => Utilities.printReference
       case i: IdentNode =>
         var asmType: Option[ASMType] = None
