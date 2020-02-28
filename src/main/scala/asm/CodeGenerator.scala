@@ -252,9 +252,9 @@ object CodeGenerator {
   def generateArrayLiteral(arrayLiteral: ArrayLiteralNode): IndexedSeq[Instruction] = {
     val varReg1 = RM.nextVariableRegister()
     // Because we assume every expr in the array is of the same type.
-    var exprElemSize = getSize(arrayLiteral.exprNodes.head.getType(topSymbolTable, currentSymbolTable))
+    val exprElemSize = getSize(arrayLiteral.exprNodes.head.getType(topSymbolTable, currentSymbolTable))
     val arrayLength = arrayLiteral.exprNodes.length
-    var intSize = 4
+    val intSize = 4
 
     // Calculations necessary to retrieve size of array for loading into return.
     val arraySize = intSize + arrayLength * exprElemSize
@@ -475,7 +475,7 @@ object CodeGenerator {
     val addInstruction: IndexedSeq[Instruction] = lhs match {
       // Offset from symbol table for ident.
       case ident: IdentNode => IndexedSeq[Instruction](Add(None, conditionFlag = false, varReg1,
-        // TODO: CONFIRM THAT I SHOULD BE GETTING OFFSET HERE
+        // CONFIRMED THAT I SHOULD BE GETTING OFFSET HERE
         instructionSet.getSP, new Immediate(symbolTableManager.getOffset(ident.getKey))))
 //        instructionSet.getSP, new Immediate(getSize(ident.getType(topSymbolTable, currentSymbolTable)))))
       // No offset if not reading variable.
@@ -493,7 +493,6 @@ object CodeGenerator {
 
     lhsType match {
       case scalar if scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)
-        // TODO: add read int to common funcs
         => generatedReadInstructions ++ Utilities.printReadInt
       case scalar if scalar == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable)
       => generatedReadInstructions ++ Utilities.printReadChar
@@ -547,7 +546,6 @@ object CodeGenerator {
     )
   }
 
-  // TODO: replace
   def generatePrint(expr: ExprNode, printLn: Boolean): IndexedSeq[Instruction] = {
     val instr = expr match {
       case Int_literNode(_, n) => Utilities.printInt(n.toInt)
@@ -559,10 +557,10 @@ object CodeGenerator {
       case i: IdentNode =>
         new Load(
           condition=None, asmType=None,
-          RM.peekVariableRegister, instructionSet.getSP,
+          RM.peekVariableRegister(), instructionSet.getSP,
           new Immediate(symbolTableManager.getOffset(i.getKey)),
           registerWriteBack = false) +: (i.getType(topSymbolTable, currentSymbolTable) match {
-            case scalar: SCALAR => {
+            case scalar: SCALAR =>
               if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable))
                 IndexedSeq[Instruction](
                   BranchLink(None, PrintInt.label)
@@ -579,7 +577,6 @@ object CodeGenerator {
                 IndexedSeq[Instruction](
                   BranchLink(None, Label("UNIMPLEMENTED PRINT !!! OH NO !!! THIS IS AN ISSUE !!! PLEASE IMPLEMENT FOR PAREN EXPR NODE !!!"))
                 )
-            }
             case STRING => IndexedSeq[Instruction](
               BranchLink(None, PrintString.label)
             )
@@ -702,7 +699,6 @@ object CodeGenerator {
     // We must first enter the new scope, then generate the statements inside the scope,
     // then finally close the scope.
 
-    // TODO DANIEL CHECK IF WE MUST NEXTSCOPE
     val generatedInstructions = generateStatement(begin.stat)
 
     generatedInstructions
@@ -730,7 +726,6 @@ object CodeGenerator {
       case ident: IdentNode
       // Load identifier into first available variable register.
                   => if (checkSingleByte(ident)) {
-        // TODO: CHECK IF SIGNEDBYTE OR BYTETYPE
                       IndexedSeq[Instruction](new Load(None, Some(SignedByte),
                         RM.peekVariableRegister(), instructionSet.getSP,
                         new Immediate(symbolTableManager.getOffset(ident.getKey))))
