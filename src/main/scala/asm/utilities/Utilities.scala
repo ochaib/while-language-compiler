@@ -44,7 +44,7 @@ object Utilities {
         // BL p_print_string
         val reg: Register = RM.peekVariableRegister()
         if (commonFunctions.add(PrintString))
-            strings += (Label("msg_print_string") -> new StringLiteral("%.*s\\0", 5))
+            strings += (Label("msg_print_string") -> new StringLiteral("\"%.*s\\0\"", 5))
         IndexedSeq[Instruction](
             new Load(condition=None, asmType=None, dest=reg, label=msgLabel),
             Move(condition = None, dest = RM.instructionSet.getReturn, src = new ShiftedRegister(reg)),
@@ -55,7 +55,7 @@ object Utilities {
     def printNewline: IndexedSeq[Instruction] = {
         // BL p_print_ln
         if (commonFunctions.add(PrintLn))
-            strings += (Label("msg_print_ln") -> new StringLiteral("\\0", 1))
+            strings += (Label("msg_print_ln") -> new StringLiteral("\"\\0\"", 1))
         IndexedSeq[Instruction](
             BranchLink(condition = None, label = PrintLn.label)
         )
@@ -67,8 +67,8 @@ object Utilities {
         // BL p_print_bool
         val reg: Register = RM.peekVariableRegister()
         if (commonFunctions.add(PrintBool)) {
-            strings += (Label("msg_print_bool_true") -> new StringLiteral("true\\0", 5))
-            strings += (Label("msg_print_bool_false") -> new StringLiteral("false\\0", 6))
+            strings += (Label("msg_print_bool_true") -> new StringLiteral("\"true\\0\"", 5))
+            strings += (Label("msg_print_bool_false") -> new StringLiteral("\"false\\0\"", 6))
         }
         IndexedSeq[Instruction](
             Move(condition = None, dest = reg, src = new Immediate(if (b) 1 else 0)),
@@ -99,7 +99,7 @@ object Utilities {
         // BL p_print_int
         val reg: Register = RM.peekVariableRegister()
         if (commonFunctions.add(PrintInt))
-            strings += (Label("msg_print_int") -> new StringLiteral("%d\\0", 3))
+            strings += (Label("msg_print_int") -> new StringLiteral("\"%d\\0\"", 3))
         IndexedSeq[Instruction](
             new Load(condition=None, asmType=None, dest=reg, loadable = new LoadableExpression(i)),
             Move(condition = None, dest = RM.instructionSet.getReturn, src = new ShiftedRegister(reg)),
@@ -111,7 +111,7 @@ object Utilities {
         // BL p_free_pair
         if (commonFunctions.add(PrintFreePair))
             strings += (Label("msg_free_pair") ->
-                new StringLiteral("NullReferenceError: dereference a null reference\\n\\0", 50)
+                new StringLiteral("\"NullReferenceError: dereference a null reference\\n\\0\"", 50)
             )
         IndexedSeq[Instruction](
             BranchLink(condition=None, label=PrintFreePair.label)
@@ -121,7 +121,7 @@ object Utilities {
     def printReadChar: IndexedSeq[Instruction] = {
         if (commonFunctions.add(PrintReadChar))
             strings += (Label("msg_read_char") ->
-                new StringLiteral(" %c\\0", 4)
+                new StringLiteral("\" %c\\0\"", 4)
             )
         IndexedSeq[Instruction](
             BranchLink(condition=None, label=PrintReadChar.label)
@@ -131,7 +131,7 @@ object Utilities {
     def printCheckNullPointer: IndexedSeq[Instruction] = {
         if (commonFunctions.add(PrintCheckNullPointer))
             strings += (Label("msg_check_null_pointer") ->
-                new StringLiteral("NullReferenceError: dereference a null reference\\n\\0", 50)
+                new StringLiteral("\"NullReferenceError: dereference a null reference\\n\\0\"", 50)
             )
         IndexedSeq[Instruction](
             BranchLink(condition=None, label=PrintCheckNullPointer.label)
@@ -142,8 +142,8 @@ object Utilities {
         // BLVS p_throw_overflow_error
         if (commonFunctions.add(PrintOverflowError))
             strings += (Label("msg_throw_overflow_error") ->
-                new StringLiteral("OverflowError: the result is too small/large " +
-                                  "to store in a 4-byte signed-integer.\\n", 82)
+                new StringLiteral("\"OverflowError: the result is too small/large " +
+                                  "to store in a 4-byte signed-integer.\\n\"", 82)
             )
         printRuntimeError // make sure print runtime error is added to common functions
         IndexedSeq[Instruction](
@@ -163,9 +163,9 @@ object Utilities {
     def printCheckArrayBounds: IndexedSeq[Instruction] = {
         if (commonFunctions.add(PrintCheckArrayBounds)) {
             strings += (Label("msg_negative_index") ->
-                new StringLiteral("ArrayIndexOutOfBoundsError: negative index\\n\\0", 44))
+                new StringLiteral("\"ArrayIndexOutOfBoundsError: negative index\\n\\0\"", 44))
             strings += (Label("msg_index_too_large") ->
-                new StringLiteral("ArrayIndexOutOfBoundsError: index too large\\n\\0", 45))
+                new StringLiteral("\"ArrayIndexOutOfBoundsError: index too large\\n\\0\"", 45))
         }
         printRuntimeError
         IndexedSeq[Instruction](
@@ -176,7 +176,7 @@ object Utilities {
     def printDivideByZero: IndexedSeq[Instruction] = {
         if (commonFunctions.add(PrintDivideByZero)) {
             strings += (Label("msg_divide_by_zero") ->
-              new StringLiteral("DivideByZeroError: divide or modulo by zero\\n\\0", 45))
+              new StringLiteral("\"DivideByZeroError: divide or modulo by zero\\n\\0\"", 45))
         }
         printRuntimeError
         IndexedSeq[Instruction](
