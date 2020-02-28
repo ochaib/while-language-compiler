@@ -675,10 +675,19 @@ object CodeGenerator {
     // We must first enter the new scope, then generate the statements inside the scope,
     // then finally close the scope.
 
-    // TODO DANIEL CHECK IF WE MUST NEXTSCOPE
-    val generatedInstructions = generateStatement(begin.stat)
+    // Update the current symbol table to the begin scope
+    currentSymbolTable = symbolTableManager.nextScope()
 
-    generatedInstructions
+    // Enter Scope
+    val allocateInstructions: IndexedSeq[Instruction] = enterScopeAndAllocateStack()
+
+    // Scope Instructions
+    val statInstructions: IndexedSeq[Instruction] = generateStatement(begin.stat)
+
+    // Leave Scope
+    val deallocateInstructions: IndexedSeq[Instruction] = leaveScopeAndDeallocateStack()
+
+    allocateInstructions ++ statInstructions ++ deallocateInstructions
   }
 
   def generateExpression(expr: ExprNode): IndexedSeq[Instruction] = {
