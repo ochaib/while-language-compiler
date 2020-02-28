@@ -105,7 +105,7 @@ object CodeGenerator {
     // Leave function scope
     val deallocateInstructions = leaveScopeAndDeallocateStack()
 
-    var popEndInstruction = IndexedSeq[Instruction](popPC, new EndFunction)
+    val popEndInstruction = IndexedSeq[Instruction](popPC, new EndFunction)
 
     // TODO: HAVE TO GO BACK TO MAIN
 
@@ -171,7 +171,7 @@ object CodeGenerator {
 
     IndexedSeq[Instruction](new Store(None, asmType,
       RM.peekVariableRegister(), instructionSet.getSP,
-      new Immediate(symbolTableManager.getNextOffset(ident.getKey))))
+      new Immediate(symbolTableManager.getNextOffset(ident.getKey)), registerWriteBack = false))
   }
 
   // THIS, COMES FROM EXPR
@@ -480,7 +480,6 @@ object CodeGenerator {
     val addInstruction: IndexedSeq[Instruction] = lhs match {
       // Offset from symbol table for ident.
       case ident: IdentNode => IndexedSeq[Instruction](Add(None, conditionFlag = false, varReg1,
-        // CONFIRMED THAT I SHOULD BE GETTING OFFSET HERE
         instructionSet.getSP, new Immediate(symbolTableManager.getOffset(ident.getKey))))
         //        instructionSet.getSP, new Immediate(getSize(ident.getType(topSymbolTable, currentSymbolTable)))))
         // No offset if not reading variable.
@@ -562,9 +561,14 @@ object CodeGenerator {
       case Pair_literNode(_) => Utilities.printReference
       case ArrayElemNode(_, _, _) => Utilities.printReference
       case i: IdentNode =>
-        new Load(None, None, RM.peekVariableRegister(), instructionSet.getSP,
+        var asmType: Option[ASMType] = None
+        if (checkSingleByte(i)) asmType = Some(SignedByte)
+        IndexedSeq[Instruction](
+          new Load(None, asmType, RM.peekVariableRegister(), instructionSet.getSP,
           new Immediate(symbolTableManager.getOffset(i.getKey)),
-          registerWriteBack=false) +: (i.getType(topSymbolTable, currentSymbolTable) match {
+          registerWriteBack=false),
+          Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister()))
+        ) ++ (i.getType(topSymbolTable, currentSymbolTable) match {
             case scalar: SCALAR =>
               if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
                 Utilities.printInt(0) // doesn't matter just need to trigger add printInt
@@ -597,12 +601,13 @@ object CodeGenerator {
             case _: ARRAY | _: PAIR => Utilities.printReference
           })
       case i: ParenExprNode =>
+        // TODO: MAY NEED TO REPLICATE IDENT CHANGES HERE
         new Load(
           condition=None, asmType=None,
-          RM.peekVariableRegister, instructionSet.getSP,
+          RM.peekVariableRegister(), instructionSet.getSP,
           new Immediate(symbolTableManager.getOffset(i.getKey)),
           registerWriteBack = false) +: (i.getType(topSymbolTable, currentSymbolTable) match {
-            case scalar: SCALAR => {
+            case scalar: SCALAR =>
               if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
                 Utilities.printInt(0) // doesn't matter just need to trigger add printInt
                 IndexedSeq[Instruction](
@@ -625,24 +630,26 @@ object CodeGenerator {
                 IndexedSeq[Instruction](
                   BranchLink(None, Label("UNIMPLEMENTED PRINT !!! OH NO !!! THIS IS AN ISSUE !!! PLEASE IMPLEMENT FOR PAREN EXPR NODE !!!"))
                 )
-            }
             case STRING => Utilities.printString(""); IndexedSeq[Instruction](
               BranchLink(None, PrintString.label)
             )
             case _: ARRAY | _: PAIR => Utilities.printReference
           })
       case i: BinaryOperationNode =>
-        (new Load(
-          condition=None, asmType=None,
-          RM.peekVariableRegister, instructionSet.getSP,
-          new Immediate(symbolTableManager.getOffset(i.getKey)),
-          registerWriteBack = false
-        ) +: generateBinary(i)) ++ (i.getType(topSymbolTable, currentSymbolTable) match {
-            case scalar: SCALAR => {
+//        (new Load(
+//          condition=None, asmType=None,
+//          RM.peekVariableRegister(), instructionSet.getSP,
+//          new Immediate(symbolTableManager.getOffset(i.getKey)),
+//          registerWriteBack = false
+//        ) +:
+          generateBinary(i) ++ IndexedSeq[Instruction](Move(None, instructionSet.getReturn,
+            new ShiftedRegister(RM.peekVariableRegister()))) ++
+            (i.getType(topSymbolTable, currentSymbolTable) match {
+            case scalar: SCALAR =>
               if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
                 Utilities.printInt(0) // doesn't matter just need to trigger add printInt
                 IndexedSeq[Instruction](
-                  Move(condition=None, dest=instructionSet.getReturn, src=new ShiftedRegister(RM.peekVariableRegister)),
+                  Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())),
                   BranchLink(None, PrintInt.label)
                 )
               }
@@ -662,20 +669,21 @@ object CodeGenerator {
                 IndexedSeq[Instruction](
                   BranchLink(None, Label("UNIMPLEMENTED PRINT !!! OH NO !!! THIS IS AN ISSUE !!! PLEASE IMPLEMENT FOR PAREN EXPR NODE !!!"))
                 )
-            }
             case STRING => Utilities.printString(""); IndexedSeq[Instruction](
               BranchLink(None, PrintString.label)
             )
             case _: ARRAY | _: PAIR => Utilities.printReference
           })
       case i: UnaryOperationNode =>
-        (new Load(
-          condition=None, asmType=None,
-          RM.peekVariableRegister, instructionSet.getSP,
-          new Immediate(symbolTableManager.getOffset(i.getKey)),
-          registerWriteBack = false
-        ) +: generateUnary(i)) ++ (i.getType(topSymbolTable, currentSymbolTable) match {
-            case scalar: SCALAR => {
+//        (new Load(
+//          condition=None, asmType=None,
+//          RM.peekVariableRegister(), instructionSet.getSP,
+//          new Immediate(symbolTableManager.getOffset(i.getKey)),
+//          registerWriteBack = false
+//        ) +:
+          generateUnary(i) ++ IndexedSeq[Instruction](Move(None, instructionSet.getReturn,
+            new ShiftedRegister(RM.peekVariableRegister()))) ++ (i.getType(topSymbolTable, currentSymbolTable) match {
+            case scalar: SCALAR =>
               if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
                 Utilities.printInt(0) // doesn't matter just need to trigger add printInt
                 IndexedSeq[Instruction](
@@ -698,7 +706,6 @@ object CodeGenerator {
                 IndexedSeq[Instruction](
                   BranchLink(None, Label("UNIMPLEMENTED PRINT !!! OH NO !!! THIS IS AN ISSUE !!! PLEASE IMPLEMENT FOR PAREN EXPR NODE !!!"))
                 )
-            }
             case STRING => Utilities.printString(""); IndexedSeq[Instruction](
               BranchLink(None, PrintString.label)
             )
@@ -750,7 +757,7 @@ object CodeGenerator {
     val allocateElseInstruction: IndexedSeq[Instruction] = enterScopeAndAllocateStack()
 
     // Else
-    val elseInstructions = elseLabel +: generateStatement(ifNode.elseStat)
+    val elseInstructions = generateStatement(ifNode.elseStat)
 
     // Leave Scope
     val deallocateElseInstruction: IndexedSeq[Instruction] = leaveScopeAndDeallocateStack()
@@ -761,7 +768,7 @@ object CodeGenerator {
 
     val totalThenInstructions = allocateThenInstruction ++ thenInstructions ++ deallocateThenInstruction
 
-    val totalElseInstructions = allocateElseInstruction ++ elseInstructions ++ deallocateElseInstruction
+    val totalElseInstructions = elseLabel +: (allocateElseInstruction ++ elseInstructions ++ deallocateElseInstruction)
 
     condInstructions ++ elseBranchInstructions ++ totalThenInstructions ++
       fiBranchInstructions ++ totalElseInstructions :+ fiLabel
@@ -859,7 +866,6 @@ object CodeGenerator {
                 RM.peekVariableRegister(), instructionSet.getSP,
                 new Immediate(symbolTableManager.getOffset(ident.getKey)),
                 registerWriteBack = false))
-        //                        new Immediate(symbolTableManager.getOffset(ident.getKey))))
         //                        new Immediate(getSize(
         //                          ident.getType(topSymbolTable, currentSymbolTable)))))
           } else {
@@ -901,89 +907,119 @@ object CodeGenerator {
   def generateBinary(binaryOperation: BinaryOperationNode): IndexedSeq[Instruction] = {
     val varReg1 = RM.nextVariableRegister()
     val varReg2 = RM.peekVariableRegister()
-    RM.freeVariableRegister(varReg1)
     val r1 = instructionSet.getArgumentRegisters(1)
+    RM.freeVariableRegister(varReg1)
 
-    binaryOperation match {
+    // Necessary to insure register correctness
+    var firstArgument: ExprNode = Int_literNode(null, null)
+    var secondArgument: ExprNode = Int_literNode(null, null)
+
+    val binOpInstructions: IndexedSeq[Instruction] = binaryOperation match {
       case MultiplyNode(_, argOne, argTwo) =>
-        generateExpression(argOne) ++ generateExpression(argTwo) ++
-        IndexedSeq[Instruction](
-          SMull(None, conditionFlag = false, varReg1, varReg2, varReg1, varReg2),
-          // Need to be shifted by 31, ASR 31
-          Compare(None, varReg2, new ShiftedRegister(varReg1, "ASR", 31))) ++ Utilities.printOverflowError(Some(NotEqual))
+        firstArgument = argOne
+        secondArgument = argTwo
+          IndexedSeq[Instruction](
+            SMull(None, conditionFlag = false, varReg1, varReg2, varReg1, varReg2),
+            // Need to be shifted by 31, ASR 31
+            Compare(None, varReg2, new ShiftedRegister(varReg1, "ASR", 31))) ++ Utilities.printOverflowError(Some(NotEqual))
       case DivideNode(_, argOne, argTwo) =>
-        generateExpression(argOne) ++ generateExpression(argTwo) ++
+        firstArgument = argOne
+        secondArgument = argTwo
           IndexedSeq[Instruction](
             Move(None, instructionSet.getReturn, new ShiftedRegister(varReg1)),
             Move(None, r1, new ShiftedRegister(varReg2))
           ) ++ Utilities.printDivideByZero ++ IndexedSeq[Instruction](
-            BranchLink(None, DivMod.label),
-            Move(None, varReg1, new ShiftedRegister(instructionSet.getReturn)))
+          BranchLink(None, DivMod.label),
+          Move(None, varReg1, new ShiftedRegister(instructionSet.getReturn)))
       case ModNode(_, argOne, argTwo) =>
-        generateExpression(argOne) ++ generateExpression(argTwo) ++
-        IndexedSeq[Instruction](
-          Move(None, instructionSet.getReturn, new ShiftedRegister(varReg1)),
-          Move(None, r1, new ShiftedRegister(varReg2))
-        ) ++ Utilities.printDivideByZero ++ IndexedSeq[Instruction](
+        firstArgument = argOne
+        secondArgument = argTwo
+          IndexedSeq[Instruction](
+            Move(None, instructionSet.getReturn, new ShiftedRegister(varReg1)),
+            Move(None, r1, new ShiftedRegister(varReg2))
+          ) ++ Utilities.printDivideByZero ++ IndexedSeq[Instruction](
           BranchLink(None, DivMod.label),
           Move(None, varReg1, new ShiftedRegister(r1)))
       case PlusNode(_, argOne, argTwo) =>
         // Should be ADDS, conditionFlag set to true.
-        generateExpression(argOne) ++ generateExpression(argTwo) ++
+        firstArgument = argOne
+        secondArgument = argTwo
           IndexedSeq[Instruction](
             Add(None, conditionFlag = true, varReg1, varReg1, new ShiftedRegister(varReg2))
           ) ++ Utilities.printOverflowError(Some(Overflow))
       case MinusNode(_, argOne, argTwo) =>
-        generateExpression(argOne) ++ generateExpression(argTwo) ++
-        IndexedSeq[Instruction](
-          Subtract(None, conditionFlag = true, varReg1, varReg1, new ShiftedRegister(varReg2))
-        ) ++ Utilities.printOverflowError(Some(Overflow))
+        firstArgument = argOne
+        secondArgument = argTwo
+          IndexedSeq[Instruction](
+            Subtract(None, conditionFlag = true, varReg1, varReg1, new ShiftedRegister(varReg2))
+          ) ++ Utilities.printOverflowError(Some(Overflow))
       case GreaterThanNode(_, argOne, argTwo) =>
-        generateExpression(argOne) ++ generateExpression(argTwo) ++
-        IndexedSeq[Instruction](
-          Compare(None, varReg1, new ShiftedRegister(varReg2)),
-          Move(Some(GreaterThan), varReg1, new Immediate(1)),
-          Move(Some(LessEqual), varReg1, new Immediate(0)))
+        firstArgument = argOne
+        secondArgument = argTwo
+          IndexedSeq[Instruction](
+            Compare(None, varReg1, new ShiftedRegister(varReg2)),
+            Move(Some(GreaterThan), varReg1, new Immediate(1)),
+            Move(Some(LessEqual), varReg1, new Immediate(0)))
       case GreaterEqualNode(_, argOne, argTwo) =>
-        generateExpression(argOne) ++ generateExpression(argTwo) ++
-        IndexedSeq[Instruction](
-          Compare(None, varReg1, new ShiftedRegister(varReg2)),
-          Move(Some(GreaterEqual), varReg1, new Immediate(1)),
-          Move(Some(LessThan), varReg1, new Immediate(0)))
+        firstArgument = argOne
+        secondArgument = argTwo
+          IndexedSeq[Instruction](
+            Compare(None, varReg1, new ShiftedRegister(varReg2)),
+            Move(Some(GreaterEqual), varReg1, new Immediate(1)),
+            Move(Some(LessThan), varReg1, new Immediate(0)))
       case LessThanNode(_, argOne, argTwo) =>
-        generateExpression(argOne) ++ generateExpression(argTwo) ++
-        IndexedSeq[Instruction](
-          Compare(None, varReg1, new ShiftedRegister(varReg2)),
-          Move(Some(LessThan), varReg1, new Immediate(1)),
-          Move(Some(GreaterEqual), varReg1, new Immediate(0)))
+        firstArgument = argOne
+        secondArgument = argTwo
+          IndexedSeq[Instruction](
+            Compare(None, varReg1, new ShiftedRegister(varReg2)),
+            Move(Some(LessThan), varReg1, new Immediate(1)),
+            Move(Some(GreaterEqual), varReg1, new Immediate(0)))
       case LessEqualNode(_, argOne, argTwo) =>
-        generateExpression(argOne) ++ generateExpression(argTwo) ++
-        IndexedSeq[Instruction](
-          Compare(None, varReg1, new ShiftedRegister(varReg2)),
-          Move(Some(LessEqual), varReg1, new Immediate(1)),
-          Move(Some(GreaterThan), varReg1, new Immediate(0)))
+        firstArgument = argOne
+        secondArgument = argTwo
+          IndexedSeq[Instruction](
+            Compare(None, varReg1, new ShiftedRegister(varReg2)),
+            Move(Some(LessEqual), varReg1, new Immediate(1)),
+            Move(Some(GreaterThan), varReg1, new Immediate(0)))
       case EqualToNode(_, argOne, argTwo) =>
-        generateExpression(argOne) ++ generateExpression(argTwo) ++
+        firstArgument = argOne
+        secondArgument = argTwo
         IndexedSeq[Instruction](
-          Compare(None, varReg1, new ShiftedRegister(varReg2)),
-          Move(Some(Equal), varReg1, new Immediate(1)),
-          Move(Some(NotEqual), varReg1, new Immediate(0)))
+            Compare(None, varReg1, new ShiftedRegister(varReg2)),
+            Move(Some(Equal), varReg1, new Immediate(1)),
+            Move(Some(NotEqual), varReg1, new Immediate(0)))
       case NotEqualNode(_, argOne, argTwo) =>
-        generateExpression(argOne) ++ generateExpression(argTwo) ++
-        IndexedSeq[Instruction](
-          Compare(None, varReg1, new ShiftedRegister(varReg2)),
-          Move(Some(NotEqual), varReg1, new Immediate(1)),
-          Move(Some(Equal), varReg1, new Immediate(0)))
+        firstArgument = argOne
+        secondArgument = argTwo
+          IndexedSeq[Instruction](
+            Compare(None, varReg1, new ShiftedRegister(varReg2)),
+            Move(Some(NotEqual), varReg1, new Immediate(1)),
+            Move(Some(Equal), varReg1, new Immediate(0)))
 
       case LogicalAndNode(_, argOne, argTwo) =>
-        generateExpression(argOne) ++ generateExpression(argTwo) ++
-        IndexedSeq[Instruction](And(None, conditionFlag = false, varReg1,
-                                    varReg1, new ShiftedRegister(varReg2)))
+        firstArgument = argOne
+        secondArgument = argTwo
+          IndexedSeq[Instruction](And(None, conditionFlag = false, varReg1,
+            varReg1, new ShiftedRegister(varReg2)))
       case LogicalOrNode(_, argOne, argTwo) =>
-        generateExpression(argOne) ++ generateExpression(argTwo) ++
-        IndexedSeq[Instruction](Or(None, conditionFlag = false, varReg1,
-                                   varReg1, new ShiftedRegister(varReg2)))
+        firstArgument = argOne
+        secondArgument = argTwo
+          IndexedSeq[Instruction](Or(None, conditionFlag = false, varReg1,
+            varReg1, new ShiftedRegister(varReg2)))
     }
+
+    // Generate the instructions for the first argument.
+    val firstArgInstructions: IndexedSeq[Instruction] = generateExpression(firstArgument)
+
+    // Call next register as previous variable register is storing first arg instructions.
+    val varReg3: Register = RM.nextVariableRegister()
+    // Generate the instructions for the second argument.
+    val secondArgInstructions: IndexedSeq[Instruction] = generateExpression(secondArgument)
+    // Free register used by generateExpression to allow other generators to use it.
+    RM.freeVariableRegister(varReg3)
+
+    // Return all instructions in the correct order.
+    firstArgInstructions ++ secondArgInstructions ++ binOpInstructions
   }
 
   def generateCommonFunction(func: CommonFunction): IndexedSeq[Instruction] = func match {
@@ -1272,7 +1308,7 @@ object CodeGenerator {
       }
       currentOffset -= offsetSize
       // Add offset for IDENTIFIER to current scope map.
-      identOffsetMap + (key -> currentOffset)
+      identOffsetMap = identOffsetMap + (key -> currentOffset)
       currentOffset
     }
 
