@@ -757,7 +757,7 @@ object CodeGenerator {
     val allocateElseInstruction: IndexedSeq[Instruction] = enterScopeAndAllocateStack()
 
     // Else
-    val elseInstructions = elseLabel +: generateStatement(ifNode.elseStat)
+    val elseInstructions = generateStatement(ifNode.elseStat)
 
     // Leave Scope
     val deallocateElseInstruction: IndexedSeq[Instruction] = leaveScopeAndDeallocateStack()
@@ -768,7 +768,7 @@ object CodeGenerator {
 
     val totalThenInstructions = allocateThenInstruction ++ thenInstructions ++ deallocateThenInstruction
 
-    val totalElseInstructions = allocateElseInstruction ++ elseInstructions ++ deallocateElseInstruction
+    val totalElseInstructions = elseLabel +: (allocateElseInstruction ++ elseInstructions ++ deallocateElseInstruction)
 
     condInstructions ++ elseBranchInstructions ++ totalThenInstructions ++
       fiBranchInstructions ++ totalElseInstructions :+ fiLabel
