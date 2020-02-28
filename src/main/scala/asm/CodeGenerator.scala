@@ -160,7 +160,7 @@ object CodeGenerator {
 
   def generateIdent(ident: IdentNode): IndexedSeq[Instruction] = {
     // Retrieve actual size for ident from symbol table.
-//    val identSize = getSize(ident.getType(topSymbolTable, currentSymbolTable))
+    //    val identSize = getSize(ident.getType(topSymbolTable, currentSymbolTable))
 
     // ASMType to classify if ident is of type bool and if so should be loaded
     // with ByteType triggering STRB instead of the usual STR.
@@ -353,21 +353,21 @@ object CodeGenerator {
     val peekedReg = RM.peekVariableRegister()
 
     // Check if loadOffset below can be replaced with:
-//     val loadOffset: IndexedSeq[Instruction] = pairElem match {
-//        case fst: FstNode => generateExpression(fst.expression)
-//        case snd: SndNode => generateExpression(snd.expression)
-//     }
+    //     val loadOffset: IndexedSeq[Instruction] = pairElem match {
+    //        case fst: FstNode => generateExpression(fst.expression)
+    //        case snd: SndNode => generateExpression(snd.expression)
+    //     }
 
-//    val immOff: Int = pairElem match {
-//      case fst: FstNode => 0
-//      case snd: SndNode => 1
-//    }
+    //    val immOff: Int = pairElem match {
+    //      case fst: FstNode => 0
+    //      case snd: SndNode => 1
+    //    }
 
     val loadOffset = IndexedSeq[Instruction](
       // Current offset of identifier related to pair.
       new Load(None, None, peekedReg, instructionSet.getSP,
                new Immediate(getSize(pairElem.getType(topSymbolTable, currentSymbolTable))), registerWriteBack = false)
-//               new Immediate(symbolTableManager.getOffset(pairElem.getKey)))
+      //               new Immediate(symbolTableManager.getOffset(pairElem.getKey)))
     )
 
     val nullPtrIns = Move(None, instructionSet.getReturn,
@@ -430,7 +430,7 @@ object CodeGenerator {
       loads = IndexedSeq[Instruction](
         new Load(None, None, RM.peekVariableRegister(), RM.peekVariableRegister(),
           new Immediate(4), registerWriteBack = false),
-//            new Immediate(symbolTableManager.getOffset(pairElemNode.getKey)), registerWriteBack = false),
+    //            new Immediate(symbolTableManager.getOffset(pairElemNode.getKey)), registerWriteBack = false),
         new Load(None, asmType, RM.peekVariableRegister(), RM.peekVariableRegister())
       )
 
@@ -444,7 +444,7 @@ object CodeGenerator {
     var totalArgOffset: Int = 0
     // First check if there are arguments in the arglist.
     if (call.argList.isDefined)
-      argInstructions = call.argList.get.exprNodes.flatMap(e =>
+      argInstructions = call.argList.get.exprNodes.reverse.flatMap(e =>
       { val exprSize = getSize(e.getType(topSymbolTable, currentSymbolTable))
         totalArgOffset += exprSize
         // Distinguish between STR and STRB.
@@ -460,7 +460,7 @@ object CodeGenerator {
       BranchLink(None, Label(s"f_${call.identNode.ident}"))
     )
 
-    // May need to do this multiple times if stack exceeds 1024 (max stack size).
+    // TODO May need to do this multiple times if stack exceeds 1024 (max stack size).
     labelAndBranch = labelAndBranch :+ Add(None, conditionFlag = false, instructionSet.getSP,
                                            instructionSet.getSP, new Immediate(totalArgOffset))
 
@@ -480,10 +480,10 @@ object CodeGenerator {
     val addInstruction: IndexedSeq[Instruction] = lhs match {
       // Offset from symbol table for ident.
       case ident: IdentNode => IndexedSeq[Instruction](Add(None, conditionFlag = false, varReg1,
-        // TODO: CONFIRM THAT I SHOULD BE GETTING OFFSET HERE
+        // CONFIRMED THAT I SHOULD BE GETTING OFFSET HERE
         instructionSet.getSP, new Immediate(symbolTableManager.getOffset(ident.getKey))))
-//        instructionSet.getSP, new Immediate(getSize(ident.getType(topSymbolTable, currentSymbolTable)))))
-      // No offset if not reading variable.
+        //        instructionSet.getSP, new Immediate(getSize(ident.getType(topSymbolTable, currentSymbolTable)))))
+        // No offset if not reading variable.
       case _ => IndexedSeq[Instruction](Add(None, conditionFlag = false, varReg1,
         instructionSet.getSP, new Immediate(0)))
     }
@@ -498,7 +498,6 @@ object CodeGenerator {
 
     lhsType match {
       case scalar if scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)
-        // TODO: add read int to common funcs
         => generatedReadInstructions ++ Utilities.printReadInt
       case scalar if scalar == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable)
       => generatedReadInstructions ++ Utilities.printReadChar
@@ -553,20 +552,155 @@ object CodeGenerator {
     )
   }
 
-  // TODO: replace
   def generatePrint(expr: ExprNode, printLn: Boolean): IndexedSeq[Instruction] = {
+    println("GENERATING PRINT")
     val instr = expr match {
       case Int_literNode(_, n) => Utilities.printInt(n.toInt)
       case Bool_literNode(_, b) => Utilities.printBool(b)
       case Char_literNode(_, c) => Utilities.printChar(c)
       case Str_literNode(_, s) => Utilities.printString(s)
-      case Pair_literNode(_) => IndexedSeq[Instruction](
-        BranchLink(None, Label("UNIMPLEMENTED PRINT !!! OH NO !!! THIS IS AN ISSUE !!! PLEASE IMPLEMENT FOR PAREN EXPR NODE !!!"))
-      )
+      case Pair_literNode(_) => Utilities.printReference
       case ArrayElemNode(_, _, _) => Utilities.printReference
-      case IdentNode(_, _) => Utilities.printReference
-      // TODO: pair liter node and parenexprnode
-      // TODO: print read reference?
+      case i: IdentNode =>
+        new Load(None, None, RM.peekVariableRegister(), instructionSet.getSP,
+          new Immediate(symbolTableManager.getOffset(i.getKey)),
+          registerWriteBack=false) +: (i.getType(topSymbolTable, currentSymbolTable) match {
+            case scalar: SCALAR =>
+              if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
+                Utilities.printInt(0) // doesn't matter just need to trigger add printInt
+                IndexedSeq[Instruction](
+                  BranchLink(None, PrintInt.label)
+                )
+              }
+              else if (scalar == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
+                Utilities.printBool(true)
+                IndexedSeq[Instruction](
+                  BranchLink(None, PrintBool.label)
+                )
+              }
+              else if (scalar == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
+                Utilities.printChar('c')
+                IndexedSeq[Instruction](
+                  BranchLink(condition = None, label = PutChar.label)
+                )
+              }
+              else
+                IndexedSeq[Instruction](
+                  BranchLink(None, Label("UNIMPLEMENTED PRINT !!! OH NO !!! THIS IS AN ISSUE !!! PLEASE IMPLEMENT FOR PAREN EXPR NODE !!!"))
+                )
+            case STRING => Utilities.printString(""); IndexedSeq[Instruction](
+              BranchLink(None, PrintString.label)
+            )
+            case _: ARRAY | _: PAIR => Utilities.printReference
+          })
+      case i: ParenExprNode =>
+        new Load(
+          condition=None, asmType=None,
+          RM.peekVariableRegister, instructionSet.getSP,
+          new Immediate(symbolTableManager.getOffset(i.getKey)),
+          registerWriteBack = false) +: (i.getType(topSymbolTable, currentSymbolTable) match {
+            case scalar: SCALAR => {
+              if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
+                Utilities.printInt(0) // doesn't matter just need to trigger add printInt
+                IndexedSeq[Instruction](
+                  BranchLink(None, PrintInt.label)
+                )
+              }
+              else if (scalar == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
+                Utilities.printBool(true)
+                IndexedSeq[Instruction](
+                  BranchLink(None, PrintBool.label)
+                )
+              }
+              else if (scalar == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
+                Utilities.printChar('c')
+                IndexedSeq[Instruction](
+                  BranchLink(condition = None, label = PutChar.label)
+                )
+              }
+              else
+                IndexedSeq[Instruction](
+                  BranchLink(None, Label("UNIMPLEMENTED PRINT !!! OH NO !!! THIS IS AN ISSUE !!! PLEASE IMPLEMENT FOR PAREN EXPR NODE !!!"))
+                )
+            }
+            case STRING => Utilities.printString(""); IndexedSeq[Instruction](
+              BranchLink(None, PrintString.label)
+            )
+            case _: ARRAY | _: PAIR => Utilities.printReference
+          })
+      case i: BinaryOperationNode =>
+        (new Load(
+          condition=None, asmType=None,
+          RM.peekVariableRegister, instructionSet.getSP,
+          new Immediate(symbolTableManager.getOffset(i.getKey)),
+          registerWriteBack = false
+        ) +: generateBinary(i)) ++ (i.getType(topSymbolTable, currentSymbolTable) match {
+            case scalar: SCALAR => {
+              if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
+                Utilities.printInt(0) // doesn't matter just need to trigger add printInt
+                IndexedSeq[Instruction](
+                  Move(condition=None, dest=instructionSet.getReturn, src=new ShiftedRegister(RM.peekVariableRegister)),
+                  BranchLink(None, PrintInt.label)
+                )
+              }
+              else if (scalar == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
+                Utilities.printBool(true)
+                IndexedSeq[Instruction](
+                  BranchLink(None, PrintBool.label)
+                )
+              }
+              else if (scalar == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
+                Utilities.printChar('c')
+                IndexedSeq[Instruction](
+                  BranchLink(condition = None, label = PutChar.label)
+                )
+              }
+              else
+                IndexedSeq[Instruction](
+                  BranchLink(None, Label("UNIMPLEMENTED PRINT !!! OH NO !!! THIS IS AN ISSUE !!! PLEASE IMPLEMENT FOR PAREN EXPR NODE !!!"))
+                )
+            }
+            case STRING => Utilities.printString(""); IndexedSeq[Instruction](
+              BranchLink(None, PrintString.label)
+            )
+            case _: ARRAY | _: PAIR => Utilities.printReference
+          })
+      case i: UnaryOperationNode =>
+        (new Load(
+          condition=None, asmType=None,
+          RM.peekVariableRegister, instructionSet.getSP,
+          new Immediate(symbolTableManager.getOffset(i.getKey)),
+          registerWriteBack = false
+        ) +: generateUnary(i)) ++ (i.getType(topSymbolTable, currentSymbolTable) match {
+            case scalar: SCALAR => {
+              if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
+                Utilities.printInt(0) // doesn't matter just need to trigger add printInt
+                IndexedSeq[Instruction](
+                  BranchLink(None, PrintInt.label)
+                )
+              }
+              else if (scalar == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
+                Utilities.printBool(true)
+                IndexedSeq[Instruction](
+                  BranchLink(None, PrintBool.label)
+                )
+              }
+              else if (scalar == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
+                Utilities.printChar('c')
+                IndexedSeq[Instruction](
+                  BranchLink(condition = None, label = PutChar.label)
+                )
+              }
+              else
+                IndexedSeq[Instruction](
+                  BranchLink(None, Label("UNIMPLEMENTED PRINT !!! OH NO !!! THIS IS AN ISSUE !!! PLEASE IMPLEMENT FOR PAREN EXPR NODE !!!"))
+                )
+            }
+            case STRING => Utilities.printString(""); IndexedSeq[Instruction](
+              BranchLink(None, PrintString.label)
+            )
+            case _: ARRAY | _: PAIR => Utilities.printReference
+          })
     }
 
     if (printLn) instr ++ Utilities.printNewline
@@ -681,10 +815,19 @@ object CodeGenerator {
     // We must first enter the new scope, then generate the statements inside the scope,
     // then finally close the scope.
 
-    // TODO DANIEL CHECK IF WE MUST NEXTSCOPE
-    val generatedInstructions = generateStatement(begin.stat)
+    // Update the current symbol table to the begin scope
+    currentSymbolTable = symbolTableManager.nextScope()
 
-    generatedInstructions
+    // Enter Scope
+    val allocateInstructions: IndexedSeq[Instruction] = enterScopeAndAllocateStack()
+
+    // Scope Instructions
+    val statInstructions: IndexedSeq[Instruction] = generateStatement(begin.stat)
+
+    // Leave Scope
+    val deallocateInstructions: IndexedSeq[Instruction] = leaveScopeAndDeallocateStack()
+
+    allocateInstructions ++ statInstructions ++ deallocateInstructions
   }
 
   def generateExpression(expr: ExprNode): IndexedSeq[Instruction] = {
@@ -708,19 +851,19 @@ object CodeGenerator {
                      RM.peekVariableRegister(), new LoadableExpression(0)))
       case ident: IdentNode
       // Load identifier into first available variable register.
-                  => if (checkSingleByte(ident)) {
-        // TODO: CHECK IF SIGNEDBYTE OR BYTETYPE
-                      IndexedSeq[Instruction](new Load(None, Some(SignedByte),
-                        RM.peekVariableRegister(), instructionSet.getSP,
-                        new Immediate(symbolTableManager.getOffset(ident.getKey))))
+          => if (checkSingleByte(ident)) {
+              IndexedSeq[Instruction](new Load(None, Some(SignedByte),
+                RM.peekVariableRegister(), instructionSet.getSP,
+                new Immediate(symbolTableManager.getOffset(ident.getKey)),
+                registerWriteBack = false))
         //                        new Immediate(symbolTableManager.getOffset(ident.getKey))))
-//                        new Immediate(getSize(
-//                          ident.getType(topSymbolTable, currentSymbolTable)))))
-                  } else {
-                      IndexedSeq[Instruction](new Load(None, None,
-                        RM.peekVariableRegister(), instructionSet.getSP,
-                        new Immediate(symbolTableManager.getOffset(ident.getKey)),
-                        registerWriteBack = false))}
+        //                        new Immediate(getSize(
+        //                          ident.getType(topSymbolTable, currentSymbolTable)))))
+          } else {
+              IndexedSeq[Instruction](new Load(None, None,
+                RM.peekVariableRegister(), instructionSet.getSP,
+                new Immediate(symbolTableManager.getOffset(ident.getKey)),
+                registerWriteBack = false))}
       case arrayElem: ArrayElemNode => generateArrayElem(arrayElem)
       case unaryOperation: UnaryOperationNode => generateUnary(unaryOperation)
       case binaryOperation: BinaryOperationNode => generateBinary(binaryOperation)
@@ -783,10 +926,10 @@ object CodeGenerator {
           Move(None, varReg1, new ShiftedRegister(r1)))
       case PlusNode(_, argOne, argTwo) =>
         // Should be ADDS, conditionFlag set to true.
-      generateExpression(argOne) ++ generateExpression(argTwo) ++
-        IndexedSeq[Instruction](
-          Add(None, conditionFlag = true, varReg1, varReg1, new ShiftedRegister(varReg2))
-        ) ++ Utilities.printOverflowError(Some(Overflow))
+        generateExpression(argOne) ++ generateExpression(argTwo) ++
+          IndexedSeq[Instruction](
+            Add(None, conditionFlag = true, varReg1, varReg1, new ShiftedRegister(varReg2))
+          ) ++ Utilities.printOverflowError(Some(Overflow))
       case MinusNode(_, argOne, argTwo) =>
         generateExpression(argOne) ++ generateExpression(argTwo) ++
         IndexedSeq[Instruction](
@@ -1044,9 +1187,20 @@ object CodeGenerator {
     symbolTableManager.enterScope()
     if (getScopeStackSize(currentSymbolTable) == 0) IndexedSeq()
     else {
-      bytesAllocatedSoFar += getScopeStackSize(currentSymbolTable)
-      IndexedSeq(Subtract(None, conditionFlag = false,
-        instructionSet.getSP, instructionSet.getSP, new Immediate(getScopeStackSize(currentSymbolTable))))
+      var allocateInstructions: IndexedSeq[Instruction] = IndexedSeq()
+      var bytesToAllocate = getScopeStackSize(currentSymbolTable)
+      while (bytesToAllocate > 0) {
+        if (bytesToAllocate >= instructionSet.getMaxOffset) {
+          bytesToAllocate -= instructionSet.getMaxOffset
+          allocateInstructions = allocateInstructions :+ Subtract(None, conditionFlag = false, instructionSet.getSP, instructionSet.getSP, new Immediate(instructionSet.getMaxOffset))
+          bytesAllocatedSoFar += instructionSet.getMaxOffset
+        } else {
+          allocateInstructions = allocateInstructions :+ Subtract(None, conditionFlag = false, instructionSet.getSP, instructionSet.getSP, new Immediate(bytesToAllocate))
+          bytesAllocatedSoFar += bytesToAllocate
+          bytesToAllocate = 0
+        }
+      }
+      allocateInstructions
     }
   }
 
@@ -1055,9 +1209,17 @@ object CodeGenerator {
     if (getScopeStackSize(currentSymbolTable) == 0) IndexedSeq()
     // If all the bytes allocated so far have been freed, a return must have already taken place
     else if (bytesAllocatedSoFar != 0) {
-      bytesAllocatedSoFar -= getScopeStackSize(currentSymbolTable)
-      IndexedSeq(Add(None, conditionFlag = false,
-        instructionSet.getSP, instructionSet.getSP, new Immediate(getScopeStackSize(currentSymbolTable))))
+      var deallocateInstructions: IndexedSeq[Instruction] = IndexedSeq()
+      while (bytesAllocatedSoFar > 0) {
+        if (bytesAllocatedSoFar >= instructionSet.getMaxOffset) {
+          deallocateInstructions = deallocateInstructions :+ Add(None, conditionFlag = false, instructionSet.getSP, instructionSet.getSP, new Immediate(instructionSet.getMaxOffset))
+          bytesAllocatedSoFar -= instructionSet.getMaxOffset
+        } else {
+          deallocateInstructions = deallocateInstructions :+ Add(None, conditionFlag = false, instructionSet.getSP, instructionSet.getSP, new Immediate(bytesAllocatedSoFar))
+          bytesAllocatedSoFar -= bytesAllocatedSoFar
+        }
+      }
+      deallocateInstructions
     }
     else IndexedSeq()
   }
