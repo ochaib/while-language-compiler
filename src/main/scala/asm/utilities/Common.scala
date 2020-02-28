@@ -2,7 +2,7 @@ package asm.utilities
 
 import asm.instructions.Label
 
-class StringLiteral(string: String, length: Int)
+class StringLiteral(val string: String, val length: Int)
 
 sealed abstract class CommonFunction { val label: Label }
 
