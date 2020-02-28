@@ -583,6 +583,7 @@ object CodeGenerator {
                   BranchLink(None, Label("UNIMPLEMENTED PRINT !!! OH NO !!! THIS IS AN ISSUE !!! PLEASE IMPLEMENT FOR PAREN EXPR NODE !!!"))
                 )
             case STRING => Utilities.printString(""); IndexedSeq[Instruction](
+              Move(condition=None, dest=instructionSet.getReturn, src=new ShiftedRegister(RM.peekVariableRegister)),
               BranchLink(None, PrintString.label)
             )
             case _: ARRAY | _: PAIR => IndexedSeq[Instruction](Move(None, instructionSet.getReturn,
@@ -621,6 +622,7 @@ object CodeGenerator {
                   BranchLink(None, Label("UNIMPLEMENTED PRINT !!! OH NO !!! THIS IS AN ISSUE !!! PLEASE IMPLEMENT FOR PAREN EXPR NODE !!!"))
                 )
             case STRING => Utilities.printString(""); IndexedSeq[Instruction](
+              Move(condition=None, dest=instructionSet.getReturn, src=new ShiftedRegister(RM.peekVariableRegister)),
               BranchLink(None, PrintString.label)
             )
             case _: ARRAY | _: PAIR => Utilities.printReference
@@ -661,6 +663,7 @@ object CodeGenerator {
                   BranchLink(None, Label("UNIMPLEMENTED PRINT !!! OH NO !!! THIS IS AN ISSUE !!! PLEASE IMPLEMENT FOR PAREN EXPR NODE !!!"))
                 )
             case STRING => Utilities.printString(""); IndexedSeq[Instruction](
+              Move(condition=None, dest=instructionSet.getReturn, src=new ShiftedRegister(RM.peekVariableRegister)),
               BranchLink(None, PrintString.label)
             )
             case _: ARRAY | _: PAIR => Utilities.printReference
@@ -700,6 +703,7 @@ object CodeGenerator {
                   BranchLink(None, Label("UNIMPLEMENTED PRINT !!! OH NO !!! THIS IS AN ISSUE !!! PLEASE IMPLEMENT FOR PAREN EXPR NODE !!!"))
                 )
             case STRING => Utilities.printString(""); IndexedSeq[Instruction](
+              Move(condition=None, dest=instructionSet.getReturn, src=new ShiftedRegister(RM.peekVariableRegister)),
               BranchLink(None, PrintString.label)
             )
             case _: ARRAY | _: PAIR => Utilities.printReference
