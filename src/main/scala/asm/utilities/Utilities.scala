@@ -40,7 +40,7 @@ object Utilities {
     }
 
     def printString(s: String): IndexedSeq[Instruction] = {
-        val msgLabel: Label = addString(s)
+        val msgLabel: Label = if (s.length > 0) addString(s) else Label(s)
         // Load R4, =msg_#
         // Mov R0, R4
         // BL p_print_string
