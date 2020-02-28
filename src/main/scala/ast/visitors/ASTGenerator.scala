@@ -500,7 +500,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     val secondExpr: ExprNode = visit(ctx.getChild(2)).asInstanceOf[ExprNode]
 
     binaryOperator match {
-      case "||" => LogicalOrNode(ctx.start, firstExpr, secondExpr)
+      case "||" => LogicalAndNode(ctx.start, firstExpr, secondExpr)
     }
   }
 
