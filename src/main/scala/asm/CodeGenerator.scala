@@ -77,8 +77,10 @@ object CodeGenerator {
     val mainInstructions = mainHeaderInstructions ++ allocateInstructions ++
       statInstructions ++ deallocateInstructions ++ mainEndInstructions
 
+    val commonFunctions = Utilities.commonFunctions.flatMap(generateCommonFunction)
+
     // Program Instructions = Function Instructions + Main Instructions
-    functionInstructions ++ mainInstructions
+    functionInstructions ++ mainInstructions ++ commonFunctions
   }
 
   def generateFunction(func: FuncNode): IndexedSeq[Instruction] = {

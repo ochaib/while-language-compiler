@@ -46,7 +46,7 @@ object Utilities {
         if (commonFunctions.add(PrintString))
             strings += (Label("msg_print_string") -> new StringLiteral("%.*s\\0", 5))
         IndexedSeq[Instruction](
-            new Load(condition=None, asmType=None, dest=reg, label=PrintString.label),
+            new Load(condition=None, asmType=None, dest=reg, label=msgLabel),
             Move(condition = None, dest = RM.instructionSet.getReturn, src = new ShiftedRegister(reg)),
             BranchLink(condition = None, label = PrintString.label)
         )
