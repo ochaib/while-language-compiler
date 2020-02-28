@@ -455,7 +455,7 @@ object CodeGenerator {
       BranchLink(None, Label(s"f_${call.identNode.ident}"))
     )
 
-    // May need to do this multiple times if stack exceeds 1024 (max stack size).
+    // TODO May need to do this multiple times if stack exceeds 1024 (max stack size).
     labelAndBranch = labelAndBranch :+ Add(None, conditionFlag = false, instructionSet.getSP,
                                            instructionSet.getSP, new Immediate(totalArgOffset))
 
@@ -1047,9 +1047,20 @@ object CodeGenerator {
     symbolTableManager.enterScope()
     if (getScopeStackSize(currentSymbolTable) == 0) IndexedSeq()
     else {
-      bytesAllocatedSoFar += getScopeStackSize(currentSymbolTable)
-      IndexedSeq(Subtract(None, conditionFlag = false,
-        instructionSet.getSP, instructionSet.getSP, new Immediate(getScopeStackSize(currentSymbolTable))))
+      var allocateInstructions: IndexedSeq[Instruction] = IndexedSeq()
+      var bytesToAllocate = getScopeStackSize(currentSymbolTable)
+      while (bytesToAllocate > 0) {
+        if (bytesToAllocate >= instructionSet.getMaxOffset) {
+          bytesToAllocate -= instructionSet.getMaxOffset
+          allocateInstructions = allocateInstructions :+ Subtract(None, conditionFlag = false, instructionSet.getSP, instructionSet.getSP, new Immediate(instructionSet.getMaxOffset))
+          bytesAllocatedSoFar += instructionSet.getMaxOffset
+        } else {
+          allocateInstructions = allocateInstructions :+ Subtract(None, conditionFlag = false, instructionSet.getSP, instructionSet.getSP, new Immediate(bytesToAllocate))
+          bytesAllocatedSoFar += bytesToAllocate
+          bytesToAllocate = 0
+        }
+      }
+      allocateInstructions
     }
   }
 
@@ -1058,9 +1069,17 @@ object CodeGenerator {
     if (getScopeStackSize(currentSymbolTable) == 0) IndexedSeq()
     // If all the bytes allocated so far have been freed, a return must have already taken place
     else if (bytesAllocatedSoFar != 0) {
-      bytesAllocatedSoFar -= getScopeStackSize(currentSymbolTable)
-      IndexedSeq(Add(None, conditionFlag = false,
-        instructionSet.getSP, instructionSet.getSP, new Immediate(getScopeStackSize(currentSymbolTable))))
+      var deallocateInstructions: IndexedSeq[Instruction] = IndexedSeq()
+      while (bytesAllocatedSoFar > 0) {
+        if (bytesAllocatedSoFar >= instructionSet.getMaxOffset) {
+          deallocateInstructions = deallocateInstructions :+ Add(None, conditionFlag = false, instructionSet.getSP, instructionSet.getSP, new Immediate(instructionSet.getMaxOffset))
+          bytesAllocatedSoFar -= instructionSet.getMaxOffset
+        } else {
+          deallocateInstructions = deallocateInstructions :+ Add(None, conditionFlag = false, instructionSet.getSP, instructionSet.getSP, new Immediate(bytesAllocatedSoFar))
+          bytesAllocatedSoFar -= bytesAllocatedSoFar
+        }
+      }
+      deallocateInstructions
     }
     else IndexedSeq()
   }

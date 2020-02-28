@@ -27,6 +27,9 @@ trait InstructionSet {
   // Return the variable? registers, possibly not necessary.
   def getVariableRegisters: ListBuffer[Register]
 
+  // Returns the maximum bits that can be offseted at once
+  def getMaxOffset: Int
+
   // Print the instructions to a string with the instruction set's syntax
   def print(instructions: IndexedSeq[Instruction]): String
 
