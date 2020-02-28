@@ -494,13 +494,11 @@ object CodeGenerator {
     lhsType match {
       case scalar if scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)
         // TODO: add read int to common funcs
-        => generatedReadInstructions :+ BranchLink(None, Label("p_read_int"))
+        => generatedReadInstructions ++ Utilities.printReadInt
       case scalar if scalar == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable)
       => generatedReadInstructions ++ Utilities.printReadChar
       case _ => assert(assertion = false, "Undefined type for read.")
     }
-
-    generatedReadInstructions
   }
 
   def generateFree(expr: ExprNode): IndexedSeq[Instruction] = {
@@ -892,6 +890,16 @@ object CodeGenerator {
       Move(condition=None, dest=instructionSet.getArgumentRegisters(1),
            src=new ShiftedRegister(instructionSet.getReturn)),
       new Load(condition=None, asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_read_char")),
+      Add(condition = None, conditionFlag = false, dest = instructionSet.getReturn,
+          src1 = instructionSet.getReturn, src2 = new Immediate(4)),
+      BranchLink(condition=None, label=Scanf.label),
+      popPC
+    )
+    case PrintReadInt => IndexedSeq[Instruction](
+      pushLR,
+      Move(condition=None, dest=instructionSet.getArgumentRegisters(1),
+           src=new ShiftedRegister(instructionSet.getReturn)),
+      new Load(condition=None, asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_read_int")),
       Add(condition = None, conditionFlag = false, dest = instructionSet.getReturn,
           src1 = instructionSet.getReturn, src2 = new Immediate(4)),
       BranchLink(condition=None, label=Scanf.label),

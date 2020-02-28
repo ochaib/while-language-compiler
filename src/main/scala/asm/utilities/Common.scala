@@ -11,12 +11,12 @@ case object PrintString extends CommonFunction { val label: Label = new Label("p
 case object PrintLn extends CommonFunction { val label: Label = new Label("p_print_ln") }
 case object PrintBool extends CommonFunction { val label: Label = new Label("p_print_bool") }
 case object PrintInt extends CommonFunction { val label: Label = new Label("p_print_int") }
-// TODO: printreference needs a utility function and a generation
 case object PrintReference extends CommonFunction { val label: Label = new Label("p_print_reference") }
 
 // util funcs
 case object PrintFreePair extends CommonFunction { val label: Label = new Label("p_free_pair") }
 case object PrintReadChar extends CommonFunction { val label: Label = new Label("p_read_char") }
+case object PrintReadInt extends CommonFunction { val label: Label = new Label("p_read_int") }
 case object PrintCheckNullPointer extends CommonFunction { val label: Label = new Label("p_check_null_pointer") }
 
 // error funcs

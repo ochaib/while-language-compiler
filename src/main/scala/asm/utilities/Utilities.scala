@@ -130,6 +130,16 @@ object Utilities {
         )
     }
 
+    def printReadInt: IndexedSeq[Instruction] = {
+        if (commonFunctions.add(PrintReadInt))
+            strings += (Label("msg_read_int") ->
+                new StringLiteral("\"%d\\0\"", 3)
+            )
+        IndexedSeq[Instruction](
+            BranchLink(condition=None, label=PrintReadInt.label)
+        )
+    }
+
     def printCheckNullPointer: IndexedSeq[Instruction] = {
         if (commonFunctions.add(PrintCheckNullPointer))
             strings += (Label("msg_check_null_pointer") ->
