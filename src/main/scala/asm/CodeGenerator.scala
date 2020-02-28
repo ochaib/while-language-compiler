@@ -180,6 +180,7 @@ object CodeGenerator {
 
     val loadRes: IndexedSeq[Instruction] = IndexedSeq[Instruction](new Load(None, None, varReg, varReg))
 
+    // Now free register, push it back onto the register stack.
     RM.freeVariableRegister(varReg)
 
     arrayElemInstructions ++ loadRes
@@ -193,10 +194,9 @@ object CodeGenerator {
     // Must now retrieve elements in array corresponding to each
     val arrayElemInstructions = retrieveArrayElements(arrayElem, varReg2, varReg1)
 
-    var asmType: Option[ASMType] = None
-
     // Check if B is necessary for load, store etc.
     // May need to be ByteType
+    var asmType: Option[ASMType] = None
     if (checkSingleByte(arrayElem)) asmType = Some(SignedByte)
 
     val storeResult = IndexedSeq[Instruction](
@@ -752,12 +752,11 @@ object CodeGenerator {
 
   def generateUnary(unaryOperation: UnaryOperationNode): IndexedSeq[Instruction] = {
     unaryOperation match {
-      // More must be done for these according to the reference compiler.
+      // Logical not node according to the reference compiler.
       case LogicalNotNode(_, expr) =>
         generateExpression(expr) ++ IndexedSeq[Instruction](
           ExclusiveOr(None, conditionFlag = false, RM.peekVariableRegister(),
                       RM.peekVariableRegister(), new Immediate(1)))
-
       // Negate according to reference compiler.
       case NegateNode(_, expr) =>
         generateExpression(expr) ++
@@ -766,9 +765,8 @@ object CodeGenerator {
                RM.peekVariableRegister(), new Immediate(0)),
         ) ++ Utilities.printOverflowError
       case LenNode(_, expr) =>
-        val varReg = RM.peekVariableRegister()
         generateExpression(expr) ++ IndexedSeq[Instruction](
-          new Load(None, None, varReg, varReg)
+          new Load(None, None, RM.peekVariableRegister(), RM.peekVariableRegister())
         )
       // Finished implementation as nothing else must be done.
       case OrdNode(_, expr) => generateExpression(expr)
