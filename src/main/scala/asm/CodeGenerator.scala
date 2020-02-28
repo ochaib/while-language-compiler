@@ -884,6 +884,18 @@ object CodeGenerator {
       BranchLink(condition=None, label=Free.label),
       popPC
     )
+    case PrintReference => IndexedSeq[Instruction](
+      pushLR,
+      Move(condition=None, dest=instructionSet.getArgumentRegisters(1),
+           src=new ShiftedRegister(instructionSet.getReturn)),
+      new Load(condition=None, asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_print_reference")),
+      Add(condition = None, conditionFlag = false, dest = instructionSet.getReturn,
+          src1 = instructionSet.getReturn, src2 = new Immediate(4)),
+      BranchLink(condition=None, label=Printf.label),
+      Move(condition=None, dest=instructionSet.getReturn, src=new Immediate(0)),
+      BranchLink(condition=None, label=Flush.label),
+      popPC
+    )
     case PrintReadChar => IndexedSeq[Instruction](
       PrintReadChar.label,
       pushLR,

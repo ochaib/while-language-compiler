@@ -140,6 +140,16 @@ object Utilities {
         )
     }
 
+    def printReference: IndexedSeq[Instruction] = {
+        if (commonFunctions.add(PrintReference))
+            strings += (Label("msg_print_reference") ->
+                new StringLiteral("\"%p\\0\"", 3)
+            )
+        IndexedSeq[Instruction](
+            BranchLink(condition=None, label=PrintReference.label)
+        )
+    }
+
     def printCheckNullPointer: IndexedSeq[Instruction] = {
         if (commonFunctions.add(PrintCheckNullPointer))
             strings += (Label("msg_check_null_pointer") ->
