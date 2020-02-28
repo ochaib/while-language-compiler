@@ -358,4 +358,5 @@ object ARM11 extends InstructionSet {
       }
     } else ""
 
+  override def getMaxOffset: Int = 1024
 }
