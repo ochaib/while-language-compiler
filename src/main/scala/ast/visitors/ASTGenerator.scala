@@ -339,7 +339,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     val childCount = ctx.getChildCount
 
     // childCount - 1 in case it is signed +
-    val num: String = ctx.getChild(childCount - 1).getText
+    var num: String = ctx.getChild(childCount - 1).getText
 
     // check if it's negated
     // can't rely on child 0 as antlr prefers longest token sequence
@@ -350,9 +350,10 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
         parent.getChild(0).getText == "-"
       case _ => false
     }
+    if (negated) num = "-" + num
 
     // parse the number -- if there's an overflow it'll be set to None
-    val numVal: Option[Int] = (if (negated) "-" + num else num).toIntOption
+    val numVal: Option[Int] = num.toIntOption
 
     numVal match {
       case None => {
