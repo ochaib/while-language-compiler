@@ -439,7 +439,7 @@ object CodeGenerator {
     var totalArgOffset: Int = 0
     // First check if there are arguments in the arglist.
     if (call.argList.isDefined)
-      argInstructions = call.argList.get.exprNodes.flatMap(e =>
+      argInstructions = call.argList.get.exprNodes.reverse.flatMap(e =>
       { val exprSize = getSize(e.getType(topSymbolTable, currentSymbolTable))
         totalArgOffset += exprSize
         // Distinguish between STR and STRB.
