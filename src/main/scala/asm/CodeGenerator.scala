@@ -869,11 +869,14 @@ object CodeGenerator {
                       RM.peekVariableRegister(), new Immediate(1)))
       // Negate according to reference compiler.
       case NegateNode(_, expr) =>
-        generateExpression(expr) ++
-        IndexedSeq[Instruction](
-          RSBS(None, conditionFlag = false, RM.peekVariableRegister(),
-               RM.peekVariableRegister(), new Immediate(0)),
-        ) ++ Utilities.printOverflowError(Some(Overflow))
+        expr match {
+          case Int_literNode(_, str) => IndexedSeq[Instruction](
+            new Load(None, None, RM.peekVariableRegister(), new LoadableExpression(str.toInt)))
+          case _ => generateExpression(expr) ++ IndexedSeq[Instruction](
+            RSBS(None, conditionFlag = false, RM.peekVariableRegister(),
+            RM.peekVariableRegister(), new Immediate(0)),
+          ) ++ Utilities.printOverflowError(Some(Overflow))
+        }
       case LenNode(_, expr) =>
         generateExpression(expr) ++ IndexedSeq[Instruction](
           new Load(None, None, RM.peekVariableRegister(), RM.peekVariableRegister())
