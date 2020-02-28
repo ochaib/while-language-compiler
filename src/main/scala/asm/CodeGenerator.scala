@@ -563,18 +563,21 @@ object CodeGenerator {
               if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
                 Utilities.printInt(0) // doesn't matter just need to trigger add printInt
                 IndexedSeq[Instruction](
+                  Move(condition = None, dest = instructionSet.getReturn, src = new ShiftedRegister(RM.peekVariableRegister)),
                   BranchLink(None, PrintInt.label)
                 )
               }
               else if (scalar == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
                 Utilities.printBool(true)
                 IndexedSeq[Instruction](
+                  Move(condition = None, dest = instructionSet.getReturn, src = new ShiftedRegister(RM.peekVariableRegister)),
                   BranchLink(None, PrintBool.label)
                 )
               }
               else if (scalar == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
                 Utilities.printChar('c')
                 IndexedSeq[Instruction](
+                  Move(condition = None, dest = instructionSet.getReturn, src = new ShiftedRegister(RM.peekVariableRegister)),
                   BranchLink(condition = None, label = PutChar.label)
                 )
               }
