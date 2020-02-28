@@ -207,13 +207,12 @@ object ARM11 extends InstructionSet {
         dest,
         Some(src),
         Some(flexOffset),
-        registerWriteBack,
+        Some(registerWriteBack),
         None
         ) =>
       s"\tSTR${printCondition(condition)}${printType(byteType)}" +
         s" ${print(dest)}, [${print(src)}, ${print(flexOffset)}]" +
-        s"${if (registerWriteBack.isDefined && registerWriteBack.get) "!"
-        else ""}"
+        s"${if (registerWriteBack) "!" else ""}"
 
     // STR{cond}{B} Rd, label
     case Store(condition, byteType: Option[ASMType], dest, None, None, None, Some(label)) =>
