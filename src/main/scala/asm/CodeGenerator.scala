@@ -621,12 +621,13 @@ object CodeGenerator {
             case _: ARRAY | _: PAIR => Utilities.printReference
           })
       case i: BinaryOperationNode =>
-        (new Load(
-          condition=None, asmType=None,
-          RM.peekVariableRegister(), instructionSet.getSP,
-          new Immediate(symbolTableManager.getOffset(i.getKey)),
-          registerWriteBack = false
-        ) +: generateBinary(i)) ++ (i.getType(topSymbolTable, currentSymbolTable) match {
+//        (new Load(
+//          condition=None, asmType=None,
+//          RM.peekVariableRegister(), instructionSet.getSP,
+//          new Immediate(symbolTableManager.getOffset(i.getKey)),
+//          registerWriteBack = false
+//        ) +:
+          generateBinary(i) ++ (i.getType(topSymbolTable, currentSymbolTable) match {
             case scalar: SCALAR =>
               if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
                 Utilities.printInt(0) // doesn't matter just need to trigger add printInt
@@ -657,12 +658,13 @@ object CodeGenerator {
             case _: ARRAY | _: PAIR => Utilities.printReference
           })
       case i: UnaryOperationNode =>
-        (new Load(
-          condition=None, asmType=None,
-          RM.peekVariableRegister(), instructionSet.getSP,
-          new Immediate(symbolTableManager.getOffset(i.getKey)),
-          registerWriteBack = false
-        ) +: generateUnary(i)) ++ (i.getType(topSymbolTable, currentSymbolTable) match {
+//        (new Load(
+//          condition=None, asmType=None,
+//          RM.peekVariableRegister(), instructionSet.getSP,
+//          new Immediate(symbolTableManager.getOffset(i.getKey)),
+//          registerWriteBack = false
+//        ) +:
+          generateUnary(i) ++ (i.getType(topSymbolTable, currentSymbolTable) match {
             case scalar: SCALAR =>
               if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
                 Utilities.printInt(0) // doesn't matter just need to trigger add printInt
