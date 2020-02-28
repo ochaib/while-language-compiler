@@ -5,7 +5,7 @@ from termcolor import colored
 from time import time
 from tqdm import tqdm
 MAX_POOL_SIZE=40 # be careful
-EMU_MAX_POOL_SIZE=5 # be EVEN MORE careful
+EMU_MAX_POOL_SIZE=1 # be EVEN MORE careful
 
 retcode = 0
 
@@ -115,7 +115,7 @@ def emulate_batch(exe_fns):
     print(f"> Emulating in batches of {EMU_MAX_POOL_SIZE}")
     for i in tqdm(range(0, len(exe_fns), EMU_MAX_POOL_SIZE)):
         emulating = []
-        for fn, exe_fn, ref_exe_fn in exe_fns[i:i+MAX_POOL_SIZE]:
+        for fn, exe_fn, ref_exe_fn in exe_fns[i:i+EMU_MAX_POOL_SIZE]:
             emulating.append((fn, emulate_ARM(exe_fn), emulate_ARM(ref_exe_fn)))
         for _, p, p_ref in emulating:
             try:
