@@ -252,8 +252,13 @@ object CodeGenerator {
   def generateArrayLiteral(arrayLiteral: ArrayLiteralNode): IndexedSeq[Instruction] = {
     val varReg1 = RM.nextVariableRegister()
     // Because we assume every expr in the array is of the same type.
-    var exprElemSize = getSize(arrayLiteral.exprNodes.head.getType(topSymbolTable, currentSymbolTable))
     val arrayLength = arrayLiteral.exprNodes.length
+    // TODO Ossama check this
+    var exprElemSize = {
+      if (arrayLength != 0)
+        getSize(arrayLiteral.exprNodes.head.getType(topSymbolTable, currentSymbolTable))
+      else 0
+    }
     var intSize = 4
 
     // Calculations necessary to retrieve size of array for loading into return.
