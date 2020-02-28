@@ -267,7 +267,7 @@ object CodeGenerator {
 
     var generatedExpressions: IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
-    var acc = exprElemSize
+    var acc = getSize(GENERAL_ARRAY) + exprElemSize
     // Generate expression instructions for each expression node in the array.
     arrayLiteral.exprNodes.foreach(expr => { generatedExpressions ++= generateExpression(expr) :+
       new Store(None, None, RM.peekVariableRegister(), varReg1,
