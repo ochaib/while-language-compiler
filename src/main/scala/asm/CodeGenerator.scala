@@ -747,7 +747,7 @@ object CodeGenerator {
       case arrayElem: ArrayElemNode => generateArrayElem(arrayElem)
       case unaryOperation: UnaryOperationNode => generateUnary(unaryOperation)
       case binaryOperation: BinaryOperationNode => generateBinary(binaryOperation)
-      case parenExpr: ParenExprNode => generateExpression(parenExpr.expr)  
+      case parenExpr: ParenExprNode => generateExpression(parenExpr.expr)
     }
   }
 
@@ -905,14 +905,14 @@ object CodeGenerator {
       new Load(condition=None, asmType=None, dest=instructionSet.getReturn, src=instructionSet.getReturn, flexOffset=new Immediate(4)),
       BranchLink(condition=None, label=Free.label),
       Pop(condition=None, List(instructionSet.getReturn)),
-      BranchLink(None, label=Free.label),
+      BranchLink(condition=None, label=Free.label),
       popPC
     )
     case PrintReadChar => IndexedSeq[Instruction](
       pushLR,
       Move(condition=None, dest=instructionSet.getArgumentRegisters(1), src=new ShiftedRegister(instructionSet.getReturn)),
       new Load(condition=None, asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_read_char")),
-      new Add(condition=None, conditionFlag=false, dest=instructionSet.getReturn, src1=instructionSet.getReturn, src2=new Immediate(4)),
+      Add(condition = None, conditionFlag = false, dest = instructionSet.getReturn, src1 = instructionSet.getReturn, src2 = new Immediate(4)),
       BranchLink(condition=None, label=Scanf.label),
       popPC
     )
@@ -926,9 +926,9 @@ object CodeGenerator {
     case PrintBool => IndexedSeq[Instruction](
       pushLR,
       Compare(condition=None, operand1=instructionSet.getReturn, operand2=new Immediate(0)),
-      new Load(condition=Some(NotEqual), asmType=None, dest=instructionSet.getReturn, loadable=new Label("msg_print_bool_true")),
-      new Load(condition=Some(Equal), asmType=None, dest=instructionSet.getReturn, loadable=new Label("msg_print_bool_false")),
-      new Add(condition=None, conditionFlag=false, dest=instructionSet.getReturn, src1=instructionSet.getReturn, src2=new Immediate(4)),
+      new Load(condition=Some(NotEqual), asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_print_bool_true")),
+      new Load(condition=Some(Equal), asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_print_bool_false")),
+      Add(condition = None, conditionFlag = false, dest = instructionSet.getReturn, src1 = instructionSet.getReturn, src2 = new Immediate(4)),
       BranchLink(condition=None, label=Printf.label),
       Move(condition=None, dest=instructionSet.getReturn, src=new Immediate(0)),
       BranchLink(condition=None, label=Flush.label),
@@ -941,7 +941,7 @@ object CodeGenerator {
       BranchLink(condition=Some(LessThan), label=PrintRuntimeError.label),
       new Load(condition=None, asmType=None, dest=instructionSet.getArgumentRegisters(1), src=instructionSet.getArgumentRegisters(1)),
       Compare(condition=None, operand1=instructionSet.getReturn, operand2=new ShiftedRegister(instructionSet.getArgumentRegisters(1))),
-      new Load(condition=Some(HigherSame), asmType=None, dest=instructionSet.getReturn, loadable=Label("mg_index_too_large")),
+      new Load(condition=Some(HigherSame), asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_index_too_large")),
       BranchLink(condition=Some(HigherSame), PrintRuntimeError.label),
       popPC
     )
@@ -949,7 +949,7 @@ object CodeGenerator {
       pushLR,
       Move(condition=None, dest=instructionSet.getArgumentRegisters(1), src=new ShiftedRegister(instructionSet.getReturn)),
       new Load(condition=None, asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_print_int")),
-      new Add(condition=None, conditionFlag=false, dest=instructionSet.getReturn, src1=instructionSet.getReturn, src2=new Immediate(4)),
+      Add(condition = None, conditionFlag = false, dest = instructionSet.getReturn, src1 = instructionSet.getReturn, src2 = new Immediate(4)),
       BranchLink(condition=None, Printf.label),
       Move(condition=None, dest=instructionSet.getArgumentRegisters(1), src=new Immediate(0)),
       BranchLink(condition=None, Flush.label),
@@ -958,6 +958,11 @@ object CodeGenerator {
     case PrintOverflowError => IndexedSeq[Instruction](
       new Load(condition=None, asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_throw_overflow_error")),
       BranchLink(condition=None, label=PrintRuntimeError.label)
+    )
+    case PrintDivideByZero => IndexedSeq[Instruction](
+      pushLR, Compare(None, instructionSet.getArgumentRegisters(1), new Immediate(0)),
+      new Load(Some(Equal), None, instructionSet.getReturn, loadable = Label("msg_divide_by_zero")),
+      BranchLink(Some(Equal), PrintRuntimeError.label), popPC
     )
   }
 

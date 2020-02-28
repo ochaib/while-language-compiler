@@ -172,4 +172,15 @@ object Utilities {
         )
     }
 
+    def printDivideByZero: IndexedSeq[Instruction] = {
+        if (commonFunctions.add(PrintDivideByZero)) {
+            strings += (Label("msg_divide_by_zero") ->
+              new StringLiteral("DivideByZeroError: divide or modulo by zero\\n\\0", 45))
+        }
+        printRuntimeError
+        IndexedSeq[Instruction](
+            BranchLink(None, PrintDivideByZero.label)
+        )
+    }
+
 }

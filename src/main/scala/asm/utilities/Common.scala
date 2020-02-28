@@ -19,6 +19,7 @@ case object PrintCheckNullPointer extends CommonFunction { val label: Label = ne
 case object PrintOverflowError extends CommonFunction { val label: Label = new Label("p_throw_overflow_error") }
 case object PrintRuntimeError extends CommonFunction { val label: Label = new Label("p_throw_runtime_error") }
 case object PrintCheckArrayBounds extends CommonFunction { val label: Label = new Label("p_check_array_bounds") }
+case object PrintDivideByZero extends CommonFunction { val label: Label = Label("p_check_divide_by_zero")}
 
 // NOTE: the functions below DO NOT need to be generated
 // they come with the assembler (at least in ARM 11)
