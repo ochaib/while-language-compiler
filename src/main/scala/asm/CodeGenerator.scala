@@ -160,7 +160,7 @@ object CodeGenerator {
 
   def generateIdent(ident: IdentNode): IndexedSeq[Instruction] = {
     // Retrieve actual size for ident from symbol table.
-//    val identSize = getSize(ident.getType(topSymbolTable, currentSymbolTable))
+    //    val identSize = getSize(ident.getType(topSymbolTable, currentSymbolTable))
 
     // ASMType to classify if ident is of type bool and if so should be loaded
     // with ByteType triggering STRB instead of the usual STR.
@@ -348,21 +348,21 @@ object CodeGenerator {
     val peekedReg = RM.peekVariableRegister()
 
     // Check if loadOffset below can be replaced with:
-//     val loadOffset: IndexedSeq[Instruction] = pairElem match {
-//        case fst: FstNode => generateExpression(fst.expression)
-//        case snd: SndNode => generateExpression(snd.expression)
-//     }
+    //     val loadOffset: IndexedSeq[Instruction] = pairElem match {
+    //        case fst: FstNode => generateExpression(fst.expression)
+    //        case snd: SndNode => generateExpression(snd.expression)
+    //     }
 
-//    val immOff: Int = pairElem match {
-//      case fst: FstNode => 0
-//      case snd: SndNode => 1
-//    }
+    //    val immOff: Int = pairElem match {
+    //      case fst: FstNode => 0
+    //      case snd: SndNode => 1
+    //    }
 
     val loadOffset = IndexedSeq[Instruction](
       // Current offset of identifier related to pair.
       new Load(None, None, peekedReg, instructionSet.getSP,
                new Immediate(getSize(pairElem.getType(topSymbolTable, currentSymbolTable))), registerWriteBack = false)
-//               new Immediate(symbolTableManager.getOffset(pairElem.getKey)))
+      //               new Immediate(symbolTableManager.getOffset(pairElem.getKey)))
     )
 
     val nullPtrIns = Move(None, instructionSet.getReturn,
@@ -425,7 +425,7 @@ object CodeGenerator {
       loads = IndexedSeq[Instruction](
         new Load(None, None, RM.peekVariableRegister(), RM.peekVariableRegister(),
           new Immediate(4), registerWriteBack = false),
-//            new Immediate(symbolTableManager.getOffset(pairElemNode.getKey)), registerWriteBack = false),
+    //            new Immediate(symbolTableManager.getOffset(pairElemNode.getKey)), registerWriteBack = false),
         new Load(None, asmType, RM.peekVariableRegister(), RM.peekVariableRegister())
       )
 
@@ -477,8 +477,8 @@ object CodeGenerator {
       case ident: IdentNode => IndexedSeq[Instruction](Add(None, conditionFlag = false, varReg1,
         // CONFIRMED THAT I SHOULD BE GETTING OFFSET HERE
         instructionSet.getSP, new Immediate(symbolTableManager.getOffset(ident.getKey))))
-//        instructionSet.getSP, new Immediate(getSize(ident.getType(topSymbolTable, currentSymbolTable)))))
-      // No offset if not reading variable.
+        //        instructionSet.getSP, new Immediate(getSize(ident.getType(topSymbolTable, currentSymbolTable)))))
+        // No offset if not reading variable.
       case _ => IndexedSeq[Instruction](Add(None, conditionFlag = false, varReg1,
         instructionSet.getSP, new Immediate(0)))
     }
@@ -832,19 +832,19 @@ object CodeGenerator {
                      RM.peekVariableRegister(), new LoadableExpression(0)))
       case ident: IdentNode
       // Load identifier into first available variable register.
-                  => if (checkSingleByte(ident)) {
-                      IndexedSeq[Instruction](new Load(None, Some(SignedByte),
-                        RM.peekVariableRegister(), instructionSet.getSP,
-                        new Immediate(symbolTableManager.getOffset(ident.getKey)),
-                        registerWriteBack = false))
+          => if (checkSingleByte(ident)) {
+              IndexedSeq[Instruction](new Load(None, Some(SignedByte),
+                RM.peekVariableRegister(), instructionSet.getSP,
+                new Immediate(symbolTableManager.getOffset(ident.getKey)),
+                registerWriteBack = false))
         //                        new Immediate(symbolTableManager.getOffset(ident.getKey))))
-//                        new Immediate(getSize(
-//                          ident.getType(topSymbolTable, currentSymbolTable)))))
-                  } else {
-                      IndexedSeq[Instruction](new Load(None, None,
-                        RM.peekVariableRegister(), instructionSet.getSP,
-                        new Immediate(symbolTableManager.getOffset(ident.getKey)),
-                        registerWriteBack = false))}
+        //                        new Immediate(getSize(
+        //                          ident.getType(topSymbolTable, currentSymbolTable)))))
+          } else {
+              IndexedSeq[Instruction](new Load(None, None,
+                RM.peekVariableRegister(), instructionSet.getSP,
+                new Immediate(symbolTableManager.getOffset(ident.getKey)),
+                registerWriteBack = false))}
       case arrayElem: ArrayElemNode => generateArrayElem(arrayElem)
       case unaryOperation: UnaryOperationNode => generateUnary(unaryOperation)
       case binaryOperation: BinaryOperationNode => generateBinary(binaryOperation)
