@@ -556,7 +556,8 @@ object CodeGenerator {
       case ArrayElemNode(_, _, _) => Utilities.printReference
       case i: IdentNode =>
         new Load(None, None, RM.peekVariableRegister(), instructionSet.getSP,
-          new Immediate(symbolTableManager.getOffset(i.getKey))) +: (i.getType(topSymbolTable, currentSymbolTable) match {
+          new Immediate(symbolTableManager.getOffset(i.getKey)),
+          registerWriteBack=false) +: (i.getType(topSymbolTable, currentSymbolTable) match {
             case scalar: SCALAR =>
               if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable))
                 IndexedSeq[Instruction](
