@@ -555,9 +555,7 @@ object CodeGenerator {
       case Pair_literNode(_) => Utilities.printReference
       case ArrayElemNode(_, _, _) => Utilities.printReference
       case i: IdentNode =>
-        new Load(
-          condition=None, asmType=None,
-          RM.peekVariableRegister(), instructionSet.getSP,
+        new Load(None, None, RM.peekVariableRegister(), instructionSet.getSP,
           new Immediate(symbolTableManager.getOffset(i.getKey)),
           registerWriteBack = false) +: (i.getType(topSymbolTable, currentSymbolTable) match {
             case scalar: SCALAR =>
@@ -728,7 +726,8 @@ object CodeGenerator {
                   => if (checkSingleByte(ident)) {
                       IndexedSeq[Instruction](new Load(None, Some(SignedByte),
                         RM.peekVariableRegister(), instructionSet.getSP,
-                        new Immediate(symbolTableManager.getOffset(ident.getKey))))
+                        new Immediate(symbolTableManager.getOffset(ident.getKey)),
+                        registerWriteBack = false))
         //                        new Immediate(symbolTableManager.getOffset(ident.getKey))))
 //                        new Immediate(getSize(
 //                          ident.getType(topSymbolTable, currentSymbolTable)))))
