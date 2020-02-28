@@ -554,13 +554,40 @@ object CodeGenerator {
       case Bool_literNode(_, b) => Utilities.printBool(b)
       case Char_literNode(_, c) => Utilities.printChar(c)
       case Str_literNode(_, s) => Utilities.printString(s)
-      case Pair_literNode(_) => IndexedSeq[Instruction](
-        BranchLink(None, Label("UNIMPLEMENTED PRINT !!! OH NO !!! THIS IS AN ISSUE !!! PLEASE IMPLEMENT FOR PAREN EXPR NODE !!!"))
-      )
+      case Pair_literNode(_) => Utilities.printReference
       case ArrayElemNode(_, _, _) => Utilities.printReference
-      case IdentNode(_, _) => Utilities.printReference
-      // TODO: pair liter node and parenexprnode
-      // TODO: print read reference?
+      case i: IdentNode =>
+        new Load(
+          condition=None, asmType=None,
+          RM.peekVariableRegister, instructionSet.getSP,
+          new Immediate(symbolTableManager.getOffset(i.getKey)),
+          registerWriteBack = false) +: (i.getType(topSymbolTable, currentSymbolTable) match {
+            case scalar: SCALAR => {
+              if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable))
+                IndexedSeq[Instruction](
+                  BranchLink(None, PrintInt.label)
+                )
+              else if (scalar == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable))
+                IndexedSeq[Instruction](
+                  BranchLink(None, PrintBool.label)
+                )
+              else if (scalar == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable))
+                IndexedSeq[Instruction](
+                  BranchLink(condition = None, label = PutChar.label)
+                )
+              else
+                IndexedSeq[Instruction](
+                  BranchLink(None, Label("UNIMPLEMENTED PRINT !!! OH NO !!! THIS IS AN ISSUE !!! PLEASE IMPLEMENT FOR PAREN EXPR NODE !!!"))
+                )
+            }
+            case STRING => IndexedSeq[Instruction](
+              BranchLink(None, PrintString.label)
+            )
+            case _: ARRAY | _: PAIR => IndexedSeq[Instruction](
+              BranchLink(None, PrintReference.label)
+            )
+          })
+      // TODO: parenexprnode
     }
 
     if (printLn) instr ++ Utilities.printNewline
