@@ -54,7 +54,12 @@ case class Load private (
       dest,
       Some(src),
       Instructions.checkFlexOffset(flexOffset),
-      Some(registerWriteBack),
+      {
+        if (Instructions.checkFlexOffset(flexOffset).isDefined)
+          Some(registerWriteBack)
+        else
+          None
+      },
       None,
       None
     )
