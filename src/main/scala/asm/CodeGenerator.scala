@@ -838,6 +838,7 @@ object CodeGenerator {
     case PrintLn => IndexedSeq[Instruction](
       PrintLn.label,
       pushLR,
+      new Load(condition=None, asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_print_ln")),
       Add(condition=None, conditionFlag=false, dest=instructionSet.getReturn,
           src1=instructionSet.getReturn, src2=new Immediate(4)),
       BranchLink(condition=None, label=Puts.label),
@@ -857,6 +858,9 @@ object CodeGenerator {
       new Load(condition=None, asmType=None, dest=instructionSet.getArgumentRegisters(1),
                src=instructionSet.getReturn),
       Add(condition=None, conditionFlag=false, dest=instructionSet.getArgumentRegisters(2),
+          src1=instructionSet.getReturn, src2=new Immediate(4)),
+      new Load(condition=None, asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_print_string")),
+      Add(condition=None, conditionFlag=false, dest=instructionSet.getReturn,
           src1=instructionSet.getReturn, src2=new Immediate(4)),
       BranchLink(condition=None, label=Printf.label),
       Move(condition=None, dest=instructionSet.getReturn, src=new Immediate(0)),
