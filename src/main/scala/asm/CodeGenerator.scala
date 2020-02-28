@@ -171,7 +171,7 @@ object CodeGenerator {
 
     IndexedSeq[Instruction](new Store(None, asmType,
       RM.peekVariableRegister(), instructionSet.getSP,
-      new Immediate(symbolTableManager.getNextOffset(ident.getKey))))
+      new Immediate(symbolTableManager.getNextOffset(ident.getKey)), registerWriteBack = false))
   }
 
   // THIS, COMES FROM EXPR
@@ -848,7 +848,6 @@ object CodeGenerator {
                 RM.peekVariableRegister(), instructionSet.getSP,
                 new Immediate(symbolTableManager.getOffset(ident.getKey)),
                 registerWriteBack = false))
-        //                        new Immediate(symbolTableManager.getOffset(ident.getKey))))
         //                        new Immediate(getSize(
         //                          ident.getType(topSymbolTable, currentSymbolTable)))))
           } else {
