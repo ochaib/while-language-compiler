@@ -6,6 +6,7 @@ import asm.registers._
 import asm.utilities._
 import ast.nodes._
 import ast.symboltable._
+import scala.util.control.Breaks._
 
 import scala.collection.mutable
 
@@ -139,9 +140,9 @@ object CodeGenerator {
 
   def getOffset(key: String): Int = {
     if (paramOffsetMap.get(key).isDefined || currentSymbolTable.lookup(key).isDefined && currentSymbolTable.lookup(key).get.isInstanceOf[PARAM])
-      getParamOffset(key) + bytesAllocatedSoFar
+      getParamOffset(key) + bytesAllocatedSoFar //- getScopeStackSize(currentSymbolTable)
     else
-      symbolTableManager.getOffset(key)// + bytesAllocatedSoFar - getScopeStackSize(currentSymbolTable)
+      symbolTableManager.getOffset(key) + getBytesAllocatedSinceDeclaration(key) //- getScopeStackSize(currentSymbolTable)
   }
 
 //  def generateParamList(paramList: ParamListNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
@@ -190,6 +191,16 @@ object CodeGenerator {
     }
   }
 
+  def getBytesAllocatedSinceDeclaration(key: String): Int = {
+    var bytesAllocated = 0
+    var symbolTableIter: SymbolTable = currentSymbolTable
+    while(symbolTableIter.map.get(key).isEmpty) {
+      bytesAllocated += getScopeStackSize(symbolTableIter)
+      symbolTableIter = symbolTableIter.encSymbolTable
+    }
+    bytesAllocated
+  }
+
   def generateIdent(ident: IdentNode): IndexedSeq[Instruction] = {
     // Retrieve actual size for ident from symbol table.
     //    val identSize = getSize(ident.getType(topSymbolTable, currentSymbolTable))
@@ -203,7 +214,8 @@ object CodeGenerator {
 
     IndexedSeq[Instruction](new Store(None, asmType,
       RM.peekVariableRegister(), instructionSet.getSP,
-      new Immediate(symbolTableManager.getNextOffset(ident.getKey)), registerWriteBack = false))
+      // TODO
+      new Immediate(getOffset(ident.getKey) + getBytesAllocatedSinceDeclaration(ident.getKey)), registerWriteBack = false))
   }
 
   // THIS, COMES FROM EXPR
@@ -1344,7 +1356,23 @@ object CodeGenerator {
     // Returns current identifier offset
     def getOffset(key: String): Int = {
       // Retrieve offset for current identifier or return 0.
-      identOffsetMap getOrElse(key, 0)
+      val offsetOption: Option[Int] = lookupOffset(key)
+      if (offsetOption.isEmpty) {
+        getNextOffset(key)
+      } else offsetOption.get
+    }
+
+    def lookupOffset(key: String): Option[Int] = {
+      var offset: Option[Int] = None
+      breakable {
+        for (map <- identMapStack.toList.reverse) {
+          if (map.get(key).isDefined) {
+            offset = map.get(key)
+            break
+          }
+        }
+      }
+      offset
     }
 
     // Enters the current scope
