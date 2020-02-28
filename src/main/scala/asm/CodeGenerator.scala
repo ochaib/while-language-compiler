@@ -1260,7 +1260,7 @@ object CodeGenerator {
       }
       currentOffset -= offsetSize
       // Add offset for IDENTIFIER to current scope map.
-      identOffsetMap + (key -> currentOffset)
+      identOffsetMap = identOffsetMap + (key -> currentOffset)
       currentOffset
     }
 
