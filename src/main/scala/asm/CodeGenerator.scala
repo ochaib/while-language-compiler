@@ -77,7 +77,9 @@ object CodeGenerator {
     val mainInstructions = mainHeaderInstructions ++ allocateInstructions ++
       statInstructions ++ deallocateInstructions ++ mainEndInstructions
 
-    val commonFunctions = Utilities.commonFunctions.flatMap(generateCommonFunction)
+    // Common Functions
+    // note: sets are not ordered, so if you remove toList here the output is out of order!
+    val commonFunctions = Utilities.commonFunctions.toList.flatMap(generateCommonFunction)
 
     // Program Instructions = Function Instructions + Main Instructions
     functionInstructions ++ mainInstructions ++ commonFunctions
