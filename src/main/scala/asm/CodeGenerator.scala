@@ -342,7 +342,8 @@ object CodeGenerator {
     val varReg2 = RM.peekVariableRegister()
 
     // Once we are on the second element it will be at an offset that we must retrieve.
-    val finalStore = new Store(None, None, instructionSet.getReturn, varReg2, new Immediate(pairSizeOffset))
+    val finalStore = new Store(None, None, instructionSet.getReturn, varReg2, new Immediate(pairSizeOffset),
+                               registerWriteBack = false)
 
     exprInstructions ++ coreInstructions :+ finalStore
   }
@@ -358,16 +359,15 @@ object CodeGenerator {
     //        case snd: SndNode => generateExpression(snd.expression)
     //     }
 
-    //    val immOff: Int = pairElem match {
-    //      case fst: FstNode => 0
-    //      case snd: SndNode => 1
-    //    }
+//    val immOffset: Int = pairElem match {
+//      case fst: FstNode => symbolTableManager.getOffset(fst.getKey)
+//      case snd: SndNode => symbolTableManager.getOffset(snd.getKey)
+//    }
 
     val loadOffset = IndexedSeq[Instruction](
       // Current offset of identifier related to pair.
       new Load(None, None, peekedReg, instructionSet.getSP,
                new Immediate(getSize(pairElem.getType(topSymbolTable, currentSymbolTable))), registerWriteBack = false)
-      //               new Immediate(symbolTableManager.getOffset(pairElem.getKey)))
     )
 
     val nullPtrIns = Move(None, instructionSet.getReturn,
@@ -399,12 +399,12 @@ object CodeGenerator {
       case fst: FstNode =>
         IndexedSeq[Instruction](
           new Load(None, None, RM.peekVariableRegister(), instructionSet.getSP,
-          new Immediate(getSize(fst.getType(topSymbolTable, currentSymbolTable))),
+          new Immediate(symbolTableManager.getOffset(fst.expression.getKey)),
           registerWriteBack = false)
         ) ++ generatePEHelper(fst, isSnd = false)
       case snd: SndNode => IndexedSeq[Instruction](
         new Load(None, None, RM.peekVariableRegister(), instructionSet.getSP,
-        new Immediate(getSize(snd.getType(topSymbolTable, currentSymbolTable))),
+          new Immediate(symbolTableManager.getOffset(snd.expression.getKey)),
         registerWriteBack = false)
       ) ++ generatePEHelper(snd, isSnd = true)
     }
@@ -585,10 +585,10 @@ object CodeGenerator {
             case STRING => Utilities.printString(""); IndexedSeq[Instruction](
               BranchLink(None, PrintString.label)
             )
-            case _: ARRAY | _: PAIR => Utilities.printReference
+            case _: ARRAY | _: PAIR => IndexedSeq[Instruction](Move(None, instructionSet.getReturn,
+              new ShiftedRegister(RM.peekVariableRegister()))) ++ Utilities.printReference
           })
       case i: ParenExprNode =>
-        // TODO: MAY NEED TO REPLICATE IDENT CHANGES HERE
         new Load(
           condition=None, asmType=None,
           RM.peekVariableRegister(), instructionSet.getSP,
