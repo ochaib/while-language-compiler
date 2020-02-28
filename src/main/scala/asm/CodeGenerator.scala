@@ -77,8 +77,12 @@ object CodeGenerator {
     val mainInstructions = mainHeaderInstructions ++ allocateInstructions ++
       statInstructions ++ deallocateInstructions ++ mainEndInstructions
 
+    // Common Functions
+    // note: sets are not ordered, so if you remove toList here the output is out of order!
+    val commonFunctions = Utilities.commonFunctions.toList.flatMap(generateCommonFunction)
+
     // Program Instructions = Function Instructions + Main Instructions
-    functionInstructions ++ mainInstructions
+    functionInstructions ++ mainInstructions ++ commonFunctions
   }
 
   def generateFunction(func: FuncNode): IndexedSeq[Instruction] = {
@@ -224,8 +228,7 @@ object CodeGenerator {
           new Load(None, None, varReg, varReg),
           Move(None, instructionSet.getReturn, new ShiftedRegister(varReg2)),
           Move(None, instructionSet.getArgumentRegisters(1), new ShiftedRegister(varReg)),
-          // TODO: Add label for p_check_array_bounds
-          BranchLink(None, Label("p_check_array_bounds")),
+        ) ++ Utilities.printCheckArrayBounds ++ IndexedSeq[Instruction](
           Add(None, conditionFlag = false, varReg, varReg, new Immediate(4)),
           Add(None, conditionFlag = false, varReg, varReg, new ShiftedRegister(varReg2, "LSL", 2))
         )
@@ -258,7 +261,7 @@ object CodeGenerator {
 
     val preExprInstructions = IndexedSeq[Instruction](
       new Load(None, None, instructionSet.getReturn, new LoadableExpression(arraySize)),
-      BranchLink(None, Label("malloc")),
+      BranchLink(None, Malloc.label),
       Move(None, varReg1, new ShiftedRegister(instructionSet.getReturn))
     )
 
@@ -297,7 +300,7 @@ object CodeGenerator {
     // Generate instructions for the new pair.
     val preExprInstructions: IndexedSeq[Instruction] = IndexedSeq[Instruction](
       new Load(None, None, instructionSet.getReturn, new LoadableExpression(pairSize)),
-      BranchLink(None, Label("malloc")),
+      BranchLink(None, Malloc.label),
       Move(None, varReg1, new ShiftedRegister(instructionSet.getReturn))
     )
 
@@ -320,7 +323,7 @@ object CodeGenerator {
     var coreInstructions = IndexedSeq[Instruction](
         // Load the size of the type into a variable register.
         new Load(None, None, instructionSet.getReturn, new LoadableExpression(exprSize)),
-        BranchLink(None, Label("malloc")))
+        BranchLink(None, Malloc.label))
 
     // Check if B suffix is necessary (ByteType).
     if (checkSingleByte(expr)) {
@@ -490,23 +493,19 @@ object CodeGenerator {
 
     lhsType match {
       case scalar if scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)
-        // TODO: Generate top level msg with " %c\\0" and with "p_read_int"
-        => generatedReadInstructions :+ BranchLink(None, Label("p_read_int"))
+        // TODO: add read int to common funcs
+        => generatedReadInstructions ++ Utilities.printReadInt
       case scalar if scalar == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable)
-        // TODO: Generate top level msg with " %c\\0" and with "p_read_char"
-      => generatedReadInstructions :+ BranchLink(None, Label("p_read_char"))
-      case _ => assert(assertion = false, "Undefined type for read.")
+      => generatedReadInstructions ++ Utilities.printReadChar
+      case _ => assert(assertion = false, "Undefined type for read."); null
     }
-
-    generatedReadInstructions
   }
 
   def generateFree(expr: ExprNode): IndexedSeq[Instruction] = {
     // Need to generate p_free_pair here.
-    generateExpression(expr) ++ IndexedSeq[Instruction](
-      Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())),
-      // TODO: Call printFreePair or something
-      BranchLink(None, Label("p_free_pair")))
+    generateExpression(expr) ++ (
+      Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())) +: Utilities.printFreePair
+    )
   }
 
   def generateReturn(expr: ExprNode): IndexedSeq[Instruction] = {
@@ -544,58 +543,28 @@ object CodeGenerator {
 
     intLoad ++ IndexedSeq[Instruction](
       Move(None, instructionSet.getReturn, new ShiftedRegister(regUsedByGenExp)),
-      BranchLink(None, Label("exit")))
+      BranchLink(None, Exit.label)
+    )
   }
 
   // TODO: replace
   def generatePrint(expr: ExprNode, printLn: Boolean): IndexedSeq[Instruction] = {
-    // Generate instruction then add necessary move.
-    val preLabelInstructions = generateExpression(expr) ++ IndexedSeq[Instruction](
-      Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister()))
-    )
-
-    // TODO: Check if can be replaced with matching on Int_liternode... etc.
-    val printBranchType: IndexedSeq[Instruction]
-    = expr.getType(topSymbolTable, currentSymbolTable) match {
-      case scalar: SCALAR =>
-        if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
-          IndexedSeq[Instruction](
-            // TODO: Call printInt or something
-            BranchLink(None, Label("p_print_int"))
-          )
-        } else if (scalar == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
-          IndexedSeq[Instruction](
-            // TODO: Call printBool or something
-            BranchLink(None, Label("p_print_bool"))
-          )
-        }
-        else if (scalar == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
-          IndexedSeq[Instruction](
-            // TODO: Call printChar or something
-            BranchLink(None, Label("p_print_char"))
-          )
-        }
-        // Return empty list, or assert error or something.
-        // TODO: Check this
-        else IndexedSeq[Instruction]()
-      case STRING =>
-        IndexedSeq[Instruction](
-          // TODO: Call printString or something
-          BranchLink(None, Label("p_print_string"))
-        )
-      // Do same thing for arrays and pair prints.
-      case _:ARRAY | _:PAIR =>
-        IndexedSeq[Instruction](
-          // TODO: Call something that generates relevant label.
-          BranchLink(None, Label("p_print_reference"))
-        )
+    val instr = expr match {
+      case Int_literNode(_, n) => Utilities.printInt(n.toInt)
+      case Bool_literNode(_, b) => Utilities.printBool(b)
+      case Char_literNode(_, c) => Utilities.printChar(c)
+      case Str_literNode(_, s) => Utilities.printString(s)
+      case Pair_literNode(_) => IndexedSeq[Instruction](
+        BranchLink(None, Label("UNIMPLEMENTED PRINT !!! OH NO !!! THIS IS AN ISSUE !!! PLEASE IMPLEMENT FOR PAREN EXPR NODE !!!"))
+      )
+      case ArrayElemNode(_, _, _) => Utilities.printReference
+      case IdentNode(_, _) => Utilities.printReference
+      // TODO: pair liter node and parenexprnode
+      // TODO: print read reference?
     }
 
-    // Extra printLn label necessary for printLn obviously.
-    var printLineBranch = IndexedSeq[Instruction]()
-    if (printLn) printLineBranch = IndexedSeq[Instruction](BranchLink(None, Label("p_print_ln")))
-
-    preLabelInstructions ++ printBranchType ++ printLineBranch
+    if (printLn) instr ++ Utilities.printNewline
+    else instr
   }
 
   def generateIf(ifNode: IfNode): IndexedSeq[Instruction] = {
@@ -766,7 +735,7 @@ object CodeGenerator {
         IndexedSeq[Instruction](
           RSBS(None, conditionFlag = false, RM.peekVariableRegister(),
                RM.peekVariableRegister(), new Immediate(0)),
-        ) ++ Utilities.printOverflowError
+        ) ++ Utilities.printOverflowError(Some(Overflow))
       case LenNode(_, expr) =>
         generateExpression(expr) ++ IndexedSeq[Instruction](
           new Load(None, None, RM.peekVariableRegister(), RM.peekVariableRegister())
@@ -789,41 +758,34 @@ object CodeGenerator {
         IndexedSeq[Instruction](
           SMull(None, conditionFlag = false, varReg1, varReg2, varReg1, varReg2),
           // Need to be shifted by 31, ASR 31
-          Compare(None, varReg2, new ShiftedRegister(varReg1, "ASR", 31)),
-          // TODO: Trigger p_throw_overflow_error
-          BranchLink(Some(NotEqual), Label("p_throw_overflow_error")))
+          Compare(None, varReg2, new ShiftedRegister(varReg1, "ASR", 31))) ++ Utilities.printOverflowError(Some(NotEqual))
       case DivideNode(_, argOne, argTwo) =>
         generateExpression(argOne) ++ generateExpression(argTwo) ++
-          // TODO: Call function to generate labels below.
           IndexedSeq[Instruction](
             Move(None, instructionSet.getReturn, new ShiftedRegister(varReg1)),
-            Move(None, r1, new ShiftedRegister(varReg2)),
-            BranchLink(None, Label("p_check_divide_by_zero")),
-            BranchLink(None, Label("__aeabi_idiv")),
+            Move(None, r1, new ShiftedRegister(varReg2))
+          ) ++ Utilities.printDivideByZero ++ IndexedSeq[Instruction](
+            BranchLink(None, DivMod.label),
             Move(None, varReg1, new ShiftedRegister(instructionSet.getReturn)))
       case ModNode(_, argOne, argTwo) =>
         generateExpression(argOne) ++ generateExpression(argTwo) ++
-        // TODO: Call function to generate labels below.
         IndexedSeq[Instruction](
           Move(None, instructionSet.getReturn, new ShiftedRegister(varReg1)),
-          Move(None, r1, new ShiftedRegister(varReg2)),
-          BranchLink(None, Label("p_check_divide_by_zero")),
-          BranchLink(None, Label("__aeabi_idiv")),
+          Move(None, r1, new ShiftedRegister(varReg2))
+        ) ++ Utilities.printDivideByZero ++ IndexedSeq[Instruction](
+          BranchLink(None, DivMod.label),
           Move(None, varReg1, new ShiftedRegister(r1)))
       case PlusNode(_, argOne, argTwo) =>
         // Should be ADDS, conditionFlag set to true.
       generateExpression(argOne) ++ generateExpression(argTwo) ++
         IndexedSeq[Instruction](
-          Add(None, conditionFlag = true, varReg1, varReg1, new ShiftedRegister(varReg2)),
-          // TODO: Call function to generate overflow error label.
-          BranchLink(Some(Overflow), Label("p_throw_overflow_error")))
+          Add(None, conditionFlag = true, varReg1, varReg1, new ShiftedRegister(varReg2))
+        ) ++ Utilities.printOverflowError(Some(Overflow))
       case MinusNode(_, argOne, argTwo) =>
         generateExpression(argOne) ++ generateExpression(argTwo) ++
         IndexedSeq[Instruction](
-          Subtract(None, conditionFlag = true, varReg1, varReg1, new ShiftedRegister(varReg2)),
-          // TODO: Call function to generate overflow error label.
-          BranchLink(Some(Overflow), Label("p_throw_overflow_error")))
-
+          Subtract(None, conditionFlag = true, varReg1, varReg1, new ShiftedRegister(varReg2))
+        ) ++ Utilities.printOverflowError(Some(Overflow))
       case GreaterThanNode(_, argOne, argTwo) =>
         generateExpression(argOne) ++ generateExpression(argTwo) ++
         IndexedSeq[Instruction](
@@ -874,7 +836,9 @@ object CodeGenerator {
 
   def generateCommonFunction(func: CommonFunction): IndexedSeq[Instruction] = func match {
     case PrintLn => IndexedSeq[Instruction](
+      PrintLn.label,
       pushLR,
+      new Load(condition=None, asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_print_ln")),
       Add(condition=None, conditionFlag=false, dest=instructionSet.getReturn,
           src1=instructionSet.getReturn, src2=new Immediate(4)),
       BranchLink(condition=None, label=Puts.label),
@@ -883,15 +847,20 @@ object CodeGenerator {
       popPC
     )
     case PrintRuntimeError => IndexedSeq[Instruction](
+      PrintRuntimeError.label,
       BranchLink(condition=None, PrintString.label),
       Move(condition=None, dest=instructionSet.getReturn, src=new Immediate(-1)),
       BranchLink(None, Exit.label)
     )
     case PrintString => IndexedSeq[Instruction](
+      PrintString.label,
       pushLR,
       new Load(condition=None, asmType=None, dest=instructionSet.getArgumentRegisters(1),
                src=instructionSet.getReturn),
       Add(condition=None, conditionFlag=false, dest=instructionSet.getArgumentRegisters(2),
+          src1=instructionSet.getReturn, src2=new Immediate(4)),
+      new Load(condition=None, asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_print_string")),
+      Add(condition=None, conditionFlag=false, dest=instructionSet.getReturn,
           src1=instructionSet.getReturn, src2=new Immediate(4)),
       BranchLink(condition=None, label=Printf.label),
       Move(condition=None, dest=instructionSet.getReturn, src=new Immediate(0)),
@@ -899,6 +868,7 @@ object CodeGenerator {
       popPC
     )
     case PrintFreePair => IndexedSeq[Instruction](
+      PrintFreePair.label,
       pushLR,
       Compare(condition=None, operand1=instructionSet.getReturn, operand2=new Immediate(0)),
       new Load(condition=Some(Equal), asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_free_pair")),
@@ -914,7 +884,21 @@ object CodeGenerator {
       BranchLink(condition=None, label=Free.label),
       popPC
     )
+    case PrintReference => IndexedSeq[Instruction](
+      PrintReference.label,
+      pushLR,
+      Move(condition=None, dest=instructionSet.getArgumentRegisters(1),
+           src=new ShiftedRegister(instructionSet.getReturn)),
+      new Load(condition=None, asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_print_reference")),
+      Add(condition = None, conditionFlag = false, dest = instructionSet.getReturn,
+          src1 = instructionSet.getReturn, src2 = new Immediate(4)),
+      BranchLink(condition=None, label=Printf.label),
+      Move(condition=None, dest=instructionSet.getReturn, src=new Immediate(0)),
+      BranchLink(condition=None, label=Flush.label),
+      popPC
+    )
     case PrintReadChar => IndexedSeq[Instruction](
+      PrintReadChar.label,
       pushLR,
       Move(condition=None, dest=instructionSet.getArgumentRegisters(1),
            src=new ShiftedRegister(instructionSet.getReturn)),
@@ -924,7 +908,19 @@ object CodeGenerator {
       BranchLink(condition=None, label=Scanf.label),
       popPC
     )
+    case PrintReadInt => IndexedSeq[Instruction](
+      PrintReadInt.label,
+      pushLR,
+      Move(condition=None, dest=instructionSet.getArgumentRegisters(1),
+           src=new ShiftedRegister(instructionSet.getReturn)),
+      new Load(condition=None, asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_read_int")),
+      Add(condition = None, conditionFlag = false, dest = instructionSet.getReturn,
+          src1 = instructionSet.getReturn, src2 = new Immediate(4)),
+      BranchLink(condition=None, label=Scanf.label),
+      popPC
+    )
     case PrintCheckNullPointer => IndexedSeq[Instruction](
+      PrintCheckNullPointer.label,
       pushLR,
       Compare(condition=None, operand1=instructionSet.getReturn, operand2=new Immediate(0)),
       new Load(condition=Some(Equal), asmType=None, dest=instructionSet.getReturn,
@@ -933,6 +929,7 @@ object CodeGenerator {
       popPC
     )
     case PrintBool => IndexedSeq[Instruction](
+      PrintBool.label,
       pushLR,
       Compare(condition=None, operand1=instructionSet.getReturn, operand2=new Immediate(0)),
       new Load(condition=Some(NotEqual), asmType=None, dest=instructionSet.getReturn,
@@ -947,6 +944,7 @@ object CodeGenerator {
       popPC
     )
     case PrintCheckArrayBounds => IndexedSeq[Instruction](
+      PrintCheckArrayBounds.label,
       pushLR,
       Compare(condition=None, operand1=instructionSet.getReturn, operand2=new Immediate(0)),
       new Load(condition=Some(LessThan), asmType=None, dest=instructionSet.getReturn,
@@ -962,6 +960,7 @@ object CodeGenerator {
       popPC
     )
     case PrintInt => IndexedSeq[Instruction](
+      PrintInt.label,
       pushLR,
       Move(condition=None, dest=instructionSet.getArgumentRegisters(1),
            src=new ShiftedRegister(instructionSet.getReturn)),
@@ -974,11 +973,13 @@ object CodeGenerator {
       popPC
     )
     case PrintOverflowError => IndexedSeq[Instruction](
+      PrintOverflowError.label,
       new Load(condition=None, asmType=None, dest=instructionSet.getReturn,
                loadable=Label("msg_throw_overflow_error")),
       BranchLink(condition=None, label=PrintRuntimeError.label)
     )
     case PrintDivideByZero => IndexedSeq[Instruction](
+      PrintDivideByZero.label,
       pushLR, Compare(None, instructionSet.getArgumentRegisters(1), new Immediate(0)),
       new Load(Some(Equal), None, instructionSet.getReturn, loadable = Label("msg_divide_by_zero")),
       BranchLink(Some(Equal), PrintRuntimeError.label), popPC

@@ -3,8 +3,9 @@ package asm.instructionset
 import asm.instructions._
 import asm.instructions.ByteType
 import asm.registers.Register
+import asm.utilities._
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ListBuffer, Map}
 
 sealed trait ARM11Register extends Register
 case object R0 extends ARM11Register { val registerID = "r0" }
@@ -85,13 +86,18 @@ object ARM11 extends InstructionSet {
   )
 
   // Print the instructions to a string with the instruction set's syntax
-  def print(instructions: IndexedSeq[Instruction],
-            strings: IndexedSeq[String] = IndexedSeq[String]()): String = {
+  def print(instructions: IndexedSeq[Instruction]): String = {
 
-    //printStringLabels(strings)
-    // TODO print required strings
-    ".text\n\n" + ".global main\n" +
+    ".data\n\n" +
+      Utilities.strings.map[String](Function.tupled(printStringLiteral _)).mkString("\n") +
+      "\n\n.text\n\n" +
+      ".global main\n" +
       instructions.map(print).mkString("\n")
+  }
+
+  def printStringLiteral(msgLabel: Label, stringLiteral: StringLiteral): String = {
+    // TODO: escape escape sequences?
+    s"${msgLabel.label}:\n" + s"\t.word ${stringLiteral.length}\n" + s"\t.ascii ${stringLiteral.string}"
   }
 
   def print(instruction: Instruction): String = instruction match {
@@ -147,7 +153,8 @@ object ARM11 extends InstructionSet {
         None,
         Some(label)
         ) =>
-      s"\tLDR${printCondition(condition)}${printType(asmType)} ${print(dest)}, ${print(label)}"
+      s"\tLDR${printCondition(condition)}${printType(asmType)} ${print(dest)}, =${label.label}"
+      // FIXME: hi there, its priansh, i changed this to = from print(label), lmk if this breaks anything
 
     // LDR{cond}{B|Type} Rd, [Rn], FlexOffset
     case Load(
