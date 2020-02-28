@@ -497,7 +497,7 @@ object CodeGenerator {
         => generatedReadInstructions ++ Utilities.printReadInt
       case scalar if scalar == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable)
       => generatedReadInstructions ++ Utilities.printReadChar
-      case _ => assert(assertion = false, "Undefined type for read.")
+      case _ => assert(assertion = false, "Undefined type for read."); null
     }
   }
 
@@ -557,8 +557,8 @@ object CodeGenerator {
       case Pair_literNode(_) => IndexedSeq[Instruction](
         BranchLink(None, Label("UNIMPLEMENTED PRINT !!! OH NO !!! THIS IS AN ISSUE !!! PLEASE IMPLEMENT FOR PAREN EXPR NODE !!!"))
       )
-      case ArrayElemNode =>
-      case IdentNode => 
+      case ArrayElemNode(_, _, _) => Utilities.printReference
+      case IdentNode(_, _) => Utilities.printReference
       // TODO: pair liter node and parenexprnode
       // TODO: print read reference?
     }
