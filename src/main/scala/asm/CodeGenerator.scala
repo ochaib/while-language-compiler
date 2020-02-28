@@ -253,13 +253,12 @@ object CodeGenerator {
     val varReg1 = RM.nextVariableRegister()
     // Because we assume every expr in the array is of the same type.
     val arrayLength = arrayLiteral.exprNodes.length
-    // TODO Ossama check this
     var exprElemSize = {
       if (arrayLength != 0)
         getSize(arrayLiteral.exprNodes.head.getType(topSymbolTable, currentSymbolTable))
       else 0
     }
-    var intSize = 4
+    val intSize = 4
 
     // Calculations necessary to retrieve size of array for loading into return.
     val arraySize = intSize + arrayLength * exprElemSize
@@ -931,7 +930,7 @@ object CodeGenerator {
             Move(None, instructionSet.getReturn, new ShiftedRegister(varReg1)),
             Move(None, r1, new ShiftedRegister(varReg2))
           ) ++ Utilities.printDivideByZero ++ IndexedSeq[Instruction](
-          BranchLink(None, DivMod.label),
+          BranchLink(None, Div.label),
           Move(None, varReg1, new ShiftedRegister(instructionSet.getReturn)))
       case ModNode(_, argOne, argTwo) =>
         firstArgument = argOne
@@ -1068,7 +1067,7 @@ object CodeGenerator {
       BranchLink(condition=None, label=Free.label),
       new Load(condition=None, asmType=None, dest=instructionSet.getReturn, src=instructionSet.getSP),
       new Load(condition=None, asmType=None, dest=instructionSet.getReturn, src=instructionSet.getReturn,
-               flexOffset=new Immediate(4)),
+               flexOffset=new Immediate(4), registerWriteBack = false),
       BranchLink(condition=None, label=Free.label),
       Pop(condition=None, List(instructionSet.getReturn)),
       BranchLink(condition=None, label=Free.label),
