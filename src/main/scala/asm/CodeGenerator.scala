@@ -587,7 +587,37 @@ object CodeGenerator {
               BranchLink(None, PrintReference.label)
             )
           })
-      // TODO: parenexprnode
+      case i: ParenExprNode =>
+        new Load(
+          condition=None, asmType=None,
+          RM.peekVariableRegister, instructionSet.getSP,
+          new Immediate(symbolTableManager.getOffset(i.getKey)),
+          registerWriteBack = false) +: (i.getType(topSymbolTable, currentSymbolTable) match {
+            case scalar: SCALAR => {
+              if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable))
+                IndexedSeq[Instruction](
+                  BranchLink(None, PrintInt.label)
+                )
+              else if (scalar == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable))
+                IndexedSeq[Instruction](
+                  BranchLink(None, PrintBool.label)
+                )
+              else if (scalar == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable))
+                IndexedSeq[Instruction](
+                  BranchLink(condition = None, label = PutChar.label)
+                )
+              else
+                IndexedSeq[Instruction](
+                  BranchLink(None, Label("UNIMPLEMENTED PRINT !!! OH NO !!! THIS IS AN ISSUE !!! PLEASE IMPLEMENT FOR PAREN EXPR NODE !!!"))
+                )
+            }
+            case STRING => IndexedSeq[Instruction](
+              BranchLink(None, PrintString.label)
+            )
+            case _: ARRAY | _: PAIR => IndexedSeq[Instruction](
+              BranchLink(None, PrintReference.label)
+            )
+          })
     }
 
     if (printLn) instr ++ Utilities.printNewline
