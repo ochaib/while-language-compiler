@@ -1163,7 +1163,7 @@ object CodeGenerator {
       Add(condition = None, conditionFlag = false, dest = instructionSet.getReturn,
           src1 = instructionSet.getReturn, src2 = new Immediate(4)),
       BranchLink(condition=None, Printf.label),
-      Move(condition=None, dest=instructionSet.getArgumentRegisters(1), src=new Immediate(0)),
+      Move(condition=None, dest=instructionSet.getReturn, src=new Immediate(0)),
       BranchLink(condition=None, Flush.label),
       popPC
     )
