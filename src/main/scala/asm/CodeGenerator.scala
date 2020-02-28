@@ -713,8 +713,7 @@ object CodeGenerator {
                   } else {
                       IndexedSeq[Instruction](new Load(None, None,
                         RM.peekVariableRegister(), instructionSet.getSP,
-                        new Immediate(symbolTableManager.getOffset(ident.getKey)),
-                        registerWriteBack = false))}
+                        new Immediate(symbolTableManager.getOffset(ident.getKey))))}
       case arrayElem: ArrayElemNode => generateArrayElem(arrayElem)
       case unaryOperation: UnaryOperationNode => generateUnary(unaryOperation)
       case binaryOperation: BinaryOperationNode => generateBinary(binaryOperation)

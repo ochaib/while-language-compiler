@@ -129,12 +129,12 @@ object ARM11 extends InstructionSet {
 
     // LDR{cond}{B|Type} Rd, [Rn, FlexOffset]{!}
     case Load(
-        condition,
-        asmType,
-        dest,
-        Some(src),
-        Some(flexOffset),
-        Some(registerWriteBack),
+        condition: Option[Condition],
+        asmType: Option[ASMType],
+        dest: Register,
+        Some(src: Register),
+        Some(flexOffset: FlexOffset),
+        Some(registerWriteBack: Boolean),
         None,
         None
         ) =>
