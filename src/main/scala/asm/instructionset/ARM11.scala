@@ -147,7 +147,8 @@ object ARM11 extends InstructionSet {
         None,
         Some(label)
         ) =>
-      s"\tLDR${printCondition(condition)}${printType(asmType)} ${print(dest)}, ${print(label)}"
+      s"\tLDR${printCondition(condition)}${printType(asmType)} ${print(dest)}, =${label.label}"
+      // FIXME: hi there, its priansh, i changed this to = from print(label), lmk if this breaks anything
 
     // LDR{cond}{B|Type} Rd, [Rn], FlexOffset
     case Load(
