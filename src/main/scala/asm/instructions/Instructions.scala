@@ -166,7 +166,14 @@ case class Store private (
       dest,
       Some(src),
       Instructions.checkFlexOffset(flexOffset),
-      Some(registerWriteBack),
+      {
+        // if the flexOffset is 0 this constructor creates the same result as the constructor for
+        // STR{cond}{B|Type} Rd, [Rn]
+        if (Instructions.checkFlexOffset(flexOffset).isDefined)
+          Some(registerWriteBack)
+        else
+          None
+      },
       None
     )
   }
