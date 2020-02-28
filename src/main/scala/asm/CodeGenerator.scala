@@ -201,7 +201,7 @@ object CodeGenerator {
     // Check if B is necessary for load, store etc.
     // May need to be ByteType
     var asmType: Option[ASMType] = None
-    if (checkSingleByte(arrayElem)) asmType = Some(SignedByte)
+    if (checkSingleByte(arrayElem)) asmType = Some(ByteType)
 
     val storeResult = IndexedSeq[Instruction](
       new Store(None, asmType, varReg1, varReg2)
