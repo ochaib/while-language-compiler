@@ -21,8 +21,6 @@ case class Load private (
     loadable: Option[Loadable],
     label: Option[Label]
 ) extends Instruction(condition) {
-  assert(!(offset.isEmpty && registerWriteBack.isDefined), "Cannot use the register writeback option" +
-    "if the offset is 0")
 
   // LDR{cond}{B|Type} Rd, [Rn]
   def this(
