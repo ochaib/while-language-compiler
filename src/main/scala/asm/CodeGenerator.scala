@@ -50,6 +50,9 @@ object CodeGenerator {
     // Enter the top symbol table
     symbolTableManager.enterScope()
 
+    // Main directive and pushing LR
+    val mainHeaderInstructions: IndexedSeq[Instruction] = IndexedSeq[Instruction](Label("main"), pushLR)
+
     // Generated code for functions
     val functionInstructions: IndexedSeq[Instruction] = program.functions.flatMap(generateFunction)
 
@@ -58,9 +61,6 @@ object CodeGenerator {
 
     // Enter Scope
     val allocateInstructions = enterScopeAndAllocateStack()
-
-    // Main directive and pushing LR
-    val mainHeaderInstructions: IndexedSeq[Instruction] = IndexedSeq[Instruction](Label("main"), pushLR)
 
     // Generated code for stats
     val statInstructions: IndexedSeq[Instruction] = generateStatement(program.stat)
@@ -102,6 +102,8 @@ object CodeGenerator {
     val deallocateInstructions = leaveScopeAndDeallocateStack()
 
     var popEndInstruction = IndexedSeq[Instruction](popPC, new EndFunction)
+
+    // TODO: HAVE TO GO BACK TO MAIN
 
     labelPushLR ++ allocateInstructions ++ statInstructions ++ deallocateInstructions ++ popEndInstruction
   }
@@ -468,7 +470,9 @@ object CodeGenerator {
     val addInstruction: IndexedSeq[Instruction] = lhs match {
       // Offset from symbol table for ident.
       case ident: IdentNode => IndexedSeq[Instruction](Add(None, conditionFlag = false, varReg1,
-        instructionSet.getSP, new Immediate(getSize(ident.getType(topSymbolTable, currentSymbolTable)))))
+        // TODO: CONFIRM THAT I SHOULD BE GETTING OFFSET HERE
+        instructionSet.getSP, new Immediate(symbolTableManager.getOffset(ident.getKey))))
+//        instructionSet.getSP, new Immediate(getSize(ident.getType(topSymbolTable, currentSymbolTable)))))
       // No offset if not reading variable.
       case _ => IndexedSeq[Instruction](Add(None, conditionFlag = false, varReg1,
         instructionSet.getSP, new Immediate(0)))
@@ -522,7 +526,6 @@ object CodeGenerator {
     // Need next available register to move into r0, temporary fix below.
     val regUsedByGenExp: Register = RM.peekVariableRegister()
     // So that it can actually be used by generateExpression.
-    RM.freeVariableRegister(regUsedByGenExp)
 
     var int = 0
     val intLoad: IndexedSeq[Instruction] = expr match {
