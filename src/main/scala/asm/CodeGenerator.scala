@@ -675,10 +675,16 @@ object CodeGenerator {
     // We must first enter the new scope, then generate the statements inside the scope,
     // then finally close the scope.
 
-    // TODO DANIEL CHECK IF WE MUST NEXTSCOPE
-    val generatedInstructions = generateStatement(begin.stat)
+    // Enter Scope
+    val allocateInstructions: IndexedSeq[Instruction] = enterScopeAndAllocateStack()
 
-    generatedInstructions
+    // Scope Instructions
+    val statInstructions: IndexedSeq[Instruction] = generateStatement(begin.stat)
+
+    // Leave Scope
+    val deallocateInstructions: IndexedSeq[Instruction] = leaveScopeAndDeallocateStack()
+
+    allocateInstructions ++ statInstructions ++ deallocateInstructions
   }
 
   def generateExpression(expr: ExprNode): IndexedSeq[Instruction] = {
