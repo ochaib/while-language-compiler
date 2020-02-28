@@ -514,15 +514,16 @@ object CodeGenerator {
 
   def generateReturn(expr: ExprNode): IndexedSeq[Instruction] = {
     if (bytesAllocatedSoFar == 0)
-      IndexedSeq[Instruction](
-        Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())),
+      generateExpression(expr) ++
+        IndexedSeq[Instruction](Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())),
         popPC)
     else
-      IndexedSeq[Instruction](
-        Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())),
-        Add(None, conditionFlag = false, instructionSet.getSP,
-          instructionSet.getSP, new Immediate(bytesAllocatedSoFar)),
-        popPC)
+      generateExpression(expr) ++
+        IndexedSeq[Instruction](
+          Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())),
+          Add(None, conditionFlag = false, instructionSet.getSP,
+            instructionSet.getSP, new Immediate(bytesAllocatedSoFar)),
+          popPC)
   }
 
   def generateExit(expr: ExprNode): IndexedSeq[Instruction] = {
