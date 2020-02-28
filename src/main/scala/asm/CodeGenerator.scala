@@ -757,36 +757,31 @@ object CodeGenerator {
           Compare(None, varReg2, new ShiftedRegister(varReg1, "ASR", 31))) ++ Utilities.printOverflowError(Some(NotEqual))
       case DivideNode(_, argOne, argTwo) =>
         generateExpression(argOne) ++ generateExpression(argTwo) ++
-          // TODO: Call function to generate labels below.
           IndexedSeq[Instruction](
             Move(None, instructionSet.getReturn, new ShiftedRegister(varReg1)),
-            Move(None, r1, new ShiftedRegister(varReg2)),
-            BranchLink(None, Label("p_check_divide_by_zero")), // TODO: 
-            BranchLink(None, Label("__aeabi_idiv")), // TODO: this should be a standard function
+            Move(None, r1, new ShiftedRegister(varReg2))
+          ) ++ Utilities.printDivideByZero ++ IndexedSeq[Instruction](
+            BranchLink(None, DivMod.label),
             Move(None, varReg1, new ShiftedRegister(instructionSet.getReturn)))
       case ModNode(_, argOne, argTwo) =>
         generateExpression(argOne) ++ generateExpression(argTwo) ++
-        // TODO: Call function to generate labels below.
         IndexedSeq[Instruction](
           Move(None, instructionSet.getReturn, new ShiftedRegister(varReg1)),
-          Move(None, r1, new ShiftedRegister(varReg2)),
-          BranchLink(None, Label("p_check_divide_by_zero")),
-          BranchLink(None, Label("__aeabi_idiv")),
+          Move(None, r1, new ShiftedRegister(varReg2))
+        ) ++ Utilities.printDivideByZero ++ IndexedSeq[Instruction](
+          BranchLink(None, DivMod.label),
           Move(None, varReg1, new ShiftedRegister(r1)))
       case PlusNode(_, argOne, argTwo) =>
         // Should be ADDS, conditionFlag set to true.
       generateExpression(argOne) ++ generateExpression(argTwo) ++
         IndexedSeq[Instruction](
-          Add(None, conditionFlag = true, varReg1, varReg1, new ShiftedRegister(varReg2)),
-          // TODO: Call function to generate overflow error label.
-          BranchLink(Some(Overflow), Label("p_throw_overflow_error")))
+          Add(None, conditionFlag = true, varReg1, varReg1, new ShiftedRegister(varReg2))
+        ) ++ Utilities.printOverflowError(Some(Overflow))
       case MinusNode(_, argOne, argTwo) =>
         generateExpression(argOne) ++ generateExpression(argTwo) ++
         IndexedSeq[Instruction](
-          Subtract(None, conditionFlag = true, varReg1, varReg1, new ShiftedRegister(varReg2)),
-          // TODO: Call function to generate overflow error label.
-          BranchLink(Some(Overflow), Label("p_throw_overflow_error")))
-
+          Subtract(None, conditionFlag = true, varReg1, varReg1, new ShiftedRegister(varReg2))
+        ) ++ Utilities.printOverflowError(Some(Overflow))
       case GreaterThanNode(_, argOne, argTwo) =>
         generateExpression(argOne) ++ generateExpression(argTwo) ++
         IndexedSeq[Instruction](
@@ -837,6 +832,7 @@ object CodeGenerator {
 
   def generateCommonFunction(func: CommonFunction): IndexedSeq[Instruction] = func match {
     case PrintLn => IndexedSeq[Instruction](
+      PrintLn.label,
       pushLR,
       Add(condition=None, conditionFlag=false, dest=instructionSet.getReturn,
           src1=instructionSet.getReturn, src2=new Immediate(4)),
@@ -846,11 +842,13 @@ object CodeGenerator {
       popPC
     )
     case PrintRuntimeError => IndexedSeq[Instruction](
+      PrintRuntimeError.label,
       BranchLink(condition=None, PrintString.label),
       Move(condition=None, dest=instructionSet.getReturn, src=new Immediate(-1)),
       BranchLink(None, Exit.label)
     )
     case PrintString => IndexedSeq[Instruction](
+      PrintString.label,
       pushLR,
       new Load(condition=None, asmType=None, dest=instructionSet.getArgumentRegisters(1),
                src=instructionSet.getReturn),
@@ -862,6 +860,7 @@ object CodeGenerator {
       popPC
     )
     case PrintFreePair => IndexedSeq[Instruction](
+      PrintFreePair.label,
       pushLR,
       Compare(condition=None, operand1=instructionSet.getReturn, operand2=new Immediate(0)),
       new Load(condition=Some(Equal), asmType=None, dest=instructionSet.getReturn, loadable=Label("msg_free_pair")),
@@ -878,6 +877,7 @@ object CodeGenerator {
       popPC
     )
     case PrintReadChar => IndexedSeq[Instruction](
+      PrintReadChar.label,
       pushLR,
       Move(condition=None, dest=instructionSet.getArgumentRegisters(1),
            src=new ShiftedRegister(instructionSet.getReturn)),
@@ -888,6 +888,7 @@ object CodeGenerator {
       popPC
     )
     case PrintCheckNullPointer => IndexedSeq[Instruction](
+      PrintCheckNullPointer.label,
       pushLR,
       Compare(condition=None, operand1=instructionSet.getReturn, operand2=new Immediate(0)),
       new Load(condition=Some(Equal), asmType=None, dest=instructionSet.getReturn,
@@ -896,6 +897,7 @@ object CodeGenerator {
       popPC
     )
     case PrintBool => IndexedSeq[Instruction](
+      PrintBool.label,
       pushLR,
       Compare(condition=None, operand1=instructionSet.getReturn, operand2=new Immediate(0)),
       new Load(condition=Some(NotEqual), asmType=None, dest=instructionSet.getReturn,
@@ -910,6 +912,7 @@ object CodeGenerator {
       popPC
     )
     case PrintCheckArrayBounds => IndexedSeq[Instruction](
+      PrintCheckArrayBounds.label,
       pushLR,
       Compare(condition=None, operand1=instructionSet.getReturn, operand2=new Immediate(0)),
       new Load(condition=Some(LessThan), asmType=None, dest=instructionSet.getReturn,
@@ -925,6 +928,7 @@ object CodeGenerator {
       popPC
     )
     case PrintInt => IndexedSeq[Instruction](
+      PrintInt.label,
       pushLR,
       Move(condition=None, dest=instructionSet.getArgumentRegisters(1),
            src=new ShiftedRegister(instructionSet.getReturn)),
@@ -937,11 +941,13 @@ object CodeGenerator {
       popPC
     )
     case PrintOverflowError => IndexedSeq[Instruction](
+      PrintOverflowError.label,
       new Load(condition=None, asmType=None, dest=instructionSet.getReturn,
                loadable=Label("msg_throw_overflow_error")),
       BranchLink(condition=None, label=PrintRuntimeError.label)
     )
     case PrintDivideByZero => IndexedSeq[Instruction](
+      PrintDivideByZero.label,
       pushLR, Compare(None, instructionSet.getArgumentRegisters(1), new Immediate(0)),
       new Load(Some(Equal), None, instructionSet.getReturn, loadable = Label("msg_divide_by_zero")),
       BranchLink(Some(Equal), PrintRuntimeError.label), popPC
