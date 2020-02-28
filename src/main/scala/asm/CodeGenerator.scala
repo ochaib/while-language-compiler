@@ -547,6 +547,7 @@ object CodeGenerator {
   }
 
   def generatePrint(expr: ExprNode, printLn: Boolean): IndexedSeq[Instruction] = {
+    println("GENERATING PRINT")
     val instr = expr match {
       case Int_literNode(_, n) => Utilities.printInt(n.toInt)
       case Bool_literNode(_, b) => Utilities.printBool(b)
@@ -587,6 +588,76 @@ object CodeGenerator {
             case _: ARRAY | _: PAIR => Utilities.printReference
           })
       case i: ParenExprNode =>
+        new Load(
+          condition=None, asmType=None,
+          RM.peekVariableRegister, instructionSet.getSP,
+          new Immediate(symbolTableManager.getOffset(i.getKey)),
+          registerWriteBack = false) +: (i.getType(topSymbolTable, currentSymbolTable) match {
+            case scalar: SCALAR => {
+              if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
+                Utilities.printInt(0) // doesn't matter just need to trigger add printInt
+                IndexedSeq[Instruction](
+                  BranchLink(None, PrintInt.label)
+                )
+              }
+              else if (scalar == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
+                Utilities.printBool(true)
+                IndexedSeq[Instruction](
+                  BranchLink(None, PrintBool.label)
+                )
+              }
+              else if (scalar == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
+                Utilities.printChar('c')
+                IndexedSeq[Instruction](
+                  BranchLink(condition = None, label = PutChar.label)
+                )
+              }
+              else
+                IndexedSeq[Instruction](
+                  BranchLink(None, Label("UNIMPLEMENTED PRINT !!! OH NO !!! THIS IS AN ISSUE !!! PLEASE IMPLEMENT FOR PAREN EXPR NODE !!!"))
+                )
+            }
+            case STRING => Utilities.printString(""); IndexedSeq[Instruction](
+              BranchLink(None, PrintString.label)
+            )
+            case _: ARRAY | _: PAIR => Utilities.printReference
+          })
+      case i: BinaryOperationNode =>
+        new Load(
+          condition=None, asmType=None,
+          RM.peekVariableRegister, instructionSet.getSP,
+          new Immediate(symbolTableManager.getOffset(i.getKey)),
+          registerWriteBack = false) +: (i.getType(topSymbolTable, currentSymbolTable) match {
+            case scalar: SCALAR => {
+              if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
+                Utilities.printInt(0) // doesn't matter just need to trigger add printInt
+                IndexedSeq[Instruction](
+                  BranchLink(None, PrintInt.label)
+                )
+              }
+              else if (scalar == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
+                Utilities.printBool(true)
+                IndexedSeq[Instruction](
+                  BranchLink(None, PrintBool.label)
+                )
+              }
+              else if (scalar == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
+                Utilities.printChar('c')
+                IndexedSeq[Instruction](
+                  BranchLink(condition = None, label = PutChar.label)
+                )
+              }
+              else
+                IndexedSeq[Instruction](
+                  BranchLink(None, Label("UNIMPLEMENTED PRINT !!! OH NO !!! THIS IS AN ISSUE !!! PLEASE IMPLEMENT FOR PAREN EXPR NODE !!!"))
+                )
+            }
+            case STRING => Utilities.printString(""); IndexedSeq[Instruction](
+              BranchLink(None, PrintString.label)
+            )
+            case _: ARRAY | _: PAIR => Utilities.printReference
+          })
+      case i: UnaryOperationNode =>
         new Load(
           condition=None, asmType=None,
           RM.peekVariableRegister, instructionSet.getSP,
