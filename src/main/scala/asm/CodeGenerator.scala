@@ -530,22 +530,8 @@ object CodeGenerator {
     // then branch to exit.
     // Need next available register to move into r0, temporary fix below.
     val regUsedByGenExp: Register = RM.peekVariableRegister()
-    // So that it can actually be used by generateExpression.
 
-    var int = 0
-    val intLoad: IndexedSeq[Instruction] = expr match {
-      // Check if the expression is negate node, i.e. int to be exited with is negative.
-      case NegateNode(_, intExpr) =>
-        intExpr match {
-          // Check if negate node expression is an int.
-          case Int_literNode(_, str) => int = 0 - str.toInt
-            IndexedSeq[Instruction](new Load(None, None,
-            RM.peekVariableRegister(), new LoadableExpression(int)))
-        }
-      case _ => generateExpression(expr)
-    }
-
-    intLoad ++ IndexedSeq[Instruction](
+    generateExpression(expr) ++ IndexedSeq[Instruction](
       Move(None, instructionSet.getReturn, new ShiftedRegister(regUsedByGenExp)),
       BranchLink(None, Exit.label)
     )
@@ -896,11 +882,14 @@ object CodeGenerator {
                       RM.peekVariableRegister(), new Immediate(1)))
       // Negate according to reference compiler.
       case NegateNode(_, expr) =>
-        generateExpression(expr) ++
-        IndexedSeq[Instruction](
-          RSBS(None, conditionFlag = false, RM.peekVariableRegister(),
-               RM.peekVariableRegister(), new Immediate(0)),
-        ) ++ Utilities.printOverflowError(Some(Overflow))
+        expr match {
+          case Int_literNode(_, str) => IndexedSeq[Instruction](
+            new Load(None, None, RM.peekVariableRegister(), new LoadableExpression(str.toInt)))
+          case _ => generateExpression(expr) ++ IndexedSeq[Instruction](
+            RSBS(None, conditionFlag = false, RM.peekVariableRegister(),
+            RM.peekVariableRegister(), new Immediate(0)),
+          ) ++ Utilities.printOverflowError(Some(Overflow))
+        }
       case LenNode(_, expr) =>
         generateExpression(expr) ++ IndexedSeq[Instruction](
           new Load(None, None, RM.peekVariableRegister(), RM.peekVariableRegister())
