@@ -747,6 +747,7 @@ object CodeGenerator {
       case arrayElem: ArrayElemNode => generateArrayElem(arrayElem)
       case unaryOperation: UnaryOperationNode => generateUnary(unaryOperation)
       case binaryOperation: BinaryOperationNode => generateBinary(binaryOperation)
+      case parenExpr: ParenExprNode => generateExpression(parenExpr.expr)  
     }
   }
 
