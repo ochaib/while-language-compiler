@@ -105,7 +105,7 @@ object CodeGenerator {
     // Leave function scope
     val deallocateInstructions = leaveScopeAndDeallocateStack()
 
-    var popEndInstruction = IndexedSeq[Instruction](popPC, new EndFunction)
+    val popEndInstruction = IndexedSeq[Instruction](popPC, new EndFunction)
 
     // TODO: HAVE TO GO BACK TO MAIN
 
@@ -475,7 +475,6 @@ object CodeGenerator {
     val addInstruction: IndexedSeq[Instruction] = lhs match {
       // Offset from symbol table for ident.
       case ident: IdentNode => IndexedSeq[Instruction](Add(None, conditionFlag = false, varReg1,
-        // CONFIRMED THAT I SHOULD BE GETTING OFFSET HERE
         instructionSet.getSP, new Immediate(symbolTableManager.getOffset(ident.getKey))))
         //        instructionSet.getSP, new Immediate(getSize(ident.getType(topSymbolTable, currentSymbolTable)))))
         // No offset if not reading variable.
@@ -590,10 +589,10 @@ object CodeGenerator {
       case i: ParenExprNode =>
         new Load(
           condition=None, asmType=None,
-          RM.peekVariableRegister, instructionSet.getSP,
+          RM.peekVariableRegister(), instructionSet.getSP,
           new Immediate(symbolTableManager.getOffset(i.getKey)),
           registerWriteBack = false) +: (i.getType(topSymbolTable, currentSymbolTable) match {
-            case scalar: SCALAR => {
+            case scalar: SCALAR =>
               if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
                 Utilities.printInt(0) // doesn't matter just need to trigger add printInt
                 IndexedSeq[Instruction](
@@ -616,7 +615,6 @@ object CodeGenerator {
                 IndexedSeq[Instruction](
                   BranchLink(None, Label("UNIMPLEMENTED PRINT !!! OH NO !!! THIS IS AN ISSUE !!! PLEASE IMPLEMENT FOR PAREN EXPR NODE !!!"))
                 )
-            }
             case STRING => Utilities.printString(""); IndexedSeq[Instruction](
               BranchLink(None, PrintString.label)
             )
@@ -625,15 +623,15 @@ object CodeGenerator {
       case i: BinaryOperationNode =>
         (new Load(
           condition=None, asmType=None,
-          RM.peekVariableRegister, instructionSet.getSP,
+          RM.peekVariableRegister(), instructionSet.getSP,
           new Immediate(symbolTableManager.getOffset(i.getKey)),
           registerWriteBack = false
         ) +: generateBinary(i)) ++ (i.getType(topSymbolTable, currentSymbolTable) match {
-            case scalar: SCALAR => {
+            case scalar: SCALAR =>
               if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
                 Utilities.printInt(0) // doesn't matter just need to trigger add printInt
                 IndexedSeq[Instruction](
-                  Move(condition=None, dest=instructionSet.getReturn, src=new ShiftedRegister(RM.peekVariableRegister)),
+                  Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())),
                   BranchLink(None, PrintInt.label)
                 )
               }
@@ -653,7 +651,6 @@ object CodeGenerator {
                 IndexedSeq[Instruction](
                   BranchLink(None, Label("UNIMPLEMENTED PRINT !!! OH NO !!! THIS IS AN ISSUE !!! PLEASE IMPLEMENT FOR PAREN EXPR NODE !!!"))
                 )
-            }
             case STRING => Utilities.printString(""); IndexedSeq[Instruction](
               BranchLink(None, PrintString.label)
             )
@@ -662,11 +659,11 @@ object CodeGenerator {
       case i: UnaryOperationNode =>
         (new Load(
           condition=None, asmType=None,
-          RM.peekVariableRegister, instructionSet.getSP,
+          RM.peekVariableRegister(), instructionSet.getSP,
           new Immediate(symbolTableManager.getOffset(i.getKey)),
           registerWriteBack = false
         ) +: generateUnary(i)) ++ (i.getType(topSymbolTable, currentSymbolTable) match {
-            case scalar: SCALAR => {
+            case scalar: SCALAR =>
               if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
                 Utilities.printInt(0) // doesn't matter just need to trigger add printInt
                 IndexedSeq[Instruction](
@@ -689,7 +686,6 @@ object CodeGenerator {
                 IndexedSeq[Instruction](
                   BranchLink(None, Label("UNIMPLEMENTED PRINT !!! OH NO !!! THIS IS AN ISSUE !!! PLEASE IMPLEMENT FOR PAREN EXPR NODE !!!"))
                 )
-            }
             case STRING => Utilities.printString(""); IndexedSeq[Instruction](
               BranchLink(None, PrintString.label)
             )
