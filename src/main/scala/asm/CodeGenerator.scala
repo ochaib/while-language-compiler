@@ -374,7 +374,8 @@ object CodeGenerator {
     val varReg2 = RM.peekVariableRegister()
 
     // Once we are on the second element it will be at an offset that we must retrieve.
-    val finalStore = new Store(None, None, instructionSet.getReturn, varReg2, new Immediate(pairSizeOffset))
+    val finalStore = new Store(None, None, instructionSet.getReturn, varReg2, new Immediate(pairSizeOffset),
+                               registerWriteBack = false)
 
     exprInstructions ++ coreInstructions :+ finalStore
   }
@@ -390,16 +391,15 @@ object CodeGenerator {
     //        case snd: SndNode => generateExpression(snd.expression)
     //     }
 
-    //    val immOff: Int = pairElem match {
-    //      case fst: FstNode => 0
-    //      case snd: SndNode => 1
-    //    }
+//    val immOffset: Int = pairElem match {
+//      case fst: FstNode => symbolTableManager.getOffset(fst.getKey)
+//      case snd: SndNode => symbolTableManager.getOffset(snd.getKey)
+//    }
 
     val loadOffset = IndexedSeq[Instruction](
       // Current offset of identifier related to pair.
       new Load(None, None, peekedReg, instructionSet.getSP,
                new Immediate(getSize(pairElem.getType(topSymbolTable, currentSymbolTable))), registerWriteBack = false)
-      //               new Immediate(symbolTableManager.getOffset(pairElem.getKey)))
     )
 
     val nullPtrIns = Move(None, instructionSet.getReturn,
@@ -431,12 +431,12 @@ object CodeGenerator {
       case fst: FstNode =>
         IndexedSeq[Instruction](
           new Load(None, None, RM.peekVariableRegister(), instructionSet.getSP,
-          new Immediate(getSize(fst.getType(topSymbolTable, currentSymbolTable))),
+          new Immediate(symbolTableManager.getOffset(fst.expression.getKey)),
           registerWriteBack = false)
         ) ++ generatePEHelper(fst, isSnd = false)
       case snd: SndNode => IndexedSeq[Instruction](
         new Load(None, None, RM.peekVariableRegister(), instructionSet.getSP,
-        new Immediate(getSize(snd.getType(topSymbolTable, currentSymbolTable))),
+          new Immediate(symbolTableManager.getOffset(snd.expression.getKey)),
         registerWriteBack = false)
       ) ++ generatePEHelper(snd, isSnd = true)
     }
@@ -571,13 +571,15 @@ object CodeGenerator {
   }
 
   def generatePrint(expr: ExprNode, printLn: Boolean): IndexedSeq[Instruction] = {
-    println("GENERATING PRINT")
     val instr = expr match {
       case Int_literNode(_, n) => Utilities.printInt(n.toInt)
       case Bool_literNode(_, b) => Utilities.printBool(b)
       case Char_literNode(_, c) => Utilities.printChar(c)
       case Str_literNode(_, s) => Utilities.printString(s)
-      case Pair_literNode(_) => Utilities.printReference
+      case Pair_literNode(_) => IndexedSeq[Instruction](
+        new Load(condition=None, asmType=None, dest=RM.peekVariableRegister, loadable=new LoadableExpression(0)),
+        Move(condition=None, dest=instructionSet.getReturn, src=new ShiftedRegister(RM.peekVariableRegister))
+      ) ++ Utilities.printReference
       case ArrayElemNode(_, _, _) => Utilities.printReference
       case i: IdentNode =>
         var asmType: Option[ASMType] = None
@@ -616,12 +618,13 @@ object CodeGenerator {
                   BranchLink(None, Label("UNIMPLEMENTED PRINT !!! OH NO !!! THIS IS AN ISSUE !!! PLEASE IMPLEMENT FOR PAREN EXPR NODE !!!"))
                 )
             case STRING => Utilities.printString(""); IndexedSeq[Instruction](
+              Move(condition=None, dest=instructionSet.getReturn, src=new ShiftedRegister(RM.peekVariableRegister)),
               BranchLink(None, PrintString.label)
             )
-            case _: ARRAY | _: PAIR => Utilities.printReference
+            case _: ARRAY | _: PAIR => IndexedSeq[Instruction](Move(None, instructionSet.getReturn,
+              new ShiftedRegister(RM.peekVariableRegister()))) ++ Utilities.printReference
           })
       case i: ParenExprNode =>
-        // TODO: MAY NEED TO REPLICATE IDENT CHANGES HERE
         new Load(
           condition=None, asmType=None,
           RM.peekVariableRegister, instructionSet.getSP,
@@ -654,6 +657,7 @@ object CodeGenerator {
                   BranchLink(None, Label("UNIMPLEMENTED PRINT !!! OH NO !!! THIS IS AN ISSUE !!! PLEASE IMPLEMENT FOR PAREN EXPR NODE !!!"))
                 )
             case STRING => Utilities.printString(""); IndexedSeq[Instruction](
+              Move(condition=None, dest=instructionSet.getReturn, src=new ShiftedRegister(RM.peekVariableRegister)),
               BranchLink(None, PrintString.label)
             )
             case _: ARRAY | _: PAIR => Utilities.printReference
@@ -694,6 +698,7 @@ object CodeGenerator {
                   BranchLink(None, Label("UNIMPLEMENTED PRINT !!! OH NO !!! THIS IS AN ISSUE !!! PLEASE IMPLEMENT FOR PAREN EXPR NODE !!!"))
                 )
             case STRING => Utilities.printString(""); IndexedSeq[Instruction](
+              Move(condition=None, dest=instructionSet.getReturn, src=new ShiftedRegister(RM.peekVariableRegister)),
               BranchLink(None, PrintString.label)
             )
             case _: ARRAY | _: PAIR => Utilities.printReference
@@ -733,6 +738,7 @@ object CodeGenerator {
                   BranchLink(None, Label("UNIMPLEMENTED PRINT !!! OH NO !!! THIS IS AN ISSUE !!! PLEASE IMPLEMENT FOR PAREN EXPR NODE !!!"))
                 )
             case STRING => Utilities.printString(""); IndexedSeq[Instruction](
+              Move(condition=None, dest=instructionSet.getReturn, src=new ShiftedRegister(RM.peekVariableRegister)),
               BranchLink(None, PrintString.label)
             )
             case _: ARRAY | _: PAIR => Utilities.printReference
