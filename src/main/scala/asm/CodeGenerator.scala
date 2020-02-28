@@ -439,11 +439,13 @@ object CodeGenerator {
       argInstructions = call.argList.get.exprNodes.flatMap(e =>
       { val exprSize = getSize(e.getType(topSymbolTable, currentSymbolTable))
         totalArgOffset += exprSize
+        // Distinguish between STR and STRB.
+        var asmType: Option[ASMType] = None
+        if (checkSingleByte(e)) asmType = Some(ByteType)
         generateExpression(e) :+
-        // May need to distinguish between STR and STRB.
         // Register write back should be allowed, hence the true.
-          new Store(None, None, RM.peekVariableRegister(), instructionSet.getSP,
-            new Immediate(-exprSize), registerWriteBack = true)
+          new Store(None, asmType, RM.peekVariableRegister(), instructionSet.getSP,
+                    new Immediate(-exprSize), registerWriteBack = true)
       })
 
     var labelAndBranch = IndexedSeq[Instruction](
