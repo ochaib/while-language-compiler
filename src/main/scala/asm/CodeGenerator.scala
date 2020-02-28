@@ -201,7 +201,7 @@ object CodeGenerator {
     // Check if B is necessary for load, store etc.
     // May need to be ByteType
     var asmType: Option[ASMType] = None
-    if (checkSingleByte(arrayElem)) asmType = Some(SignedByte)
+    if (checkSingleByte(arrayElem)) asmType = Some(ByteType)
 
     val storeResult = IndexedSeq[Instruction](
       new Store(None, asmType, varReg1, varReg2)
@@ -252,9 +252,14 @@ object CodeGenerator {
   def generateArrayLiteral(arrayLiteral: ArrayLiteralNode): IndexedSeq[Instruction] = {
     val varReg1 = RM.nextVariableRegister()
     // Because we assume every expr in the array is of the same type.
-    val exprElemSize = getSize(arrayLiteral.exprNodes.head.getType(topSymbolTable, currentSymbolTable))
     val arrayLength = arrayLiteral.exprNodes.length
-    val intSize = 4
+    // TODO Ossama check this
+    var exprElemSize = {
+      if (arrayLength != 0)
+        getSize(arrayLiteral.exprNodes.head.getType(topSymbolTable, currentSymbolTable))
+      else 0
+    }
+    var intSize = 4
 
     // Calculations necessary to retrieve size of array for loading into return.
     val arraySize = intSize + arrayLength * exprElemSize
@@ -267,7 +272,7 @@ object CodeGenerator {
 
     var generatedExpressions: IndexedSeq[Instruction] = IndexedSeq[Instruction]()
 
-    var acc = exprElemSize
+    var acc = getSize(GENERAL_ARRAY) + exprElemSize
     // Generate expression instructions for each expression node in the array.
     arrayLiteral.exprNodes.foreach(expr => { generatedExpressions ++= generateExpression(expr) :+
       new Store(None, None, RM.peekVariableRegister(), varReg1,
