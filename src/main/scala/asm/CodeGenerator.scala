@@ -555,6 +555,8 @@ object CodeGenerator {
       case Pair_literNode(_) => IndexedSeq[Instruction](
         BranchLink(None, Label("UNIMPLEMENTED PRINT !!! OH NO !!! THIS IS AN ISSUE !!! PLEASE IMPLEMENT FOR PAREN EXPR NODE !!!"))
       )
+      // TODO: pair liter node and parenexprnode
+      // TODO: print read reference?
     }
 
     if (printLn) instr ++ Utilities.printNewline
