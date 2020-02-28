@@ -142,7 +142,8 @@ object Utilities {
         // BLVS p_throw_overflow_error
         if (commonFunctions.add(PrintOverflowError))
             strings += (Label("msg_throw_overflow_error") ->
-                new StringLiteral("OverflowError: the result is too small/large to store in a 4-byte signed-integer.\\n", 82)
+                new StringLiteral("OverflowError: the result is too small/large " +
+                                  "to store in a 4-byte signed-integer.\\n", 82)
             )
         printRuntimeError // make sure print runtime error is added to common functions
         IndexedSeq[Instruction](

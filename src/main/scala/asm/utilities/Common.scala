@@ -33,3 +33,4 @@ object Malloc { val label: Label = Label("malloc") }
 object Exit { val label: Label = Label("exit") }
 object Scanf { val label: Label = Label("scanf") }
 object Free { val label: Label = Label("free") }
+object DivMod { val label: Label = Label("__aeabi_idivmod")}
