@@ -885,6 +885,7 @@ object CodeGenerator {
       popPC
     )
     case PrintReference => IndexedSeq[Instruction](
+      PrintReference.label,
       pushLR,
       Move(condition=None, dest=instructionSet.getArgumentRegisters(1),
            src=new ShiftedRegister(instructionSet.getReturn)),
@@ -908,6 +909,7 @@ object CodeGenerator {
       popPC
     )
     case PrintReadInt => IndexedSeq[Instruction](
+      PrintReadInt.label,
       pushLR,
       Move(condition=None, dest=instructionSet.getArgumentRegisters(1),
            src=new ShiftedRegister(instructionSet.getReturn)),
