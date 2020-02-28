@@ -488,10 +488,10 @@ object CodeGenerator {
 
     lhsType match {
       case scalar if scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)
-        // Generate top level msg with " %c\\0" and with "p_read_int"
+        // TODO: Generate top level msg with " %c\\0" and with "p_read_int"
         => generatedReadInstructions :+ BranchLink(None, Label("p_read_int"))
       case scalar if scalar == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable)
-        // Generate top level msg with " %c\\0" and with "p_read_char"
+        // TODO: Generate top level msg with " %c\\0" and with "p_read_char"
       => generatedReadInstructions :+ BranchLink(None, Label("p_read_char"))
       case _ => assert(assertion = false, "Undefined type for read.")
     }
@@ -695,7 +695,7 @@ object CodeGenerator {
 
     val totalBodyInstructions: IndexedSeq[Instruction] = bodyLabel +: (allocateWhileBody ++ bodyInstructions ++ deallocateWhileBody)
 
-    val totalConditionInstructions = (conditionLabel +: condInstructions :+ bodyBranch)
+    val totalConditionInstructions = conditionLabel +: condInstructions :+ bodyBranch
 
     initConditionBranch +: (totalBodyInstructions ++ totalConditionInstructions)
   }
