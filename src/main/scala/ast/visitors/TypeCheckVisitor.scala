@@ -417,7 +417,6 @@ sealed class TypeCheckVisitor(entryNode: ASTNode, topSymbolTable: SymbolTable) e
   }
 
   def visitAssignment(token: Token, lhs: AssignLHSNode, rhs: AssignRHSNode): Unit = {
-    visit(lhs)
     visit(rhs)
     val lhsType = lhs.getType(topSymbolTable, currentSymbolTable)
     val rhsType = rhs.getType(topSymbolTable, currentSymbolTable)
@@ -428,7 +427,10 @@ sealed class TypeCheckVisitor(entryNode: ASTNode, topSymbolTable: SymbolTable) e
       lhs.asInstanceOf[IdentNode].resetType(topSymbolTable, currentSymbolTable)
 
       // If either side evaluated to an incorrect expression, stop checking
-    } else if (lhsType == null || rhsType == null) {
+    }
+
+    visit(lhs)
+    if (lhsType == null || rhsType == null) {
 
     } else if (! (lhsType == rhsType ||
       lhsType.isInstanceOf[PAIR] && rhsType.isInstanceOf[PAIR] ||
