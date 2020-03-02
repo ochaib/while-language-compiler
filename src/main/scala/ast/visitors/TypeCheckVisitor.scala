@@ -71,9 +71,11 @@ sealed class TypeCheckVisitor(entryNode: ASTNode, topSymbolTable: SymbolTable) e
     case assignLHSNode: AssignLHSNode => assignLHSNode match {
 
       case IdentNode(token: Token, ident) =>
-        if (currentSymbolTable.lookupAll(assignLHSNode.getKey).isEmpty) {
+        // TODO remove
+        // Idents on the lhs are always valid due to dynamic declarations
+        /* if (currentSymbolTable.lookupAll(assignLHSNode.getKey).isEmpty) {
           SemanticErrorLog.add(s"${getPos(token)} $ident has not been declared as an identifier.")
-        }
+        }*/
 
       case ArrayElemNode(token: Token, identNode, exprNodes) => arrayElemCheckerHelper(token, identNode, exprNodes)
 
@@ -406,8 +408,12 @@ sealed class TypeCheckVisitor(entryNode: ASTNode, topSymbolTable: SymbolTable) e
       // If variable is already defined log error
       SemanticErrorLog.add(s"${getPos(token)} declaration failed, ${ident.getKey} has already been declared.")
     } else {
-      currentSymbolTable.add(ident.getKey, new VARIABLE(ident.getKey, typeIdentifier.asInstanceOf[TYPE]))
+      addIdentToTable(ident.getKey, new VARIABLE(ident.getKey, typeIdentifier.asInstanceOf[TYPE]))
     }
+  }
+
+  def addIdentToTable(key: String, identifier: IDENTIFIER): Unit = {
+    currentSymbolTable.add(key, identifier)
   }
 
   def visitAssignment(token: Token, lhs: AssignLHSNode, rhs: AssignRHSNode): Unit = {
@@ -416,8 +422,13 @@ sealed class TypeCheckVisitor(entryNode: ASTNode, topSymbolTable: SymbolTable) e
     val lhsType = lhs.getType(topSymbolTable, currentSymbolTable)
     val rhsType = rhs.getType(topSymbolTable, currentSymbolTable)
 
-    // If either side evaluated to an incorrect expression, stop checking
-    if (lhsType == null || rhsType == null) {
+    // Type inference
+    if (lhs.isInstanceOf[IdentNode] && lhsType == null && rhsType != null) {
+      addIdentToTable(lhs.getKey, rhsType)
+      lhs.asInstanceOf[IdentNode].resetType(topSymbolTable, currentSymbolTable)
+
+      // If either side evaluated to an incorrect expression, stop checking
+    } else if (lhsType == null || rhsType == null) {
 
     } else if (! (lhsType == rhsType ||
       lhsType.isInstanceOf[PAIR] && rhsType.isInstanceOf[PAIR] ||

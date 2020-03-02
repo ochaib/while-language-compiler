@@ -254,6 +254,11 @@ case class IdentNode(token: Token, ident: String) extends ExprNode(token) with A
     }
   }
 
+  def resetType(topST: SymbolTable, ST: SymbolTable): TYPE = {
+    _type = initType(topST, ST)
+    _type
+  }
+
   override def toTreeString: String = console.color(ident, fg=Console.GREEN)
 }
 
