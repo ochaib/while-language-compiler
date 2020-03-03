@@ -6,7 +6,7 @@ import asm.registers._
 import asm.utilities._
 import ast.nodes._
 import ast.symboltable._
-
+import scala.util.control.Breaks._
 import scala.collection.mutable
 
 object CodeGenerator {
@@ -141,7 +141,7 @@ object CodeGenerator {
     if (paramOffsetMap.get(key).isDefined || currentSymbolTable.lookup(key).isDefined && currentSymbolTable.lookup(key).get.isInstanceOf[PARAM])
       getParamOffset(key) + bytesAllocatedSoFar
     else
-      symbolTableManager.getOffset(key)// + bytesAllocatedSoFar - getScopeStackSize(currentSymbolTable)
+      symbolTableManager.lookupOffset(key)// + bytesAllocatedSoFar - getScopeStackSize(currentSymbolTable)
   }
 
 //  def generateParamList(paramList: ParamListNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
@@ -203,7 +203,7 @@ object CodeGenerator {
 
     IndexedSeq[Instruction](new Store(None, asmType,
       RM.peekVariableRegister(), instructionSet.getSP,
-      new Immediate(symbolTableManager.getNextOffset(ident.getKey)), registerWriteBack = false))
+      new Immediate(symbolTableManager.setAndGetOffset(ident.getKey)), registerWriteBack = false))
   }
 
   // THIS, COMES FROM EXPR
@@ -419,13 +419,13 @@ object CodeGenerator {
       case fst: FstNode =>
         IndexedSeq[Instruction](
           new Load(None, None, peekedReg, peekedReg, new Immediate(offset), registerWriteBack = false),
-          new Store(None, asmType, varReg, peekedReg, new Immediate(symbolTableManager.getOffset(fst.expression.getKey)),
+          new Store(None, asmType, varReg, peekedReg, new Immediate(symbolTableManager.lookupOffset(fst.expression.getKey)),
             registerWriteBack = false)
         )
       case snd: SndNode =>
         IndexedSeq[Instruction](
           new Load(None, None, peekedReg, peekedReg, new Immediate(offset), registerWriteBack = false),
-          new Store(None, asmType, varReg, peekedReg, new Immediate(symbolTableManager.getOffset(snd.expression.getKey)),
+          new Store(None, asmType, varReg, peekedReg, new Immediate(symbolTableManager.lookupOffset(snd.expression.getKey)),
             registerWriteBack = false)
         )
 
@@ -441,12 +441,12 @@ object CodeGenerator {
       case fst: FstNode =>
         IndexedSeq[Instruction](
           new Load(None, None, RM.peekVariableRegister(), instructionSet.getSP,
-          new Immediate(symbolTableManager.getOffset(fst.expression.getKey)),
+          new Immediate(symbolTableManager.lookupOffset(fst.expression.getKey)),
           registerWriteBack = false)
         ) ++ generatePEHelper(fst, isSnd = false)
       case snd: SndNode => IndexedSeq[Instruction](
         new Load(None, None, RM.peekVariableRegister(), instructionSet.getSP,
-          new Immediate(symbolTableManager.getOffset(snd.expression.getKey)),
+          new Immediate(symbolTableManager.lookupOffset(snd.expression.getKey)),
         registerWriteBack = false)
       ) ++ generatePEHelper(snd, isSnd = true)
     }
@@ -838,16 +838,13 @@ object CodeGenerator {
 
 
     // *** BODY ***
-    val currentIdentOffsetMap = symbolTableManager.identOffsetMap
-    var prevIdentOffsetMap = symbolTableManager.identOffsetMap
+
 
     // Update Scope to While Body
     currentSymbolTable = symbolTableManager.nextScope()
 
     // Enter Scope
     val allocateWhileBody: IndexedSeq[Instruction] = enterScopeAndAllocateStack()
-
-    symbolTableManager.identOffsetMap = prevIdentOffsetMap
 
     // Body Instruction list
     val bodyInstructions: IndexedSeq[Instruction] = generateStatement(whileNode.stat)
@@ -857,7 +854,6 @@ object CodeGenerator {
 
     // ************
 
-    symbolTableManager.identOffsetMap = currentIdentOffsetMap
 
     // *** SUMMARY ***
 
@@ -1313,87 +1309,103 @@ object CodeGenerator {
     else IndexedSeq()
   }
 
-  case class SymbolTableManager(private val initScope: SymbolTable) {
-    // Current scope parent
-    private var currentScopeParent: SymbolTable = _
-    // Current scope symbol table
-    private var currentScope: SymbolTable = initScope
-    // Index of the scope relative to the other scopes at the same level
-    private var currentScopeIndex: Int = -1
-    // Variable offset information
-    private var offsetSoFar: Int = -1
-    // Map that maps offset to respective ident, is modified when getNextOffset is called.
-    private var identOffsetMap: Map[String, Int] = Map[String, Int]()
+  case class SymbolTableInfo(symbolTable: SymbolTable, scopeIndex: Int) {
+    var offsetMap: Map[String, Int] = Map()
+    val symbolTableSize: Int = getScopeStackSize(symbolTable)
+    private var offsetSoFar: Int = symbolTableSize
 
-    case class SymbolTableInfo(symbolTable: SymbolTable, scopeIndex: Int, offsetSoFar: Int, offsetMap: Map[String, Int]) {
-      val symbolTableSize = getScopeStackSize(symbolTable)
+    def setAndGetOffset(key: String): Int = {
+      val currentIdOption = symbolTable.lookup(key)
+      assert (currentIdOption.isDefined, "key must be defined in the scope")
+      val offsetSize: Int = currentIdOption.get match {
+        case value: TYPE => getSize(value)
+        case variable: VARIABLE => getSize(variable._type)
+        case _ =>
+          assert(assertion = false, "key ID must be a variable or type")
+          -1
+      }
+      offsetSoFar -= offsetSize
+      // Add offset for IDENTIFIER to current scope map.
+      offsetMap = offsetMap + (key -> offsetSoFar)
+      offsetSoFar
     }
+  }
+
+  case class SymbolTableManager(private val initScope: SymbolTable) {
+    // Info of the current symbol table
+    private var currentInfo: SymbolTableInfo = SymbolTableInfo(initScope, 0)
+
     // Stack keeping track of the symbolTable, index, byteSize, offsetSoFar and offsetMap of
     // the symbol tables as we enter scope
     // (symbolTable, index, symbolTableSize, offsetSoFar, offsetMap)
     private var infoStack: List[SymbolTableInfo] = List()
 
+    // Current scope parent
+    var currentScopeParent: SymbolTable = _
+
     // Returns the next scope under the current scope level
     def nextScope(): SymbolTable = {
       // Check you can go to next scope
-      assert(currentScopeParent.children != null && currentScopeIndex + 1 < currentScopeParent.children.length, s"Cannot go to next scope.")
-      // Increment Scope
-      currentScopeIndex += 1
+      assert(currentScopeParent.children != null && currentInfo.scopeIndex + 1 < currentScopeParent.children.length, s"Cannot go to next scope.")
       // Update current scope
-      currentScope = currentScopeParent.children.apply(currentScopeIndex)
-      // Update offsetSoFar
-      offsetSoFar = getScopeStackSize(currentScope)
-      currentScope
-    }
-
-    private def idIsVariableOrType(id: IDENTIFIER): Boolean = id.isInstanceOf[VARIABLE] || id.isInstanceOf[TYPE]
-
-    def getNextOffset(key: String): Int = {
-      val currentIdOption = currentScopeParent.lookup(key)
-      assert (currentIdOption.isDefined, "key must be defined in the scope")
-      assert (idIsVariableOrType(currentIdOption.get), "key ID must be a variable or type")
-      val offsetSize: Int = currentIdOption.get match {
-        case value: TYPE => getSize(value)
-        case variable: VARIABLE => getSize(variable._type)
-        case _ =>
-          assert(assertion = false, "key must refer to a type or variable")
-          -1
-      }
-      offsetSoFar -= offsetSize
-      // Add offset for IDENTIFIER to current scope map.
-      identOffsetMap = identOffsetMap + (key -> offsetSoFar)
-      offsetSoFar
-    }
-
-    // Returns current identifier offset
-    def getOffset(key: String): Int = {
-      // Retrieve offset for current identifier or return 0.
-      identOffsetMap getOrElse(key, 0)
+      val newIndex = currentInfo.scopeIndex + 1
+      currentInfo = SymbolTableInfo(currentScopeParent.children.apply(newIndex), newIndex)
+      currentInfo.symbolTable
     }
 
     // Enters the current scope
     def enterScope(): Unit = {
-      currentScopeParent = currentScope
+      currentScopeParent = currentInfo.symbolTable
       // Push
-      infoStack = SymbolTableInfo(currentScope, currentScopeIndex, offsetSoFar, identOffsetMap) :: infoStack
-      identOffsetMap = Map[String, Int]()
-      currentScopeIndex = -1
-      currentScope = null
+      infoStack = currentInfo :: infoStack
+      currentInfo = null
     }
 
     // Leaves the current scope
     def leaveScope(): SymbolTable = {
       assert(infoStack.nonEmpty, "Scope is at the top level already")
+      // Reset currentScopeParent
       currentScopeParent = currentScopeParent.encSymbolTable
       // Pop
-      val poppedInfo: SymbolTableInfo = infoStack.head
-      currentScope = poppedInfo.symbolTable
-      currentScopeIndex = poppedInfo.scopeIndex
-      offsetSoFar = poppedInfo.offsetSoFar
-      identOffsetMap = poppedInfo.offsetMap
+      currentInfo = infoStack.head
       infoStack = infoStack.tail
 
-      currentScope
+      // Return table
+      currentInfo.symbolTable
+    }
+
+    // Called on declarations for idents to set the map address
+    def setAndGetOffset(key: String): Int = {
+      currentInfo.setAndGetOffset(key)
+    }
+
+    // Returns current identifier offset
+    def lookupOffset(key: String): Int = {
+      var offset: Option[Int] = currentInfo.offsetMap.get(key)
+      var additionalBytes = 0
+      // If the offset is not in the current offsetMap iterate through all parent maps
+      if (offset.isEmpty) {
+        // Add the byte allocation for the current scope
+        additionalBytes += currentInfo.symbolTableSize
+        breakable {
+          for (iteratingInfo <- infoStack) {
+            // Lookup offset
+            offset = iteratingInfo.offsetMap.get(key)
+            // If it is defined, break
+            if (offset.isDefined) break
+            // Add scope bytes to additional bytes
+            additionalBytes += iteratingInfo.symbolTableSize
+          }
+        }
+      }
+      // If defined, return offset + additional bytes
+      if (offset.isDefined) {
+        offset.get + additionalBytes
+      } else {
+        // Otherwise it's an error
+        assert(assertion = false, s"$key does not exist in this symbol table or all parent tables")
+        -1
+      }
     }
 
     def returnToTopScope(): Unit = {
