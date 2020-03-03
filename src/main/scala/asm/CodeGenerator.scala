@@ -1314,21 +1314,24 @@ object CodeGenerator {
   }
 
   case class SymbolTableManager(private val initScope: SymbolTable) {
-    // Scope information
+    // Current scope parent
     private var currentScopeParent: SymbolTable = _
+    // Current scope symbol table
     private var currentScope: SymbolTable = initScope
+    // Index of the scope relative to the other scopes at the same level
     private var currentScopeIndex: Int = -1
-    private var indexStack: List[Int] = List[Int]()
-    private var scopeStack: List[SymbolTable] = List[SymbolTable]()
-
     // Variable offset information
-    private var currentOffset: Int = -1
+    private var offsetSoFar: Int = -1
     // Map that maps offset to respective ident, is modified when getNextOffset is called.
-    var identOffsetMap: Map[String, Int] = Map[String, Int]()
-    // Stack that keeps track of identMap, on ENTRY (NOT NEXT) to a new scope the current identOffsetMap is pushed to
-    // the stack, an empty identOffsetMap replaces it. When LEAVING a scope the identOffsetMap is discarded and
-    // the one for the next scope is popped.
-    var identMapStack: mutable.Stack[Map[String, Int]] = mutable.Stack[Map[String, Int]]()
+    private var identOffsetMap: Map[String, Int] = Map[String, Int]()
+
+    case class SymbolTableInfo(symbolTable: SymbolTable, scopeIndex: Int, offsetSoFar: Int, offsetMap: Map[String, Int]) {
+      val symbolTableSize = getScopeStackSize(symbolTable)
+    }
+    // Stack keeping track of the symbolTable, index, byteSize, offsetSoFar and offsetMap of
+    // the symbol tables as we enter scope
+    // (symbolTable, index, symbolTableSize, offsetSoFar, offsetMap)
+    private var infoStack: List[SymbolTableInfo] = List()
 
     // Returns the next scope under the current scope level
     def nextScope(): SymbolTable = {
@@ -1338,8 +1341,8 @@ object CodeGenerator {
       currentScopeIndex += 1
       // Update current scope
       currentScope = currentScopeParent.children.apply(currentScopeIndex)
-      // Update currentOffset
-      currentOffset = getScopeStackSize(currentScope)
+      // Update offsetSoFar
+      offsetSoFar = getScopeStackSize(currentScope)
       currentScope
     }
 
@@ -1356,10 +1359,10 @@ object CodeGenerator {
           assert(assertion = false, "key must refer to a type or variable")
           -1
       }
-      currentOffset -= offsetSize
+      offsetSoFar -= offsetSize
       // Add offset for IDENTIFIER to current scope map.
-      identOffsetMap = identOffsetMap + (key -> currentOffset)
-      currentOffset
+      identOffsetMap = identOffsetMap + (key -> offsetSoFar)
+      offsetSoFar
     }
 
     // Returns current identifier offset
@@ -1372,33 +1375,29 @@ object CodeGenerator {
     def enterScope(): Unit = {
       currentScopeParent = currentScope
       // Push
-      indexStack = currentScopeIndex :: indexStack
-      // Push identOffsetMap to identMapStack:
-      identMapStack.push(identOffsetMap)
-      // Reset identOffsetMap for next stack.
+      infoStack = SymbolTableInfo(currentScope, currentScopeIndex, offsetSoFar, identOffsetMap) :: infoStack
       identOffsetMap = Map[String, Int]()
-      scopeStack = currentScope :: scopeStack
       currentScopeIndex = -1
       currentScope = null
     }
 
     // Leaves the current scope
     def leaveScope(): SymbolTable = {
-      assert(indexStack.nonEmpty, "Scope is at the top level already")
-      assert(scopeStack.nonEmpty, "Scope is at the top level already")
+      assert(infoStack.nonEmpty, "Scope is at the top level already")
       currentScopeParent = currentScopeParent.encSymbolTable
       // Pop
-      currentScopeIndex = indexStack.head
-      // Pop identOffsetMap off identMapStack and set it to current identOffsetMap
-      identOffsetMap = identMapStack.pop()
-      indexStack = indexStack.tail
-      currentScope = scopeStack.head
-      scopeStack = scopeStack.tail
+      val poppedInfo: SymbolTableInfo = infoStack.head
+      currentScope = poppedInfo.symbolTable
+      currentScopeIndex = poppedInfo.scopeIndex
+      offsetSoFar = poppedInfo.offsetSoFar
+      identOffsetMap = poppedInfo.offsetMap
+      infoStack = infoStack.tail
+
       currentScope
     }
 
     def returnToTopScope(): Unit = {
-      while (scopeStack.size > 1)
+      while (infoStack.size > 1)
         leaveScope()
     }
   }
