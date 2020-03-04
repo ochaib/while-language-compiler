@@ -1254,10 +1254,10 @@ object CodeGenerator {
   }
 
   def getScopeStackSize(symbolTable: SymbolTable): Int = {
-    symbolTable.map.values.map(getSTStackSize).sum
+    symbolTable.map.values.map(getIDStackSize).sum
   }
 
-  def getSTStackSize(identifier: IDENTIFIER): Int = {
+  def getIDStackSize(identifier: IDENTIFIER): Int = {
     identifier match {
       case _: PARAM => 0
       case value: TYPE => getSize(value)
@@ -1311,7 +1311,7 @@ object CodeGenerator {
 
   case class SymbolTableInfo(symbolTable: SymbolTable, scopeIndex: Int) {
     var offsetMap: Map[String, Int] = Map()
-    val symbolTableSize: Int = getScopeStackSize(symbolTable)
+    val symbolTableSize: Int = if (scopeIndex == -1) 0 else getScopeStackSize(symbolTable)
     private var offsetSoFar: Int = symbolTableSize
 
     def setAndGetOffset(key: String): Int = {
@@ -1333,7 +1333,7 @@ object CodeGenerator {
 
   case class SymbolTableManager(private val initScope: SymbolTable) {
     // Info of the current symbol table
-    private var currentInfo: SymbolTableInfo = SymbolTableInfo(initScope, 0)
+    private var currentInfo: SymbolTableInfo = SymbolTableInfo(initScope, -1)
 
     // Stack keeping track of the symbolTable, index, byteSize, offsetSoFar and offsetMap of
     // the symbol tables as we enter scope
@@ -1345,10 +1345,16 @@ object CodeGenerator {
 
     // Returns the next scope under the current scope level
     def nextScope(): SymbolTable = {
-      // Check you can go to next scope
-      assert(currentScopeParent.children != null && currentInfo.scopeIndex + 1 < currentScopeParent.children.length, s"Cannot go to next scope.")
+      // Check there are children
+      assert(currentScopeParent.children != null, "Scope parent must have children to get next scope")
+      var newIndex = 0
+      // If we are already iterating through the scope then increment, otherwise reset to 0
+      if (currentInfo.symbolTable.encSymbolTable == currentScopeParent) {
+        // Check you can go to next scope
+        assert(currentInfo.scopeIndex + 1 < currentScopeParent.children.length, s"Scope parent has no more scopes left")
+        newIndex = currentInfo.scopeIndex + 1
+      }
       // Update current scope
-      val newIndex = currentInfo.scopeIndex + 1
       currentInfo = SymbolTableInfo(currentScopeParent.children.apply(newIndex), newIndex)
       currentInfo.symbolTable
     }
@@ -1358,7 +1364,7 @@ object CodeGenerator {
       currentScopeParent = currentInfo.symbolTable
       // Push
       infoStack = currentInfo :: infoStack
-      currentInfo = null
+      //currentInfo = null
     }
 
     // Leaves the current scope
