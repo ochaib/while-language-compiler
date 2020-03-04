@@ -184,7 +184,9 @@ object CodeGenerator {
         // Need to pass offset here too.
         => var asmType: Option[ASMType] = None
            if (checkSingleByte(ident)) asmType = Some(ByteType)
-           IndexedSeq[Instruction](new Store(None, asmType, RM.peekVariableRegister(), instructionSet.getSP))
+           IndexedSeq[Instruction](new Store(None, asmType, RM.peekVariableRegister(),
+             instructionSet.getSP, new Immediate(symbolTableManager.lookupOffset(ident.getKey)),
+             registerWriteBack = false))
       case arrayElem: ArrayElemNode => generateArrayElemLHS(arrayElem)
       case pairElem: PairElemNode => generatePairElemLHS(pairElem)
     }
@@ -1310,7 +1312,7 @@ object CodeGenerator {
   }
 
   case class SymbolTableInfo(symbolTable: SymbolTable, scopeIndex: Int) {
-    var offsetMap: Map[String, Int] = Map()
+    var offsetMap: Map[String, Int] = Map.empty
     val symbolTableSize: Int = if (scopeIndex == -1) 0 else getScopeStackSize(symbolTable)
     private var offsetSoFar: Int = symbolTableSize
 
@@ -1338,7 +1340,7 @@ object CodeGenerator {
     // Stack keeping track of the symbolTable, index, byteSize, offsetSoFar and offsetMap of
     // the symbol tables as we enter scope
     // (symbolTable, index, symbolTableSize, offsetSoFar, offsetMap)
-    private var infoStack: List[SymbolTableInfo] = List()
+    private var infoStack: List[SymbolTableInfo] = List.empty
 
     // Current scope parent
     var currentScopeParent: SymbolTable = _
