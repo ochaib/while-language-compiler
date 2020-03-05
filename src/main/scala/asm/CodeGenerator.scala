@@ -1236,6 +1236,7 @@ object CodeGenerator {
   }
 
   def getScopeStackSize(symbolTable: SymbolTable): Int = {
+    assert(symbolTable != topSymbolTable, "Should not be trying to calculate the size of the top level symbol table")
     symbolTable.map.values.map(getIDStackSize).sum
   }
 
@@ -1274,8 +1275,8 @@ object CodeGenerator {
   }
 
   def leaveScopeAndDeallocateStack(returnDeallocation: Boolean = false): IndexedSeq[Instruction] = {
-    currentSymbolTable = symbolTableManager.leaveScope()
     var bytesToDeallocate = getScopeStackSize(currentSymbolTable)
+    currentSymbolTable = symbolTableManager.leaveScope()
     if (bytesAllocatedSoFar == 0) IndexedSeq()
     // If all the bytes allocated so far have been freed, a return must have already taken place
     else {
