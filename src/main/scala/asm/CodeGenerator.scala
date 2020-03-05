@@ -17,6 +17,8 @@ object CodeGenerator {
   var topSymbolTable: SymbolTable = _
   var currentSymbolTable: SymbolTable = _
   var bytesAllocatedSoFar: Int = 0
+  var paramOffsetMap: Map[String, Int] = Map.empty
+  var currentParamOffset: Int = 0
 
   // Keep track of number of branches.
   val labelGenerator: LabelGenerator = LabelGenerator()
@@ -84,9 +86,6 @@ object CodeGenerator {
     // Program Instructions = Function Instructions + Main Instructions
     functionInstructions ++ mainInstructions ++ commonFunctions
   }
-
-  var paramOffsetMap: Map[String, Int] = Map[String, Int]()
-  var currentParamOffset: Int = 0
 
   def addParamToMap(param: ParamNode): Unit = {
     //if (param.getType(topSymbolTable, currentSymbolTable) != STRING) {
@@ -386,17 +385,6 @@ object CodeGenerator {
     val varReg = RM.nextVariableRegister()
     val peekedReg = RM.peekVariableRegister
 
-    // Check if loadOffset below can be replaced with:
-    //     val loadOffset: IndexedSeq[Instruction] = pairElem match {
-    //        case fst: FstNode => generateExpression(fst.expression)
-    //        case snd: SndNode => generateExpression(snd.expression)
-    //     }
-
-//    val immOffset: Int = pairElem match {
-//      case fst: FstNode => symbolTableManager.getOffset(fst.getKey)
-//      case snd: SndNode => symbolTableManager.getOffset(snd.getKey)
-//    }
-
     val loadOffset = IndexedSeq[Instruction](
       // Current offset of identifier related to pair.
       new Load(None, None, peekedReg, instructionSet.getSP,
@@ -421,14 +409,12 @@ object CodeGenerator {
       case fst: FstNode =>
         IndexedSeq[Instruction](
           new Load(None, None, peekedReg, peekedReg, new Immediate(offset), registerWriteBack = false),
-          new Store(None, asmType, varReg, peekedReg, new Immediate(symbolTableManager.lookupOffset(fst.expression.getKey)),
-            registerWriteBack = false)
+          new Store(None, asmType, varReg, peekedReg, new Immediate(0), registerWriteBack = false)
         )
       case snd: SndNode =>
         IndexedSeq[Instruction](
           new Load(None, None, peekedReg, peekedReg, new Immediate(offset), registerWriteBack = false),
-          new Store(None, asmType, varReg, peekedReg, new Immediate(symbolTableManager.lookupOffset(snd.expression.getKey)),
-            registerWriteBack = false)
+          new Store(None, asmType, varReg, peekedReg, new Immediate(0), registerWriteBack = false)
         )
 
     }
