@@ -1384,6 +1384,7 @@ object CodeGenerator {
     def lookupOffset(key: String): Int = {
       var offset: Option[Int] = None //currentInfo.offsetMap.get(key)
       var additionalBytes = 0
+      var returnValue: Int = -1
       // If the offset is not in the current offsetMap iterate through all parent maps
       //if (offset.isEmpty) {
         // Add the byte allocation for the current scope
@@ -1393,20 +1394,20 @@ object CodeGenerator {
             // Lookup offset
             offset = iteratingInfo.offsetMap.get(key)
             // If it is defined, break
-            if (offset.isDefined) break
+            if (offset.isDefined) {
+              returnValue = offset.get + additionalBytes
+              if (iteratingInfo.symbolTable.lookup(key).get.isInstanceOf[PARAM])
+                returnValue += getScopeStackSize(currentSymbolTable)
+              break
+            }
             // Add scope bytes to additional bytes
             additionalBytes += iteratingInfo.symbolTableSize
           }
         }
       // }
       // If defined, return offset + additional bytes
-      if (offset.isDefined) {
-        offset.get + additionalBytes
-      } else {
-        // Otherwise it's an error
-        assert(assertion = false, s"$key does not exist in this symbol table or all parent tables")
-        -1
-      }
+      assert(offset.isDefined, s"$key does not exist in this symbol table or all parent tables")
+      returnValue
     }
 
     def returnToTopScope(): Unit = {
