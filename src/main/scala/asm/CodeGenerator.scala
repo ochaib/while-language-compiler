@@ -1389,12 +1389,12 @@ object CodeGenerator {
 
     // Returns current identifier offset
     def lookupOffset(key: String): Int = {
-      var offset: Option[Int] = currentInfo.offsetMap.get(key)
+      var offset: Option[Int] = null //currentInfo.offsetMap.get(key)
       var additionalBytes = 0
       // If the offset is not in the current offsetMap iterate through all parent maps
-      if (offset.isEmpty) {
+      //if (offset.isEmpty) {
         // Add the byte allocation for the current scope
-        additionalBytes += currentInfo.symbolTableSize
+        // additionalBytes += currentInfo.symbolTableSize
         breakable {
           for (iteratingInfo <- infoStack) {
             // Lookup offset
@@ -1405,7 +1405,7 @@ object CodeGenerator {
             additionalBytes += iteratingInfo.symbolTableSize
           }
         }
-      }
+      // }
       // If defined, return offset + additional bytes
       if (offset.isDefined) {
         offset.get + additionalBytes
