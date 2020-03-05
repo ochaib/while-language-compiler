@@ -24,8 +24,18 @@ stat: SKIP_                                 #Skip
       | PRINTLN expr                        #Println
       | IF expr THEN stat ELSE stat FI      #If
       | WHILE expr DO stat DONE             #While
+      | FOR for_condition stat DONE         #For
+      | BREAK                               #Break
+      | CONTINUE                            #Continue
       | BEGIN stat END                      #Begin
       | stat SEMICOLON stat                 #Sequence;
+
+// Has to have the form (declaration, check, update) = (int i = __; i binOp __; i = __)
+for_condition: OPEN_PARENTHESES for_decl SEMICOLON expr SEMICOLON for_assign CLOSE_PARENTHESES;
+// Has to be a declaration of some value that continues to be checked and updated in for loop.
+for_decl: type ident EQUALS assign_rhs;
+// The update.
+for_assign: ident EQUALS assign_rhs;
 
 assign_lhs: ident                           #AssignLHSIdent
           | array_elem                      #AssignLHSArrayElem

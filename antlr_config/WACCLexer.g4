@@ -27,6 +27,9 @@ FI: 'fi';
 WHILE: 'while';
 DO: 'do';
 DONE: 'done';
+FOR: 'for';
+CONTINUE: 'continue';
+BREAK: 'break';
 
 // ASSIGN RHS
 NEWPAIR: 'newpair';
