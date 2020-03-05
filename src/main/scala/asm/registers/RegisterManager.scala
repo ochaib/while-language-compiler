@@ -3,7 +3,6 @@ package asm.registers
 import asm.instructionset.InstructionSet
 
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
 
 trait Register {def registerID: String; }
 class RegisterManager(_instructionSet: InstructionSet) {
@@ -12,22 +11,21 @@ class RegisterManager(_instructionSet: InstructionSet) {
   val instructionSet: InstructionSet = _instructionSet
 
   // Test.
-  var argumentRegisters: ListBuffer[Register] = instructionSet.getArgumentRegisters
-  var variableRegisters: ListBuffer[Register] = instructionSet.getVariableRegisters
+  var argumentRegisters: mutable.ListBuffer[Register] = instructionSet.getArgumentRegisters
+  var variableRegisters: mutable.ListBuffer[Register] = instructionSet.getVariableRegisters
 
   // List of all registers that are available to use.
-  var availableRegisters: ListBuffer[Register] = argumentRegisters ++ variableRegisters
+  var availableRegisters: mutable.ListBuffer[Register] = argumentRegisters ++ variableRegisters
 
   // Memory stack, tracks available registers in each scope.
   // Can replace with list/listbuffer because scala complains about deprecation.
-  val memoryStack: mutable.Stack[ListBuffer[Register]] =
-    new mutable.Stack[ListBuffer[Register]]
+  val memoryStack = new mutable.Stack[mutable.ListBuffer[Register]]
 
   def next(): Register = {
     availableRegisters.remove(0)
   }
 
-  def peek(): Register = {
+  def peek: Register = {
     availableRegisters.head
   }
 
@@ -35,16 +33,24 @@ class RegisterManager(_instructionSet: InstructionSet) {
     argumentRegisters.remove(0)
   }
 
-  def peekArgumentRegister(): Register = {
+  def peekArgumentRegister: Register = {
     argumentRegisters.head
   }
 
   def nextVariableRegister(): Register = {
-    variableRegisters.remove(0)
+    if (variableRegisters.isEmpty){
+      peekArgumentRegister
+    } else {
+      variableRegisters.remove(0)
+    }
   }
 
-  def peekVariableRegister(): Register = {
-    variableRegisters.head
+  def peekVariableRegister: Register = {
+    if (variableRegisters.isEmpty){
+      peekArgumentRegister
+    } else {
+      variableRegisters.head
+    }
   }
 
   // Free's are not adding registers back in initial order.
@@ -61,7 +67,7 @@ class RegisterManager(_instructionSet: InstructionSet) {
   }
 
   // Upon entering a new scope (function call) we must save the previous register state.
-  def save(): ListBuffer[Register] = {
+  def save(): mutable.ListBuffer[Register] = {
     memoryStack.push(availableRegisters)
     // Need to pass new instructions to the scope once the previous register state is saved.
     instructionSet.registers
