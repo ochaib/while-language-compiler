@@ -96,12 +96,13 @@ object CodeGenerator {
     // Update the current symbol table to function block
     currentSymbolTable = symbolTableManager.nextScope()
 
-    if (func.paramList.isDefined) {
-      setAndGetAllParams(func.paramList.get)
-    }
 
     // Enter function scope
     val allocateInstructions = enterScopeAndAllocateStack()
+
+    if (func.paramList.isDefined) {
+      setAndGetAllParams(func.paramList.get)
+    }
 
     var labelPushLR = IndexedSeq[Instruction](Label(s"f_${func.identNode.ident}"), pushLR)
     if (func.paramList.isDefined)
@@ -1376,7 +1377,7 @@ object CodeGenerator {
 
     // Called on declarations for idents to set the map address
     def setAndGetOffset(key: String, param: Boolean = false): Int = {
-      currentInfo.setAndGetOffset(key, param)
+      infoStack.head.setAndGetOffset(key, param)
     }
 
     // Returns current identifier offset
