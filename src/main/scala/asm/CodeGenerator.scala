@@ -210,6 +210,7 @@ object CodeGenerator {
   // THIS, COMES FROM EXPR
   def generateArrayElem(arrayElem: ArrayElemNode): IndexedSeq[Instruction] = {
     val varReg = RM.nextVariableRegister()
+    // TODO: Checked that this shouldn't be nextVariableRegister.
     val varReg2 = RM.peekVariableRegister
 
     // Must now retrieve elements in array corresponding to each
@@ -229,7 +230,7 @@ object CodeGenerator {
     val varReg2 = RM.nextVariableRegister()
 
     // Must now retrieve elements in array corresponding to each
-    val arrayElemInstructions = retrieveArrayElements(arrayElem, varReg2, varReg1)
+    val arrayElemInstructions = retrieveArrayElements(arrayElem, varReg1, varReg2)
 
     // Check if B is necessary for load, store etc.
     // May need to be ByteType
@@ -248,9 +249,9 @@ object CodeGenerator {
     arrayElemInstructions ++ storeResult
   }
 
-  def retrieveArrayElements(arrayElem: ArrayElemNode, varReg: Register, varReg2: Register): IndexedSeq[Instruction] = {
+  def retrieveArrayElements(arrayElem: ArrayElemNode, varReg1: Register, varReg2: Register): IndexedSeq[Instruction] = {
     val preExpr = IndexedSeq[Instruction](
-      Add(None, conditionFlag = false, varReg, instructionSet.getSP,
+      Add(None, conditionFlag = false, varReg1, instructionSet.getSP,
           new Immediate(getOffset(arrayElem.identNode.getKey)))
     )
 
@@ -258,12 +259,12 @@ object CodeGenerator {
     val exprInstructions: IndexedSeq[Instruction] = {
       arrayElem.exprNodes.flatMap(e => generateExpression(e) ++
         IndexedSeq[Instruction](
-          new Load(None, None, varReg, varReg),
+          new Load(None, None, varReg1, varReg1),
           Move(None, instructionSet.getReturn, new ShiftedRegister(varReg2)),
-          Move(None, instructionSet.getArgumentRegisters(1), new ShiftedRegister(varReg)),
+          Move(None, instructionSet.getArgumentRegisters(1), new ShiftedRegister(varReg1)),
         ) ++ Utilities.printCheckArrayBounds ++ IndexedSeq[Instruction](
-          Add(None, conditionFlag = false, varReg, varReg, new Immediate(4)),
-          Add(None, conditionFlag = false, varReg, varReg, new ShiftedRegister(varReg2, "LSL", 2))
+          Add(None, conditionFlag = false, varReg1, varReg1, new Immediate(4)),
+          Add(None, conditionFlag = false, varReg1, varReg1, new ShiftedRegister(varReg2, "LSL", 2))
         )
       )
     }
@@ -661,12 +662,6 @@ object CodeGenerator {
             case _: ARRAY | _: PAIR => Utilities.printReference
           })
       case i: BinaryOperationNode =>
-//        (new Load(
-//          condition=None, asmType=None,
-//          RM.peekVariableRegister, instructionSet.getSP,
-//          new Immediate(symbolTableManager.getOffset(i.getKey)),
-//          registerWriteBack = false
-//        ) +:
           generateBinary(i) ++
             (i.getType(topSymbolTable, currentSymbolTable) match {
             case scalar: SCALAR =>
@@ -702,12 +697,6 @@ object CodeGenerator {
             case _: ARRAY | _: PAIR => Utilities.printReference
           })
       case i: UnaryOperationNode =>
-//        (new Load(
-//          condition=None, asmType=None,
-//          RM.peekVariableRegister, instructionSet.getSP,
-//          new Immediate(symbolTableManager.getOffset(i.getKey)),
-//          registerWriteBack = false
-//        ) +:
           generateUnary(i) ++ (i.getType(topSymbolTable, currentSymbolTable) match {
             case scalar: SCALAR =>
               if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
@@ -881,8 +870,15 @@ object CodeGenerator {
                      new Immediate(if (bool) 1 else 0)))
       case Char_literNode(_, char)
         // This was using next not sure it should be so I changed it to peek.
-                  => IndexedSeq[Instruction](Move(None, RM.peekVariableRegister,
-                     new Immediate(char)))
+        // Must check for null character for some reason it may be parsed at '0' and should
+        // be treated a 0 move.
+                  => if (char == '\u0000' || char == '0') {
+                      IndexedSeq[Instruction](Move(None, RM.peekVariableRegister,
+                        new Immediate(0)))
+                    } else {
+                      IndexedSeq[Instruction](Move(None, RM.peekVariableRegister,
+                        new Immediate(char)))
+                    }
       case Str_literNode(_, str)
                   => IndexedSeq[Instruction](new Load(None, None,
                      RM.peekVariableRegister, Utilities.addString(str)))

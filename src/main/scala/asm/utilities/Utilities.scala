@@ -156,6 +156,7 @@ object Utilities {
             strings += (Label("msg_check_null_pointer") ->
                 new StringLiteral("\"NullReferenceError: dereference a null reference\\n\\0\"", 50)
             )
+        printRuntimeError
         IndexedSeq[Instruction](
             BranchLink(condition=None, label=PrintCheckNullPointer.label)
         )
