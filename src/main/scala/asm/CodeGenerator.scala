@@ -85,33 +85,20 @@ object CodeGenerator {
     functionInstructions ++ mainInstructions ++ commonFunctions
   }
 
-  var paramOffsetMap: Map[String, Int] = Map[String, Int]()
-  var currentParamOffset: Int = 0
-
-  def addParamToMap(param: ParamNode): Unit = {
-    //if (param.getType(topSymbolTable, currentSymbolTable) != STRING) {
-      paramOffsetMap = paramOffsetMap + (param.identNode.getKey -> currentParamOffset)
-      currentParamOffset += getSize(param.getType(topSymbolTable, currentSymbolTable))
-    //}
-  }
-
-  def createParamMap(paramListNode: ParamListNode): Unit = {
-    paramOffsetMap = Map[String, Int]()
-    currentParamOffset = 4
+  def setAndGetAllParams(paramListNode: ParamListNode): Unit = {
     for (param: ParamNode <- paramListNode.paramList) {
-      addParamToMap(param)
+      symbolTableManager.setAndGetOffset(param.identNode.getKey, param = true)
     }
   }
-
-  def getParamOffset(key: String): Int = paramOffsetMap(key)
 
   def generateFunction(func: FuncNode): IndexedSeq[Instruction] = {
 
-    if (func.paramList.isDefined) {
-      createParamMap(func.paramList.get)
-    }
     // Update the current symbol table to function block
     currentSymbolTable = symbolTableManager.nextScope()
+
+    if (func.paramList.isDefined) {
+      setAndGetAllParams(func.paramList.get)
+    }
 
     // Enter function scope
     val allocateInstructions = enterScopeAndAllocateStack()
@@ -130,18 +117,11 @@ object CodeGenerator {
 
     val popEndInstruction = IndexedSeq[Instruction](popPC, new EndFunction)
 
-    // TODO: HAVE TO GO BACK TO MAIN
-    currentParamOffset = 0
-    paramOffsetMap = Map()
-
     labelPushLR ++ allocateInstructions ++ statInstructions ++ deallocateInstructions ++ popEndInstruction
   }
 
   def getOffset(key: String): Int = {
-    if (paramOffsetMap.get(key).isDefined || currentSymbolTable.lookup(key).isDefined && currentSymbolTable.lookup(key).get.isInstanceOf[PARAM])
-      getParamOffset(key) + bytesAllocatedSoFar
-    else
-      symbolTableManager.lookupOffset(key)// + bytesAllocatedSoFar - getScopeStackSize(currentSymbolTable)
+    symbolTableManager.lookupOffset(key)// + bytesAllocatedSoFar - getScopeStackSize(currentSymbolTable)
   }
 
 //  def generateParamList(paramList: ParamListNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
@@ -1318,22 +1298,30 @@ object CodeGenerator {
     var offsetMap: Map[String, Int] = Map.empty
     val symbolTableSize: Int = if (scopeIndex == -1) 0 else getScopeStackSize(symbolTable)
     private var offsetSoFar: Int = symbolTableSize
+    private var paramOffsetSoFar: Int = 4
 
-    def setAndGetOffset(key: String): Int = {
+    def setAndGetOffset(key: String, isParam: Boolean): Int = {
       val currentIdOption = symbolTable.lookup(key)
-      assert (currentIdOption.isDefined, "key must be defined in the scope")
-      val offsetSize: Int = currentIdOption.get match {
-        case value: TYPE => getSize(value)
-        case variable: VARIABLE => getSize(variable._type)
-        case _ =>
-          assert(assertion = false, "key ID must be a variable or type")
-          -1
+      assert(currentIdOption.isDefined, "key must be defined in the scope")
+      if (isParam) {
+        val offset = paramOffsetSoFar
+        offsetMap = offsetMap + (key -> paramOffsetSoFar)
+        paramOffsetSoFar += getSize(currentIdOption.get.asInstanceOf[PARAM]._type)
+        offset
+      } else {
+        val offsetSize = currentIdOption.get match {
+          case value: TYPE => getSize(value)
+          case variable: VARIABLE => getSize(variable._type)
+          case _ =>
+            assert(assertion = false, "key ID must be a variable or type")
+            -1
+        }
+        offsetSoFar -= offsetSize
+        // Add offset for IDENTIFIER to current scope map.
+        offsetMap = offsetMap + (key -> offsetSoFar)
+        offsetSoFar
       }
-      offsetSoFar -= offsetSize
-      // Add offset for IDENTIFIER to current scope map.
-      offsetMap = offsetMap + (key -> offsetSoFar)
-      offsetSoFar
-    }
+  }
   }
 
   case class SymbolTableManager(private val initScope: SymbolTable) {
@@ -1386,8 +1374,8 @@ object CodeGenerator {
     }
 
     // Called on declarations for idents to set the map address
-    def setAndGetOffset(key: String): Int = {
-      currentInfo.setAndGetOffset(key)
+    def setAndGetOffset(key: String, param: Boolean = false): Int = {
+      currentInfo.setAndGetOffset(key, param)
     }
 
     // Returns current identifier offset
