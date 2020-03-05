@@ -1279,10 +1279,12 @@ object CodeGenerator {
       while (bytesToAllocate > 0) {
         if (bytesToAllocate >= instructionSet.getMaxOffset) {
           bytesToAllocate -= instructionSet.getMaxOffset
-          allocateInstructions = allocateInstructions :+ Subtract(None, conditionFlag = false, instructionSet.getSP, instructionSet.getSP, new Immediate(instructionSet.getMaxOffset))
+          allocateInstructions = allocateInstructions :+ Subtract(None, conditionFlag = false,
+            instructionSet.getSP, instructionSet.getSP, new Immediate(instructionSet.getMaxOffset))
           bytesAllocatedSoFar += instructionSet.getMaxOffset
         } else {
-          allocateInstructions = allocateInstructions :+ Subtract(None, conditionFlag = false, instructionSet.getSP, instructionSet.getSP, new Immediate(bytesToAllocate))
+          allocateInstructions = allocateInstructions :+ Subtract(None, conditionFlag = false,
+            instructionSet.getSP, instructionSet.getSP, new Immediate(bytesToAllocate))
           bytesAllocatedSoFar += bytesToAllocate
           bytesToAllocate = 0
         }
@@ -1291,24 +1293,25 @@ object CodeGenerator {
     }
   }
 
-  def leaveScopeAndDeallocateStack(): IndexedSeq[Instruction] = {
+  def leaveScopeAndDeallocateStack(returnDeallocation: Boolean = false): IndexedSeq[Instruction] = {
     currentSymbolTable = symbolTableManager.leaveScope()
-    if (getScopeStackSize(currentSymbolTable) == 0) IndexedSeq()
+    var bytesToDeallocate = getScopeStackSize(currentSymbolTable)
+    if (bytesAllocatedSoFar == 0) IndexedSeq()
     // If all the bytes allocated so far have been freed, a return must have already taken place
-    else if (bytesAllocatedSoFar != 0) {
+    else {
+      bytesAllocatedSoFar -= bytesToDeallocate
       var deallocateInstructions: IndexedSeq[Instruction] = IndexedSeq()
-      while (bytesAllocatedSoFar > 0) {
-        if (bytesAllocatedSoFar >= instructionSet.getMaxOffset) {
+      while (bytesToDeallocate > 0) {
+        if (bytesToDeallocate >= instructionSet.getMaxOffset) {
           deallocateInstructions = deallocateInstructions :+ Add(None, conditionFlag = false, instructionSet.getSP, instructionSet.getSP, new Immediate(instructionSet.getMaxOffset))
-          bytesAllocatedSoFar -= instructionSet.getMaxOffset
+          bytesToDeallocate -= instructionSet.getMaxOffset
         } else {
-          deallocateInstructions = deallocateInstructions :+ Add(None, conditionFlag = false, instructionSet.getSP, instructionSet.getSP, new Immediate(bytesAllocatedSoFar))
-          bytesAllocatedSoFar -= bytesAllocatedSoFar
+          deallocateInstructions = deallocateInstructions :+ Add(None, conditionFlag = false, instructionSet.getSP, instructionSet.getSP, new Immediate(bytesToDeallocate))
+          bytesToDeallocate -= bytesToDeallocate
         }
       }
       deallocateInstructions
     }
-    else IndexedSeq()
   }
 
   case class SymbolTableInfo(symbolTable: SymbolTable, scopeIndex: Int) {
@@ -1389,7 +1392,7 @@ object CodeGenerator {
 
     // Returns current identifier offset
     def lookupOffset(key: String): Int = {
-      var offset: Option[Int] = null //currentInfo.offsetMap.get(key)
+      var offset: Option[Int] = None //currentInfo.offsetMap.get(key)
       var additionalBytes = 0
       // If the offset is not in the current offsetMap iterate through all parent maps
       //if (offset.isEmpty) {
