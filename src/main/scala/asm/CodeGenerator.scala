@@ -1400,13 +1400,8 @@ object CodeGenerator {
         }
       // }
       // If defined, return offset + additional bytes
-      if (offset.isDefined) {
-        offset.get + additionalBytes
-      } else {
-        // Otherwise it's an error
-        assert(assertion = false, s"$key does not exist in this symbol table or all parent tables")
-        -1
-      }
+      assert(offset.isDefined, s"$key does not exist in this symbol table or all parent tables")
+      offset.get + additionalBytes
     }
 
     def returnToTopScope(): Unit = {
