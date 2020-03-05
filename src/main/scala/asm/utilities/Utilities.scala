@@ -44,7 +44,7 @@ object Utilities {
         // Load R4, =msg_#
         // Mov R0, R4
         // BL p_print_string
-        val reg: Register = RM.peekVariableRegister()
+        val reg: Register = RM.peekVariableRegister
         if (commonFunctions.add(PrintString))
             strings += (Label("msg_print_string") -> new StringLiteral("\"%.*s\\0\"", 5))
         IndexedSeq[Instruction](
@@ -67,7 +67,7 @@ object Utilities {
         // Mov r4, (#1 if true else #0)
         // Mov R0, R4
         // BL p_print_bool
-        val reg: Register = RM.peekVariableRegister()
+        val reg: Register = RM.peekVariableRegister
         if (commonFunctions.add(PrintBool)) {
             strings += (Label("msg_print_bool_true") -> new StringLiteral("\"true\\0\"", 5))
             strings += (Label("msg_print_bool_false") -> new StringLiteral("\"false\\0\"", 6))
@@ -83,7 +83,7 @@ object Utilities {
         // Mov R4, #'c'
         // Mov R0, R4
         // BL putchar
-        val reg: Register = RM.peekVariableRegister()
+        val reg: Register = RM.peekVariableRegister
         IndexedSeq[Instruction](
             Move(condition = None, dest = reg, src = new Immediate(c)),
             Move(condition = None, dest = RM.instructionSet.getReturn, src = new ShiftedRegister(reg)),
@@ -99,7 +99,7 @@ object Utilities {
         // Load R4, =i
         // Mov R0, R4
         // BL p_print_int
-        val reg: Register = RM.peekVariableRegister()
+        val reg: Register = RM.peekVariableRegister
         if (commonFunctions.add(PrintInt))
             strings += (Label("msg_print_int") -> new StringLiteral("\"%d\\0\"", 3))
         IndexedSeq[Instruction](
