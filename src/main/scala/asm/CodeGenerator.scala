@@ -1370,7 +1370,7 @@ object CodeGenerator {
       infoStack = infoStack.tail
 
       // Return table
-      currentInfo.symbolTable
+      currentInfo.symbolTable.encSymbolTable
     }
 
     // Called on declarations for idents to set the map address
