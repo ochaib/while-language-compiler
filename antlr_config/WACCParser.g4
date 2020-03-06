@@ -31,11 +31,11 @@ stat: SKIP_                                 #Skip
       | stat SEMICOLON stat                 #Sequence;
 
 // Has to have the form (declaration, check, update) = (int i = __; i binOp __; i = __)
-for_condition: OPEN_PARENTHESES for_decl SEMICOLON expr SEMICOLON for_assign CLOSE_PARENTHESES;
+for_condition: OPEN_PARENTHESES stat SEMICOLON expr SEMICOLON stat CLOSE_PARENTHESES;
 // Has to be a declaration of some value that continues to be checked and updated in for loop.
-for_decl: type ident EQUALS assign_rhs;
+//for_decl: type ident EQUALS assign_rhs;
 // The update.
-for_assign: ident EQUALS assign_rhs;
+//for_assign: ident EQUALS assign_rhs;
 
 assign_lhs: ident                           #AssignLHSIdent
           | array_elem                      #AssignLHSArrayElem
