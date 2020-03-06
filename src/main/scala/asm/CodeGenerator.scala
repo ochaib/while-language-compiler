@@ -134,7 +134,7 @@ object CodeGenerator {
   def generateStatement(statement: StatNode): IndexedSeq[Instruction] = {
     statement match {
       // Create/return empty instruction list for skip node.
-      case _: SkipNode => IndexedSeq[Instruction]()
+      case _: SkipNode => IndexedSeq.empty
       case declaration: DeclarationNode => generateDeclaration(declaration)
       case assign: AssignmentNode => generateAssignment(assign)
       case ReadNode(_, lhs) => generateRead(lhs)
@@ -148,6 +148,11 @@ object CodeGenerator {
 
       case ifNode: IfNode => generateIf(ifNode)
       case whileNode: WhileNode => generateWhile(whileNode)
+
+      // EXTENSIONS:
+      case _:BreakNode => IndexedSeq.empty
+      case _:ContinueNode => IndexedSeq.empty
+
       case begin: BeginNode => generateBegin(begin)
       case SequenceNode(_, statOne, statTwo) => generateStatement(statOne) ++ generateStatement(statTwo)
     }
@@ -809,6 +814,56 @@ object CodeGenerator {
 
     // Body Instruction list
     val bodyInstructions: IndexedSeq[Instruction] = generateStatement(whileNode.stat)
+
+    // Leave Scope
+    val deallocateWhileBody: IndexedSeq[Instruction] = leaveScopeAndDeallocateStack()
+
+    // ************
+
+
+    // *** SUMMARY ***
+
+    val totalBodyInstructions: IndexedSeq[Instruction] = bodyLabel +: (allocateWhileBody ++ bodyInstructions ++ deallocateWhileBody)
+
+    val totalConditionInstructions = conditionLabel +: condInstructions :+ bodyBranch
+
+    initConditionBranch +: (totalBodyInstructions ++ totalConditionInstructions)
+  }
+
+  def generateFor(forNode: ForNode): IndexedSeq[Instruction] = {
+    // Labels
+    val conditionLabel: Label = labelGenerator.generate()
+    val bodyLabel: Label = labelGenerator.generate()
+
+    // *** CONDITION ***
+
+    // Initial condition check
+    val initConditionBranch: Instruction = Branch(None, conditionLabel)
+
+    // Condition, (declaration, expression, assign)
+    val condInstructions: IndexedSeq[Instruction] =
+      generateDeclaration(forNode.forCondition.decl) ++
+      generateExpression(forNode.forCondition.expr) ++
+      IndexedSeq[Instruction](Compare(None, RM.peekVariableRegister, new Immediate(1))) ++
+      generateAssignment(forNode.forCondition.assign)
+
+    // Branch to start of body
+    val bodyBranch: Instruction = Branch(Some(Equal), bodyLabel)
+
+    // ************
+
+
+    // *** BODY ***
+
+
+    // Update Scope to While Body
+    currentSymbolTable = symbolTableManager.nextScope()
+
+    // Enter Scope
+    val allocateWhileBody: IndexedSeq[Instruction] = enterScopeAndAllocateStack()
+
+    // Body Instruction list
+    val bodyInstructions: IndexedSeq[Instruction] = generateStatement(forNode.stat)
 
     // Leave Scope
     val deallocateWhileBody: IndexedSeq[Instruction] = leaveScopeAndDeallocateStack()
