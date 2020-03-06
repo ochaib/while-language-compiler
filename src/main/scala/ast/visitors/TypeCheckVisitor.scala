@@ -448,9 +448,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode, topSymbolTable: SymbolTable) e
     visit(lhs)
     if (lhsType == null || rhsType == null) {
 
-    } else if (! (lhsType == rhsType ||
-      lhsType.isInstanceOf[PAIR] && rhsType.isInstanceOf[PAIR] ||
-      lhsType.isInstanceOf[ARRAY] && rhsType.isInstanceOf[ARRAY])) {
+    } else if (! typesCompatible(lhsType, rhsType)) {
 
       SemanticErrorLog.add(s"${getPos(token)} Assignment for ${lhs.getKey} to ${rhs.getKey} failed, " +
         s"expected type ${lhsType.getKey} "
@@ -485,9 +483,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode, topSymbolTable: SymbolTable) e
     val exprType = expr.getType(topSymbolTable, currentSymbolTable)
     if (currentFuncReturnType == null) {
       SemanticErrorLog.add(s"${getPos(token)} trying to global return on ${expr.toString}")
-    } else if (exprType != null && (! (exprType == currentFuncReturnType ||
-      currentFuncReturnType.isInstanceOf[PAIR] && exprType == GENERAL_PAIR ||
-      currentFuncReturnType.isInstanceOf[ARRAY] && exprType == GENERAL_ARRAY))) {
+    } else if (exprType != null && (! typesCompatible(exprType, currentFuncReturnType))) {
       SemanticErrorLog.add(s"${getPos(token)} expected return " +
         s"type ${currentFuncReturnType.getKey} but got ${exprType.getKey}.")
     }
