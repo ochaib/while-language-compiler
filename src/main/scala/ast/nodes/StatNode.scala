@@ -84,6 +84,13 @@ case class ForConditionNode(token: Token, decl: DeclarationNode, expr: ExprNode,
   }
 }
 
+case class BreakNode(token: Token) extends StatNode(token) {
+  override def toTreeString: String = console.color("break", fg=Console.BLUE)
+}
+
+case class ContinueNode(token: Token) extends StatNode(token) {
+  override def toTreeString: String = console.color("continue", fg=Console.BLUE)
+}
 
 case class BeginNode(token: Token, stat: StatNode) extends StatNode(token) {
   override def toTreeString: String = {

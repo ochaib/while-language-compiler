@@ -61,6 +61,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
   }
 
   // Individual components of stat that must be visited.
+
   override def visitSkip(ctx: WACCParser.SkipContext): SkipNode = {
     SkipNode(ctx.start)
   }
@@ -159,6 +160,20 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     val forAssign: AssignmentNode = visit(ctx.getChild(5)).asInstanceOf[AssignmentNode]
 
     ForConditionNode(ctx.start, forDeclaration, forExpression, forAssign)
+  }
+
+  // BREAK EXTENSION:
+  override def visitBreak(ctx: WACCParser.BreakContext): BreakNode = {
+    // ‘break'
+
+    BreakNode(ctx.start)
+  }
+
+  // CONTINUE EXTENSION:
+  override def visitContinue(ctx: WACCParser.ContinueContext): ContinueNode = {
+    // ‘continue'
+
+    ContinueNode(ctx.start)
   }
 
   override def visitBegin(ctx: WACCParser.BeginContext): BeginNode = {
