@@ -71,11 +71,9 @@ sealed class TypeCheckVisitor(entryNode: ASTNode, topSymbolTable: SymbolTable) e
     case assignLHSNode: AssignLHSNode => assignLHSNode match {
 
       case IdentNode(token: Token, ident) =>
-        // TODO remove
-        // Idents on the lhs are always valid due to dynamic declarations
-        /* if (currentSymbolTable.lookupAll(assignLHSNode.getKey).isEmpty) {
+         if (currentSymbolTable.lookupAll(assignLHSNode.getKey).isEmpty) {
           SemanticErrorLog.add(s"${getPos(token)} $ident has not been declared as an identifier.")
-        }*/
+        }
 
       case ArrayElemNode(token: Token, identNode, exprNodes) => arrayElemCheckerHelper(token, identNode, exprNodes)
 
