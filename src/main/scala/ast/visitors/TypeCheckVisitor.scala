@@ -437,13 +437,14 @@ sealed class TypeCheckVisitor(entryNode: ASTNode, topSymbolTable: SymbolTable) e
     val lhsType = lhs.getType(topSymbolTable, currentSymbolTable)
     val rhsType = rhs.getType(topSymbolTable, currentSymbolTable)
 
+    /*
     // Type inference
     if (lhs.isInstanceOf[IdentNode] && lhsType == null && rhsType != null) {
-      addIdentToTable(lhs.getKey, rhsType)
-      lhs.asInstanceOf[IdentNode].resetType(topSymbolTable, currentSymbolTable)
-
-      // If either side evaluated to an incorrect expression, stop checking
-    }
+      addIdentToTable(lhs.asInstanceOf[IdentNode].getKey, new VARIABLE(lhs.asInstanceOf[IdentNode].getKey,
+        // Defaults to rhs type unless it is a general type
+        if (rhsType != GENERAL_PAIR && rhsType != GENERAL_ARRAY)
+          rhsType.asInstanceOf[TYPE] else typeIdentifier.asInstanceOf[TYPE]) )
+    }*/
 
     visit(lhs)
     if (lhsType == null || rhsType == null) {
