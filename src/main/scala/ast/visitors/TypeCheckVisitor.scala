@@ -71,7 +71,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode, topSymbolTable: SymbolTable) e
     case assignLHSNode: AssignLHSNode => assignLHSNode match {
 
       case IdentNode(token: Token, ident) =>
-        if (currentSymbolTable.lookupAll(assignLHSNode.getKey).isEmpty) {
+         if (currentSymbolTable.lookupAll(assignLHSNode.getKey).isEmpty) {
           SemanticErrorLog.add(s"${getPos(token)} $ident has not been declared as an identifier.")
         }
 
@@ -394,9 +394,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode, topSymbolTable: SymbolTable) e
     // If the rhs could not have its type evaluated, do not attempt to compare them
     if (rhsType == null) {
       // If types are not the same, or the rhs is not a general identifier for pair and array respectively
-    } else if (! (typeIdentifier == rhsType ||
-      typeIdentifier.isInstanceOf[PAIR] && rhsType == GENERAL_PAIR ||
-      typeIdentifier.isInstanceOf[ARRAY] && rhsType == GENERAL_ARRAY)) {
+    } else if (! typesCompatible(typeIdentifier.asInstanceOf[TYPE], rhsType.asInstanceOf[TYPE])) {
 
       SemanticErrorLog.add(s"${getPos(token)} declaration for ${ident.getKey} " +
         s"failed, expected type ${typeIdentifier.getKey} " +
@@ -406,8 +404,30 @@ sealed class TypeCheckVisitor(entryNode: ASTNode, topSymbolTable: SymbolTable) e
       // If variable is already defined log error
       SemanticErrorLog.add(s"${getPos(token)} declaration failed, ${ident.getKey} has already been declared.")
     } else {
-      currentSymbolTable.add(ident.getKey, new VARIABLE(ident.getKey, typeIdentifier.asInstanceOf[TYPE]))
+      addIdentToTable(ident.getKey, new VARIABLE(ident.getKey,
+        // Defaults to rhs type unless it is a general type
+        if (rhsType != GENERAL_PAIR && rhsType != GENERAL_ARRAY)
+          rhsType.asInstanceOf[TYPE] else typeIdentifier.asInstanceOf[TYPE]) )
     }
+  }
+
+  def typesCompatible(typeID1: TYPE, typeID2: TYPE): Boolean = {
+    typeID1 == typeID2 ||
+      typeID1.isInstanceOf[PAIR] && typeID2 == GENERAL_PAIR ||
+      typeID1 == GENERAL_PAIR && typeID2.isInstanceOf[PAIR] ||
+      typeID1.isInstanceOf[ARRAY] && typeID2 == GENERAL_ARRAY ||
+    // Or of they are a pair check if the pair IDs are compatible
+      (if (typeID1.isInstanceOf[PAIR] && typeID2.isInstanceOf[PAIR]){
+        val typeID1Left = typeID1.asInstanceOf[PAIR]._type1
+        val typeID2Left = typeID2.asInstanceOf[PAIR]._type1
+        val typeID1Right = typeID1.asInstanceOf[PAIR]._type2
+        val typeID2Right = typeID2.asInstanceOf[PAIR]._type2
+        typesCompatible(typeID1Left, typeID2Left) && typesCompatible(typeID1Right, typeID2Right)
+      } else false)
+  }
+
+  def addIdentToTable(key: String, identifier: IDENTIFIER): Unit = {
+    currentSymbolTable.add(key, identifier)
   }
 
   def visitAssignment(token: Token, lhs: AssignLHSNode, rhs: AssignRHSNode): Unit = {
@@ -416,12 +436,9 @@ sealed class TypeCheckVisitor(entryNode: ASTNode, topSymbolTable: SymbolTable) e
     val lhsType = lhs.getType(topSymbolTable, currentSymbolTable)
     val rhsType = rhs.getType(topSymbolTable, currentSymbolTable)
 
-    // If either side evaluated to an incorrect expression, stop checking
     if (lhsType == null || rhsType == null) {
 
-    } else if (! (lhsType == rhsType ||
-      lhsType.isInstanceOf[PAIR] && rhsType.isInstanceOf[PAIR] ||
-      lhsType.isInstanceOf[ARRAY] && rhsType.isInstanceOf[ARRAY])) {
+    } else if (! typesCompatible(lhsType, rhsType)) {
 
       SemanticErrorLog.add(s"${getPos(token)} Assignment for ${lhs.getKey} to ${rhs.getKey} failed, " +
         s"expected type ${lhsType.getKey} "
@@ -456,9 +473,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode, topSymbolTable: SymbolTable) e
     val exprType = expr.getType(topSymbolTable, currentSymbolTable)
     if (currentFuncReturnType == null) {
       SemanticErrorLog.add(s"${getPos(token)} trying to global return on ${expr.toString}")
-    } else if (exprType != null && (! (exprType == currentFuncReturnType ||
-      currentFuncReturnType.isInstanceOf[PAIR] && exprType == GENERAL_PAIR ||
-      currentFuncReturnType.isInstanceOf[ARRAY] && exprType == GENERAL_ARRAY))) {
+    } else if (exprType != null && (! typesCompatible(exprType, currentFuncReturnType))) {
       SemanticErrorLog.add(s"${getPos(token)} expected return " +
         s"type ${currentFuncReturnType.getKey} but got ${exprType.getKey}.")
     }
