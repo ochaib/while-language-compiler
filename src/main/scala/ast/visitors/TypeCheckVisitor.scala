@@ -396,9 +396,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode, topSymbolTable: SymbolTable) e
     // If the rhs could not have its type evaluated, do not attempt to compare them
     if (rhsType == null) {
       // If types are not the same, or the rhs is not a general identifier for pair and array respectively
-    } else if (! (typeIdentifier == rhsType ||
-      typeIdentifier.isInstanceOf[PAIR] && rhsType == GENERAL_PAIR ||
-      typeIdentifier.isInstanceOf[ARRAY] && rhsType == GENERAL_ARRAY)) {
+    } else if (! typesCompatible(typeIdentifier.asInstanceOf[TYPE], rhsType.asInstanceOf[TYPE])) {
 
       SemanticErrorLog.add(s"${getPos(token)} declaration for ${ident.getKey} " +
         s"failed, expected type ${typeIdentifier.getKey} " +
@@ -408,8 +406,23 @@ sealed class TypeCheckVisitor(entryNode: ASTNode, topSymbolTable: SymbolTable) e
       // If variable is already defined log error
       SemanticErrorLog.add(s"${getPos(token)} declaration failed, ${ident.getKey} has already been declared.")
     } else {
-      addIdentToTable(ident.getKey, new VARIABLE(ident.getKey, typeIdentifier.asInstanceOf[TYPE]))
+      addIdentToTable(ident.getKey, new VARIABLE(ident.getKey, rhsType.asInstanceOf[TYPE]))
     }
+  }
+
+  def typesCompatible(typeID1: TYPE, typeID2: TYPE): Boolean = {
+    typeID1 == typeID2 ||
+      typeID1.isInstanceOf[PAIR] && typeID2 == GENERAL_PAIR ||
+      typeID1 == GENERAL_PAIR && typeID2.isInstanceOf[PAIR] ||
+      typeID1.isInstanceOf[ARRAY] && typeID2 == GENERAL_ARRAY ||
+    // Or of they are a pair check if the pair IDs are compatible
+      (if (typeID1.isInstanceOf[PAIR] && typeID2.isInstanceOf[PAIR]){
+        val typeID1Left = typeID1.asInstanceOf[PAIR]._type1
+        val typeID2Left = typeID2.asInstanceOf[PAIR]._type1
+        val typeID1Right = typeID1.asInstanceOf[PAIR]._type2
+        val typeID2Right = typeID2.asInstanceOf[PAIR]._type2
+        typesCompatible(typeID1Left, typeID2Left) && typesCompatible(typeID1Right, typeID2Right)
+      } else false)
   }
 
   def addIdentToTable(key: String, identifier: IDENTIFIER): Unit = {
