@@ -17,6 +17,8 @@ object CodeGenerator {
   var topSymbolTable: SymbolTable = _
   var currentSymbolTable: SymbolTable = _
   var bytesAllocatedSoFar: Int = 0
+  var paramOffsetMap: Map[String, Int] = Map.empty
+  var currentParamOffset: Int = 0
 
   // Keep track of number of branches.
   val labelGenerator: LabelGenerator = LabelGenerator()
@@ -85,36 +87,24 @@ object CodeGenerator {
     functionInstructions ++ mainInstructions ++ commonFunctions
   }
 
-  var paramOffsetMap: Map[String, Int] = Map[String, Int]()
-  var currentParamOffset: Int = 0
-
-  def addParamToMap(param: ParamNode): Unit = {
-    //if (param.getType(topSymbolTable, currentSymbolTable) != STRING) {
-      paramOffsetMap = paramOffsetMap + (param.identNode.getKey -> currentParamOffset)
-      currentParamOffset += getSize(param.getType(topSymbolTable, currentSymbolTable))
-    //}
-  }
-
-  def createParamMap(paramListNode: ParamListNode): Unit = {
-    paramOffsetMap = Map[String, Int]()
-    currentParamOffset = 4
+  def setAndGetAllParams(paramListNode: ParamListNode): Unit = {
     for (param: ParamNode <- paramListNode.paramList) {
-      addParamToMap(param)
+      symbolTableManager.setAndGetOffset(param.identNode.getKey, param = true)
     }
   }
-
-  def getParamOffset(key: String): Int = paramOffsetMap(key)
 
   def generateFunction(func: FuncNode): IndexedSeq[Instruction] = {
 
-    if (func.paramList.isDefined) {
-      createParamMap(func.paramList.get)
-    }
     // Update the current symbol table to function block
     currentSymbolTable = symbolTableManager.nextScope()
 
+
     // Enter function scope
     val allocateInstructions = enterScopeAndAllocateStack()
+
+    if (func.paramList.isDefined) {
+      setAndGetAllParams(func.paramList.get)
+    }
 
     var labelPushLR = IndexedSeq[Instruction](Label(s"f_${func.identNode.ident}"), pushLR)
     if (func.paramList.isDefined)
@@ -130,18 +120,11 @@ object CodeGenerator {
 
     val popEndInstruction = IndexedSeq[Instruction](popPC, new EndFunction)
 
-    // TODO: HAVE TO GO BACK TO MAIN
-    currentParamOffset = 0
-    paramOffsetMap = Map()
-
     labelPushLR ++ allocateInstructions ++ statInstructions ++ deallocateInstructions ++ popEndInstruction
   }
 
   def getOffset(key: String): Int = {
-    if (paramOffsetMap.get(key).isDefined || currentSymbolTable.lookup(key).isDefined && currentSymbolTable.lookup(key).get.isInstanceOf[PARAM])
-      getParamOffset(key) + bytesAllocatedSoFar
-    else
-      symbolTableManager.lookupOffset(key)// + bytesAllocatedSoFar - getScopeStackSize(currentSymbolTable)
+    symbolTableManager.lookupOffset(key)// + bytesAllocatedSoFar - getScopeStackSize(currentSymbolTable)
   }
 
 //  def generateParamList(paramList: ParamListNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
@@ -184,7 +167,7 @@ object CodeGenerator {
         // Need to pass offset here too.
         => var asmType: Option[ASMType] = None
            if (checkSingleByte(ident)) asmType = Some(ByteType)
-           IndexedSeq[Instruction](new Store(None, asmType, RM.peekVariableRegister(),
+           IndexedSeq[Instruction](new Store(None, asmType, RM.peekVariableRegister,
              instructionSet.getSP, new Immediate(symbolTableManager.lookupOffset(ident.getKey)),
              registerWriteBack = false))
       case arrayElem: ArrayElemNode => generateArrayElemLHS(arrayElem)
@@ -204,14 +187,15 @@ object CodeGenerator {
       asmType = Some(ByteType)
 
     IndexedSeq[Instruction](new Store(None, asmType,
-      RM.peekVariableRegister(), instructionSet.getSP,
+      RM.peekVariableRegister, instructionSet.getSP,
       new Immediate(symbolTableManager.setAndGetOffset(ident.getKey)), registerWriteBack = false))
   }
 
   // THIS, COMES FROM EXPR
   def generateArrayElem(arrayElem: ArrayElemNode): IndexedSeq[Instruction] = {
     val varReg = RM.nextVariableRegister()
-    val varReg2 = RM.peekVariableRegister()
+    // TODO: Checked that this shouldn't be nextVariableRegister.
+    val varReg2 = RM.peekVariableRegister
 
     // Must now retrieve elements in array corresponding to each
     val arrayElemInstructions = retrieveArrayElements(arrayElem, varReg, varReg2)
@@ -230,7 +214,7 @@ object CodeGenerator {
     val varReg2 = RM.nextVariableRegister()
 
     // Must now retrieve elements in array corresponding to each
-    val arrayElemInstructions = retrieveArrayElements(arrayElem, varReg2, varReg1)
+    val arrayElemInstructions = retrieveArrayElements(arrayElem, varReg1, varReg2)
 
     // Check if B is necessary for load, store etc.
     // May need to be ByteType
@@ -249,9 +233,9 @@ object CodeGenerator {
     arrayElemInstructions ++ storeResult
   }
 
-  def retrieveArrayElements(arrayElem: ArrayElemNode, varReg: Register, varReg2: Register): IndexedSeq[Instruction] = {
+  def retrieveArrayElements(arrayElem: ArrayElemNode, varReg1: Register, varReg2: Register): IndexedSeq[Instruction] = {
     val preExpr = IndexedSeq[Instruction](
-      Add(None, conditionFlag = false, varReg, instructionSet.getSP,
+      Add(None, conditionFlag = false, varReg1, instructionSet.getSP,
           new Immediate(getOffset(arrayElem.identNode.getKey)))
     )
 
@@ -259,12 +243,12 @@ object CodeGenerator {
     val exprInstructions: IndexedSeq[Instruction] = {
       arrayElem.exprNodes.flatMap(e => generateExpression(e) ++
         IndexedSeq[Instruction](
-          new Load(None, None, varReg, varReg),
+          new Load(None, None, varReg1, varReg1),
           Move(None, instructionSet.getReturn, new ShiftedRegister(varReg2)),
-          Move(None, instructionSet.getArgumentRegisters(1), new ShiftedRegister(varReg)),
+          Move(None, instructionSet.getArgumentRegisters(1), new ShiftedRegister(varReg1)),
         ) ++ Utilities.printCheckArrayBounds ++ IndexedSeq[Instruction](
-          Add(None, conditionFlag = false, varReg, varReg, new Immediate(4)),
-          Add(None, conditionFlag = false, varReg, varReg, new ShiftedRegister(varReg2, "LSL", 2))
+          Add(None, conditionFlag = false, varReg1, varReg1, new Immediate(4)),
+          Add(None, conditionFlag = false, varReg1, varReg1, new ShiftedRegister(varReg2, "LSL", 2))
         )
       )
     }
@@ -308,7 +292,7 @@ object CodeGenerator {
     var acc = exprElemSize
     // Generate expression instructions for each expression node in the array.
     arrayLiteral.exprNodes.foreach(expr => { generatedExpressions ++= generateExpression(expr) :+
-      new Store(None, None, RM.peekVariableRegister(), varReg1,
+      new Store(None, None, RM.peekVariableRegister, varReg1,
         // Replaced hardcoded 4 with actual expression type.
         new Immediate(acc), registerWriteBack = false);  acc = acc + getSize(expr.getType(topSymbolTable, currentSymbolTable))})
 
@@ -365,14 +349,14 @@ object CodeGenerator {
 
     // Check if B suffix is necessary (ByteType).
     if (checkSingleByte(expr)) {
-      coreInstructions = coreInstructions :+ new Store(None, Some(ByteType), RM.peekVariableRegister(),
+      coreInstructions = coreInstructions :+ new Store(None, Some(ByteType), RM.peekVariableRegister,
                                                        instructionSet.getReturn)
     } else {
-      coreInstructions = coreInstructions :+ new Store(None, None, RM.peekVariableRegister(), instructionSet.getReturn)
+      coreInstructions = coreInstructions :+ new Store(None, None, RM.peekVariableRegister, instructionSet.getReturn)
     }
 
     RM.freeVariableRegister(varReg)
-    val varReg2 = RM.peekVariableRegister()
+    val varReg2 = RM.peekVariableRegister
 
     // Once we are on the second element it will be at an offset that we must retrieve.
     val finalStore = new Store(None, None, instructionSet.getReturn, varReg2, new Immediate(pairSizeOffset),
@@ -384,18 +368,7 @@ object CodeGenerator {
   def generatePairElemLHS(pairElem: PairElemNode): IndexedSeq[Instruction] = {
     // Register than had rhs evaluated instructions.
     val varReg = RM.nextVariableRegister()
-    val peekedReg = RM.peekVariableRegister()
-
-    // Check if loadOffset below can be replaced with:
-    //     val loadOffset: IndexedSeq[Instruction] = pairElem match {
-    //        case fst: FstNode => generateExpression(fst.expression)
-    //        case snd: SndNode => generateExpression(snd.expression)
-    //     }
-
-//    val immOffset: Int = pairElem match {
-//      case fst: FstNode => symbolTableManager.getOffset(fst.getKey)
-//      case snd: SndNode => symbolTableManager.getOffset(snd.getKey)
-//    }
+    val peekedReg = RM.peekVariableRegister
 
     val loadOffset = IndexedSeq[Instruction](
       // Current offset of identifier related to pair.
@@ -404,7 +377,7 @@ object CodeGenerator {
     )
 
     val nullPtrIns = Move(None, instructionSet.getReturn,
-                          new ShiftedRegister(RM.peekVariableRegister())) +: Utilities.printCheckNullPointer
+                          new ShiftedRegister(RM.peekVariableRegister)) +: Utilities.printCheckNullPointer
 
     var asmType: Option[ASMType] = None
 
@@ -421,14 +394,12 @@ object CodeGenerator {
       case fst: FstNode =>
         IndexedSeq[Instruction](
           new Load(None, None, peekedReg, peekedReg, new Immediate(offset), registerWriteBack = false),
-          new Store(None, asmType, varReg, peekedReg, new Immediate(symbolTableManager.lookupOffset(fst.expression.getKey)),
-            registerWriteBack = false)
+          new Store(None, asmType, varReg, peekedReg, new Immediate(0), registerWriteBack = false)
         )
       case snd: SndNode =>
         IndexedSeq[Instruction](
           new Load(None, None, peekedReg, peekedReg, new Immediate(offset), registerWriteBack = false),
-          new Store(None, asmType, varReg, peekedReg, new Immediate(symbolTableManager.lookupOffset(snd.expression.getKey)),
-            registerWriteBack = false)
+          new Store(None, asmType, varReg, peekedReg, new Immediate(0), registerWriteBack = false)
         )
 
     }
@@ -442,12 +413,12 @@ object CodeGenerator {
     pairElem match {
       case fst: FstNode =>
         IndexedSeq[Instruction](
-          new Load(None, None, RM.peekVariableRegister(), instructionSet.getSP,
+          new Load(None, None, RM.peekVariableRegister, instructionSet.getSP,
           new Immediate(symbolTableManager.lookupOffset(fst.expression.getKey)),
           registerWriteBack = false)
         ) ++ generatePEHelper(fst, isSnd = false)
       case snd: SndNode => IndexedSeq[Instruction](
-        new Load(None, None, RM.peekVariableRegister(), instructionSet.getSP,
+        new Load(None, None, RM.peekVariableRegister, instructionSet.getSP,
           new Immediate(symbolTableManager.lookupOffset(snd.expression.getKey)),
         registerWriteBack = false)
       ) ++ generatePEHelper(snd, isSnd = true)
@@ -457,7 +428,7 @@ object CodeGenerator {
   def generatePEHelper(pairElemNode: PairElemNode, isSnd: Boolean): IndexedSeq[Instruction] = {
     val peInstructions =
       Move(None, instructionSet.getReturn,
-           new ShiftedRegister(RM.peekVariableRegister())) +: Utilities.printCheckNullPointer
+           new ShiftedRegister(RM.peekVariableRegister)) +: Utilities.printCheckNullPointer
 
     var asmType: Option[ASMType] = None
 
@@ -466,16 +437,16 @@ object CodeGenerator {
     if (checkSingleByte(pairElemNode)) asmType = Some(SignedByte)
 
     var loads = IndexedSeq[Instruction](
-      new Load(None, None, RM.peekVariableRegister(), RM.peekVariableRegister()),
-      new Load(None, asmType, RM.peekVariableRegister(), RM.peekVariableRegister())
+      new Load(None, None, RM.peekVariableRegister, RM.peekVariableRegister),
+      new Load(None, asmType, RM.peekVariableRegister, RM.peekVariableRegister)
     )
 
     if (isSnd)
       loads = IndexedSeq[Instruction](
-        new Load(None, None, RM.peekVariableRegister(), RM.peekVariableRegister(),
+        new Load(None, None, RM.peekVariableRegister, RM.peekVariableRegister,
           new Immediate(4), registerWriteBack = false),
     //            new Immediate(symbolTableManager.getOffset(pairElemNode.getKey)), registerWriteBack = false),
-        new Load(None, asmType, RM.peekVariableRegister(), RM.peekVariableRegister())
+        new Load(None, asmType, RM.peekVariableRegister, RM.peekVariableRegister)
       )
 
     // Should set a flag that triggers checkNullPointer at top level.
@@ -496,7 +467,7 @@ object CodeGenerator {
         if (checkSingleByte(e)) asmType = Some(ByteType)
         generateExpression(e) :+
         // Register write back should be allowed, hence the true.
-          new Store(None, asmType, RM.peekVariableRegister(), instructionSet.getSP,
+          new Store(None, asmType, RM.peekVariableRegister, instructionSet.getSP,
                     new Immediate(-exprSize), registerWriteBack = true)
       })
 
@@ -509,7 +480,7 @@ object CodeGenerator {
                                            instructionSet.getSP, new Immediate(totalArgOffset))
 
     val finalMove = IndexedSeq[Instruction](
-      Move(None, RM.peekVariableRegister(), new ShiftedRegister(instructionSet.getReturn))
+      Move(None, RM.peekVariableRegister, new ShiftedRegister(instructionSet.getReturn))
     )
 
     argInstructions ++ labelAndBranch ++ finalMove
@@ -519,7 +490,7 @@ object CodeGenerator {
     var generatedReadInstructions = IndexedSeq[Instruction]()
 
     // Peek for now doesn't seem like I would need to pop the register.
-    val varReg1 = RM.peekVariableRegister()
+    val varReg1 = RM.peekVariableRegister
 
     val addInstruction: IndexedSeq[Instruction] = lhs match {
       // Offset from symbol table for ident.
@@ -552,19 +523,19 @@ object CodeGenerator {
   def generateFree(expr: ExprNode): IndexedSeq[Instruction] = {
     // Need to generate p_free_pair here.
     generateExpression(expr) ++ (
-      Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())) +: Utilities.printFreePair
+      Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister)) +: Utilities.printFreePair
     )
   }
 
   def generateReturn(expr: ExprNode): IndexedSeq[Instruction] = {
     if (bytesAllocatedSoFar == 0)
       generateExpression(expr) ++
-        IndexedSeq[Instruction](Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())),
+        IndexedSeq[Instruction](Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister)),
         popPC)
     else
       generateExpression(expr) ++
         IndexedSeq[Instruction](
-          Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())),
+          Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister)),
           Add(None, conditionFlag = false, instructionSet.getSP,
             instructionSet.getSP, new Immediate(bytesAllocatedSoFar)),
           popPC)
@@ -574,7 +545,7 @@ object CodeGenerator {
     // Must generate the instructions necessary for the exit code,
     // then branch to exit.
     // Need next available register to move into r0, temporary fix below.
-    val regUsedByGenExp: Register = RM.peekVariableRegister()
+    val regUsedByGenExp: Register = RM.peekVariableRegister
 
     generateExpression(expr) ++ IndexedSeq[Instruction](
       Move(None, instructionSet.getReturn, new ShiftedRegister(regUsedByGenExp)),
@@ -597,7 +568,7 @@ object CodeGenerator {
         var asmType: Option[ASMType] = None
         if (checkSingleByte(i)) asmType = Some(SignedByte)
         IndexedSeq[Instruction](
-          new Load(None, asmType, RM.peekVariableRegister(), instructionSet.getSP,
+          new Load(None, asmType, RM.peekVariableRegister, instructionSet.getSP,
           new Immediate(getOffset(i.getKey)),
           registerWriteBack=false)) ++ (i.getType(topSymbolTable, currentSymbolTable) match {
             case scalar: SCALAR =>
@@ -605,7 +576,7 @@ object CodeGenerator {
                 Utilities.printInt(0) // doesn't matter just need to trigger add printInt
                 IndexedSeq[Instruction](
                   Move(condition = None, dest = instructionSet.getReturn,
-                    src = new ShiftedRegister(RM.peekVariableRegister())),
+                    src = new ShiftedRegister(RM.peekVariableRegister)),
                   BranchLink(None, PrintInt.label)
                 )
               }
@@ -613,7 +584,7 @@ object CodeGenerator {
                 Utilities.printBool(true)
                 IndexedSeq[Instruction](
                   Move(condition = None, dest = instructionSet.getReturn,
-                    src = new ShiftedRegister(RM.peekVariableRegister())),
+                    src = new ShiftedRegister(RM.peekVariableRegister)),
                   BranchLink(None, PrintBool.label)
                 )
               }
@@ -621,7 +592,7 @@ object CodeGenerator {
                 Utilities.printChar('c')
                 IndexedSeq[Instruction](
                   Move(condition = None, dest = instructionSet.getReturn,
-                    src = new ShiftedRegister(RM.peekVariableRegister())),
+                    src = new ShiftedRegister(RM.peekVariableRegister)),
                   BranchLink(condition = None, label = PutChar.label)
                 )
               }
@@ -634,7 +605,7 @@ object CodeGenerator {
               BranchLink(None, PrintString.label)
             )
             case _: ARRAY | _: PAIR => IndexedSeq[Instruction](Move(None, instructionSet.getReturn,
-              new ShiftedRegister(RM.peekVariableRegister()))) ++ Utilities.printReference
+              new ShiftedRegister(RM.peekVariableRegister))) ++ Utilities.printReference
           })
       case i: ParenExprNode =>
         new Load(
@@ -646,21 +617,21 @@ object CodeGenerator {
               if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
                 Utilities.printInt(0) // doesn't matter just need to trigger add printInt
                 IndexedSeq[Instruction](
-                  Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())),
+                  Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister)),
                   BranchLink(None, PrintInt.label)
                 )
               }
               else if (scalar == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
                 Utilities.printBool(true)
                 IndexedSeq[Instruction](
-                  Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())),
+                  Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister)),
                   BranchLink(None, PrintBool.label)
                 )
               }
               else if (scalar == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
                 Utilities.printChar('c')
                 IndexedSeq[Instruction](
-                  Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())),
+                  Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister)),
                   BranchLink(condition = None, label = PutChar.label)
                 )
               }
@@ -675,33 +646,27 @@ object CodeGenerator {
             case _: ARRAY | _: PAIR => Utilities.printReference
           })
       case i: BinaryOperationNode =>
-//        (new Load(
-//          condition=None, asmType=None,
-//          RM.peekVariableRegister(), instructionSet.getSP,
-//          new Immediate(symbolTableManager.getOffset(i.getKey)),
-//          registerWriteBack = false
-//        ) +:
           generateBinary(i) ++
             (i.getType(topSymbolTable, currentSymbolTable) match {
             case scalar: SCALAR =>
               if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
                 Utilities.printInt(0) // doesn't matter just need to trigger add printInt
                 IndexedSeq[Instruction](
-                  Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())),
+                  Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister)),
                   BranchLink(None, PrintInt.label)
                 )
               }
               else if (scalar == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
                 Utilities.printBool(true)
                 IndexedSeq[Instruction](
-                  Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())),
+                  Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister)),
                   BranchLink(None, PrintBool.label)
                 )
               }
               else if (scalar == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
                 Utilities.printChar('c')
                 IndexedSeq[Instruction](
-                  Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())),
+                  Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister)),
                   BranchLink(condition = None, label = PutChar.label)
                 )
               }
@@ -716,32 +681,26 @@ object CodeGenerator {
             case _: ARRAY | _: PAIR => Utilities.printReference
           })
       case i: UnaryOperationNode =>
-//        (new Load(
-//          condition=None, asmType=None,
-//          RM.peekVariableRegister(), instructionSet.getSP,
-//          new Immediate(symbolTableManager.getOffset(i.getKey)),
-//          registerWriteBack = false
-//        ) +:
           generateUnary(i) ++ (i.getType(topSymbolTable, currentSymbolTable) match {
             case scalar: SCALAR =>
               if (scalar == IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
                 Utilities.printInt(0) // doesn't matter just need to trigger add printInt
                 IndexedSeq[Instruction](
-                  Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())),
+                  Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister)),
                   BranchLink(None, PrintInt.label)
                 )
               }
               else if (scalar == BoolTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
                 Utilities.printBool(true)
                 IndexedSeq[Instruction](
-                  Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())),
+                  Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister)),
                   BranchLink(None, PrintBool.label)
                 )
               }
               else if (scalar == CharTypeNode(null).getType(topSymbolTable, currentSymbolTable)) {
                 Utilities.printChar('c')
                 IndexedSeq[Instruction](
-                  Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister())),
+                  Move(None, instructionSet.getReturn, new ShiftedRegister(RM.peekVariableRegister)),
                   BranchLink(condition = None, label = PutChar.label)
                 )
               }
@@ -768,7 +727,7 @@ object CodeGenerator {
 
     // Condition
     val condInstructions: IndexedSeq[Instruction] = generateExpression(ifNode.conditionExpr) :+
-      Compare(None, RM.peekVariableRegister(), new Immediate(0))
+      Compare(None, RM.peekVariableRegister, new Immediate(0))
 
     // elseBranch
     val elseBranchInstructions: IndexedSeq[Instruction] = IndexedSeq(Branch(Some(Equal), elseLabel))
@@ -831,7 +790,7 @@ object CodeGenerator {
 
     // Condition
     val condInstructions: IndexedSeq[Instruction] = generateExpression(whileNode.expr) :+
-      Compare(None, RM.peekVariableRegister(), new Immediate(1))
+      Compare(None, RM.peekVariableRegister, new Immediate(1))
 
     // Branch to start of body
     val bodyBranch: Instruction = Branch(Some(Equal), bodyLabel)
@@ -889,33 +848,40 @@ object CodeGenerator {
     expr match {
       case Int_literNode(_, str)
                   => IndexedSeq[Instruction](new Load(None, None,
-                     RM.peekVariableRegister(), new LoadableExpression(str.toInt)))
+                     RM.peekVariableRegister, new LoadableExpression(str.toInt)))
       case Bool_literNode(_, bool)
-                  => IndexedSeq[Instruction](Move(None, RM.peekVariableRegister(),
+                  => IndexedSeq[Instruction](Move(None, RM.peekVariableRegister,
                      new Immediate(if (bool) 1 else 0)))
       case Char_literNode(_, char)
         // This was using next not sure it should be so I changed it to peek.
-                  => IndexedSeq[Instruction](Move(None, RM.peekVariableRegister(),
-                     new Immediate(char)))
+        // Must check for null character for some reason it may be parsed at '0' and should
+        // be treated a 0 move.
+                  => if (char == '\u0000' || char == '0') {
+                      IndexedSeq[Instruction](Move(None, RM.peekVariableRegister,
+                        new Immediate(0)))
+                    } else {
+                      IndexedSeq[Instruction](Move(None, RM.peekVariableRegister,
+                        new Immediate(char)))
+                    }
       case Str_literNode(_, str)
                   => IndexedSeq[Instruction](new Load(None, None,
-                     RM.peekVariableRegister(), Utilities.addString(str)))
+                     RM.peekVariableRegister, Utilities.addString(str)))
       // All that is necessary for Pair_liter expression generation.
       case Pair_literNode(_)
                   => IndexedSeq[Instruction](new Load(None, None,
-                     RM.peekVariableRegister(), new LoadableExpression(0)))
+                     RM.peekVariableRegister, new LoadableExpression(0)))
       case ident: IdentNode
       // Load identifier into first available variable register.
           => if (checkSingleByte(ident)) {
               IndexedSeq[Instruction](new Load(None, Some(SignedByte),
-                RM.peekVariableRegister(), instructionSet.getSP,
+                RM.peekVariableRegister, instructionSet.getSP,
                 new Immediate(getOffset(ident.getKey)),
                 registerWriteBack = false))
         //                        new Immediate(getSize(
         //                          ident.getType(topSymbolTable, currentSymbolTable)))))
           } else {
               IndexedSeq[Instruction](new Load(None, None,
-                RM.peekVariableRegister(), instructionSet.getSP,
+                RM.peekVariableRegister, instructionSet.getSP,
                 new Immediate(getOffset(ident.getKey)),
                 registerWriteBack = false))}
       case arrayElem: ArrayElemNode => generateArrayElem(arrayElem)
@@ -930,21 +896,21 @@ object CodeGenerator {
       // Logical not node according to the reference compiler.
       case LogicalNotNode(_, expr) =>
         generateExpression(expr) ++ IndexedSeq[Instruction](
-          ExclusiveOr(None, conditionFlag = false, RM.peekVariableRegister(),
-                      RM.peekVariableRegister(), new Immediate(1)))
+          ExclusiveOr(None, conditionFlag = false, RM.peekVariableRegister,
+                      RM.peekVariableRegister, new Immediate(1)))
       // Negate according to reference compiler.
       case NegateNode(_, expr) =>
         expr match {
           case Int_literNode(_, str) => IndexedSeq[Instruction](
-            new Load(None, None, RM.peekVariableRegister(), new LoadableExpression(str.toInt)))
+            new Load(None, None, RM.peekVariableRegister, new LoadableExpression(str.toInt)))
           case _ => generateExpression(expr) ++ IndexedSeq[Instruction](
-            RSBS(None, conditionFlag = false, RM.peekVariableRegister(),
-            RM.peekVariableRegister(), new Immediate(0)),
+            RSBS(None, conditionFlag = false, RM.peekVariableRegister,
+            RM.peekVariableRegister, new Immediate(0)),
           ) ++ Utilities.printOverflowError(Some(Overflow))
         }
       case LenNode(_, expr) =>
         generateExpression(expr) ++ IndexedSeq[Instruction](
-          new Load(None, None, RM.peekVariableRegister(), RM.peekVariableRegister())
+          new Load(None, None, RM.peekVariableRegister, RM.peekVariableRegister)
         )
       // Finished implementation as nothing else must be done.
       case OrdNode(_, expr) => generateExpression(expr)
@@ -954,7 +920,7 @@ object CodeGenerator {
 
   def generateBinary(binaryOperation: BinaryOperationNode): IndexedSeq[Instruction] = {
     val varReg1 = RM.nextVariableRegister()
-    val varReg2 = RM.peekVariableRegister()
+    val varReg2 = RM.peekVariableRegister
     val r1 = instructionSet.getArgumentRegisters(1)
     RM.freeVariableRegister(varReg1)
 
@@ -1256,6 +1222,7 @@ object CodeGenerator {
   }
 
   def getScopeStackSize(symbolTable: SymbolTable): Int = {
+    assert(symbolTable != topSymbolTable, "Should not be trying to calculate the size of the top level symbol table")
     symbolTable.map.values.map(getIDStackSize).sum
   }
 
@@ -1279,10 +1246,12 @@ object CodeGenerator {
       while (bytesToAllocate > 0) {
         if (bytesToAllocate >= instructionSet.getMaxOffset) {
           bytesToAllocate -= instructionSet.getMaxOffset
-          allocateInstructions = allocateInstructions :+ Subtract(None, conditionFlag = false, instructionSet.getSP, instructionSet.getSP, new Immediate(instructionSet.getMaxOffset))
+          allocateInstructions = allocateInstructions :+ Subtract(None, conditionFlag = false,
+            instructionSet.getSP, instructionSet.getSP, new Immediate(instructionSet.getMaxOffset))
           bytesAllocatedSoFar += instructionSet.getMaxOffset
         } else {
-          allocateInstructions = allocateInstructions :+ Subtract(None, conditionFlag = false, instructionSet.getSP, instructionSet.getSP, new Immediate(bytesToAllocate))
+          allocateInstructions = allocateInstructions :+ Subtract(None, conditionFlag = false,
+            instructionSet.getSP, instructionSet.getSP, new Immediate(bytesToAllocate))
           bytesAllocatedSoFar += bytesToAllocate
           bytesToAllocate = 0
         }
@@ -1291,46 +1260,55 @@ object CodeGenerator {
     }
   }
 
-  def leaveScopeAndDeallocateStack(): IndexedSeq[Instruction] = {
+  def leaveScopeAndDeallocateStack(returnDeallocation: Boolean = false): IndexedSeq[Instruction] = {
+    var bytesToDeallocate = getScopeStackSize(currentSymbolTable)
     currentSymbolTable = symbolTableManager.leaveScope()
-    if (getScopeStackSize(currentSymbolTable) == 0) IndexedSeq()
+    if (bytesAllocatedSoFar == 0) IndexedSeq()
     // If all the bytes allocated so far have been freed, a return must have already taken place
-    else if (bytesAllocatedSoFar != 0) {
+    else {
+      bytesAllocatedSoFar -= bytesToDeallocate
       var deallocateInstructions: IndexedSeq[Instruction] = IndexedSeq()
-      while (bytesAllocatedSoFar > 0) {
-        if (bytesAllocatedSoFar >= instructionSet.getMaxOffset) {
+      while (bytesToDeallocate > 0) {
+        if (bytesToDeallocate >= instructionSet.getMaxOffset) {
           deallocateInstructions = deallocateInstructions :+ Add(None, conditionFlag = false, instructionSet.getSP, instructionSet.getSP, new Immediate(instructionSet.getMaxOffset))
-          bytesAllocatedSoFar -= instructionSet.getMaxOffset
+          bytesToDeallocate -= instructionSet.getMaxOffset
         } else {
-          deallocateInstructions = deallocateInstructions :+ Add(None, conditionFlag = false, instructionSet.getSP, instructionSet.getSP, new Immediate(bytesAllocatedSoFar))
-          bytesAllocatedSoFar -= bytesAllocatedSoFar
+          deallocateInstructions = deallocateInstructions :+ Add(None, conditionFlag = false, instructionSet.getSP, instructionSet.getSP, new Immediate(bytesToDeallocate))
+          bytesToDeallocate -= bytesToDeallocate
         }
       }
       deallocateInstructions
     }
-    else IndexedSeq()
   }
 
   case class SymbolTableInfo(symbolTable: SymbolTable, scopeIndex: Int) {
     var offsetMap: Map[String, Int] = Map.empty
     val symbolTableSize: Int = if (scopeIndex == -1) 0 else getScopeStackSize(symbolTable)
     private var offsetSoFar: Int = symbolTableSize
+    private var paramOffsetSoFar: Int = 4
 
-    def setAndGetOffset(key: String): Int = {
+    def setAndGetOffset(key: String, isParam: Boolean): Int = {
       val currentIdOption = symbolTable.lookup(key)
-      assert (currentIdOption.isDefined, "key must be defined in the scope")
-      val offsetSize: Int = currentIdOption.get match {
-        case value: TYPE => getSize(value)
-        case variable: VARIABLE => getSize(variable._type)
-        case _ =>
-          assert(assertion = false, "key ID must be a variable or type")
-          -1
+      assert(currentIdOption.isDefined, "key must be defined in the scope")
+      if (isParam) {
+        val offset = paramOffsetSoFar
+        offsetMap = offsetMap + (key -> paramOffsetSoFar)
+        paramOffsetSoFar += getSize(currentIdOption.get.asInstanceOf[PARAM]._type)
+        offset
+      } else {
+        val offsetSize = currentIdOption.get match {
+          case value: TYPE => getSize(value)
+          case variable: VARIABLE => getSize(variable._type)
+          case _ =>
+            assert(assertion = false, "key ID must be a variable or type")
+            -1
+        }
+        offsetSoFar -= offsetSize
+        // Add offset for IDENTIFIER to current scope map.
+        offsetMap = offsetMap + (key -> offsetSoFar)
+        offsetSoFar
       }
-      offsetSoFar -= offsetSize
-      // Add offset for IDENTIFIER to current scope map.
-      offsetMap = offsetMap + (key -> offsetSoFar)
-      offsetSoFar
-    }
+  }
   }
 
   case class SymbolTableManager(private val initScope: SymbolTable) {
@@ -1379,41 +1357,42 @@ object CodeGenerator {
       infoStack = infoStack.tail
 
       // Return table
-      currentInfo.symbolTable
+      currentInfo.symbolTable.encSymbolTable
     }
 
     // Called on declarations for idents to set the map address
-    def setAndGetOffset(key: String): Int = {
-      currentInfo.setAndGetOffset(key)
+    def setAndGetOffset(key: String, param: Boolean = false): Int = {
+      infoStack.head.setAndGetOffset(key, param)
     }
 
     // Returns current identifier offset
     def lookupOffset(key: String): Int = {
-      var offset: Option[Int] = currentInfo.offsetMap.get(key)
+      var offset: Option[Int] = None //currentInfo.offsetMap.get(key)
       var additionalBytes = 0
+      var returnValue: Int = -1
       // If the offset is not in the current offsetMap iterate through all parent maps
-      if (offset.isEmpty) {
+      //if (offset.isEmpty) {
         // Add the byte allocation for the current scope
-        additionalBytes += currentInfo.symbolTableSize
+        // additionalBytes += currentInfo.symbolTableSize
         breakable {
           for (iteratingInfo <- infoStack) {
             // Lookup offset
             offset = iteratingInfo.offsetMap.get(key)
             // If it is defined, break
-            if (offset.isDefined) break
+            if (offset.isDefined) {
+              returnValue = offset.get + additionalBytes
+              if (iteratingInfo.symbolTable.lookup(key).get.isInstanceOf[PARAM])
+                returnValue += getScopeStackSize(currentSymbolTable)
+              break
+            }
             // Add scope bytes to additional bytes
             additionalBytes += iteratingInfo.symbolTableSize
           }
         }
-      }
+      // }
       // If defined, return offset + additional bytes
-      if (offset.isDefined) {
-        offset.get + additionalBytes
-      } else {
-        // Otherwise it's an error
-        assert(assertion = false, s"$key does not exist in this symbol table or all parent tables")
-        -1
-      }
+      assert(offset.isDefined, s"$key does not exist in this symbol table or all parent tables")
+      returnValue
     }
 
     def returnToTopScope(): Unit = {
