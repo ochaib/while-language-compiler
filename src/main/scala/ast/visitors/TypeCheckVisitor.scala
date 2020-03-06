@@ -406,7 +406,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode, topSymbolTable: SymbolTable) e
       // If variable is already defined log error
       SemanticErrorLog.add(s"${getPos(token)} declaration failed, ${ident.getKey} has already been declared.")
     } else {
-      addIdentToTable(ident.getKey, new VARIABLE(ident.getKey, rhsType.asInstanceOf[TYPE]))
+      addIdentToTable(ident.getKey, new VARIABLE(ident.getKey, if (rhsType != GENERAL_PAIR) rhsType.asInstanceOf[TYPE] else typeIdentifier.asInstanceOf[TYPE]) )
     }
   }
 
