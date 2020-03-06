@@ -60,6 +60,15 @@ sealed class TypeCheckVisitor(entryNode: ASTNode, topSymbolTable: SymbolTable) e
         // Prepare to visit stat by creating new symbol table
         symbolTableCreatorWrapper(_ => visit(stat))
 
+      case ForNode(token: Token, forConditionNode, stat) =>
+        forConditionHelper(token, forConditionNode)
+        // Prepare to visit stat by creating new symbol table
+        symbolTableCreatorWrapper(_ => visit(stat))
+
+      case _:BreakNode =>
+
+      case _:ContinueNode =>
+
       case BeginNode(token: Token, stat) => symbolTableCreatorWrapper(_ => visit(stat))
 
       case SequenceNode(token: Token, statOne, statTwo) => visitSequence(token, statOne, statTwo)
@@ -113,6 +122,12 @@ sealed class TypeCheckVisitor(entryNode: ASTNode, topSymbolTable: SymbolTable) e
       // base pair always true
       case _: PairElemTypePairNode =>
     }
+  }
+
+  def forConditionHelper(token: Token, forConditionNode: ForConditionNode): Unit = {
+    visit(forConditionNode.decl)
+    visit(forConditionNode.expr)
+    visit(forConditionNode.assign)
   }
 
   def pairElemNodeVisit(token: Token, expr: ExprNode): Unit = {
