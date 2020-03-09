@@ -334,26 +334,18 @@ sealed class TypeCheckVisitor(entryNode: ASTNode, topSymbolTable: SymbolTable) e
     symbolTableCreatorWrapper(_ => visit(stat))
   }
 
-  def makeFunctionKey(identNode: IdentNode, paramTypeList: IndexedSeq[TYPE]): String = {
-    var key = s"${identNode.ident}_p_"
-    for (_type <- paramTypeList) {
-      key = key + s"${_type.getKey}_"
-    }
-    key
-  }
-
   def makeFunctionKey(identNode: IdentNode, listOption: Option[Any]): String = {
     if (listOption.isDefined) {
       listOption.get match {
         case paramList: ParamListNode =>
-          makeFunctionKey(identNode, paramList.paramList.map(_.paramType.getType(topSymbolTable, currentSymbolTable)))
+          SymbolTable.makeFunctionKey(identNode, paramList.paramList.map(_.paramType.getType(topSymbolTable, currentSymbolTable)))
         case argListNode: ArgListNode =>
-          makeFunctionKey(identNode, argListNode.exprNodes.map(_.getType(topSymbolTable, currentSymbolTable)))
+          SymbolTable.makeFunctionKey(identNode, argListNode.exprNodes.map(_.getType(topSymbolTable, currentSymbolTable)))
         case _ =>
           assert(assertion = false, "Must be a paramlist or arglist")
           ""
       }
-    } else makeFunctionKey(identNode, IndexedSeq())
+    } else SymbolTable.makeFunctionKey(identNode, IndexedSeq())
   }
 
   def functionDeclarationIsValid(token: Token, funcType: TypeNode, identNode: IdentNode, paramList: Option[ParamListNode], stat: StatNode): Boolean = {
@@ -372,7 +364,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode, topSymbolTable: SymbolTable) e
       if (paramList.isDefined) {
         functionIdentifier.paramTypes = paramList.get.getIdentifierList(topSymbolTable, currentSymbolTable)
       }
-      currentSymbolTable.add(identNode.getKey, functionIdentifier)
+      currentSymbolTable.add(makeFunctionKey(identNode, paramList), functionIdentifier)
       true
     }
   }
