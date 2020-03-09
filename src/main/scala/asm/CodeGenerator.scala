@@ -93,8 +93,22 @@ object CodeGenerator {
     }
   }
 
-  def getFunctionLabel(functionName: String): String = {
-    s"f_$functionName"
+  def makeFunctionKey(identNode: IdentNode, listOption: Option[Any]): String = {
+    if (listOption.isDefined) {
+      listOption.get match {
+        case paramList: ParamListNode =>
+          SymbolTable.makeFunctionKey(identNode, paramList.paramList.map(_.paramType.getType(topSymbolTable, currentSymbolTable)))
+        case argListNode: ArgListNode =>
+          SymbolTable.makeFunctionKey(identNode, argListNode.exprNodes.map(_.getType(topSymbolTable, currentSymbolTable)))
+        case _ =>
+          assert(assertion = false, "Must be a paramlist or arglist")
+          ""
+      }
+    } else SymbolTable.makeFunctionKey(identNode, IndexedSeq())
+  }
+
+  def getFunctionLabel(identNode: IdentNode, listOption: Option[Any]): String = {
+    s"f_${makeFunctionKey(identNode, listOption)}"
   }
 
   def generateFunction(func: FuncNode): IndexedSeq[Instruction] = {
@@ -110,7 +124,7 @@ object CodeGenerator {
       setAndGetAllParams(func.paramList.get)
     }
 
-    var labelPushLR = IndexedSeq[Instruction](Label(getFunctionLabel(func.identNode.ident)), pushLR)
+    var labelPushLR = IndexedSeq[Instruction](Label(getFunctionLabel(func.identNode, func.paramList)), pushLR)
     if (func.paramList.isDefined)
       // May need to fetch parameters in reverse.
       labelPushLR ++= func.paramList.get.paramList.flatMap(generateParam)
@@ -476,7 +490,7 @@ object CodeGenerator {
       })
 
     var labelAndBranch = IndexedSeq[Instruction](
-      BranchLink(None, Label(getFunctionLabel(call.identNode.ident)))
+      BranchLink(None, Label(getFunctionLabel(call.identNode, call.argList)))
     )
 
     // TODO May need to do this multiple times if stack exceeds 1024 (max stack size).
@@ -848,6 +862,7 @@ object CodeGenerator {
     allocateInstructions ++ statInstructions ++ deallocateInstructions
   }
 
+  @scala.annotation.tailrec
   def generateExpression(expr: ExprNode): IndexedSeq[Instruction] = {
     expr match {
       case Int_literNode(_, str)
