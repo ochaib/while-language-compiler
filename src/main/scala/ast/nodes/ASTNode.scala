@@ -94,11 +94,11 @@ case class NewPairNode(token: Token, fstElem: ExprNode, sndElem: ExprNode) exten
 
   private def getElemIdentifier(elemNode: ExprNode, topST: SymbolTable, ST: SymbolTable): IDENTIFIER = {
     val elemIdentifier = elemNode.getType(topST, ST)
-    if (elemIdentifier.isInstanceOf[PAIR] || elemIdentifier == GENERAL_PAIR) {
+    /*if (elemIdentifier.isInstanceOf[PAIR] || elemIdentifier == GENERAL_PAIR) {
       GENERAL_PAIR
-    } else {
+    } else {*/
       elemIdentifier
-    }
+    //}
   }
 
   override def initKey: String = s"pair(${getElemKey(fstElem)},${getElemKey(sndElem)})"
@@ -110,11 +110,11 @@ case class NewPairNode(token: Token, fstElem: ExprNode, sndElem: ExprNode) exten
         elemKey = node.getTypeKey
       case _ =>
     }
-    if (elemKey.startsWith("pair")) {
+    /*if (elemKey.startsWith("pair")) {
       "pair"
-    } else {
+    } else {*/
       elemKey
-    }
+    //}
   }
 
   override def toTreeString: String = console.color(s"newpair (${fstElem.toString}, ${sndElem.toString})", fg=Console.BLUE)
@@ -257,6 +257,11 @@ case class IdentNode(token: Token, ident: String) extends ExprNode(token) with A
           null
       }
     }
+  }
+
+  def resetType(topST: SymbolTable, ST: SymbolTable): TYPE = {
+    _type = initType(topST, ST)
+    _type
   }
 
   override def toTreeString: String = console.color(ident, fg=Console.GREEN)
