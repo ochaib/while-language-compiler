@@ -123,7 +123,12 @@ case class NewPairNode(token: Token, fstElem: ExprNode, sndElem: ExprNode) exten
 case class CallNode(token: Token, identNode: IdentNode, argList: Option[ArgListNode]) extends ASTNode(token) with AssignRHSNode {
 
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = {
-    val F: Option[FUNCTION] = ST.lookupFunAll(getKey)
+    val key = {
+      if (argList.isDefined) {
+        SymbolTable.makeFunctionKey(identNode, argList.get.exprNodes.map(_.getType(topST, ST)))
+      } else SymbolTable.makeFunctionKey(identNode, IndexedSeq())
+    }
+    val F: Option[FUNCTION] = ST.lookupFunAll(key)
     if (F.isEmpty) {
       SemanticErrorLog.add(s"${getPos(token)} $getKey has not been declared as a function.")
       null
