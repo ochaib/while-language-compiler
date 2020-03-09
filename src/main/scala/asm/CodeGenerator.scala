@@ -93,6 +93,10 @@ object CodeGenerator {
     }
   }
 
+  def getFunctionLabel(functionName: String): String = {
+    s"f_$functionName"
+  }
+
   def generateFunction(func: FuncNode): IndexedSeq[Instruction] = {
 
     // Update the current symbol table to function block
@@ -106,7 +110,7 @@ object CodeGenerator {
       setAndGetAllParams(func.paramList.get)
     }
 
-    var labelPushLR = IndexedSeq[Instruction](Label(s"f_${func.identNode.ident}"), pushLR)
+    var labelPushLR = IndexedSeq[Instruction](Label(getFunctionLabel(func.identNode.ident)), pushLR)
     if (func.paramList.isDefined)
       // May need to fetch parameters in reverse.
       labelPushLR ++= func.paramList.get.paramList.flatMap(generateParam)
@@ -472,7 +476,7 @@ object CodeGenerator {
       })
 
     var labelAndBranch = IndexedSeq[Instruction](
-      BranchLink(None, Label(s"f_${call.identNode.ident}"))
+      BranchLink(None, Label(getFunctionLabel(call.identNode.ident)))
     )
 
     // TODO May need to do this multiple times if stack exceeds 1024 (max stack size).
