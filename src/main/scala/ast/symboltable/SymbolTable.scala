@@ -79,7 +79,14 @@ object SymbolTable {
   def makeFunctionKey(identNode: IdentNode, paramTypeList: IndexedSeq[TYPE]): String = {
     var key = s"${identNode.ident}_p_"
     for (_type <- paramTypeList) {
-      key = key + s"${_type.getKey}_"
+      _type match {
+        case _: ARRAY =>
+          key = key + "array_"
+        case _: PAIR =>
+          key = key + s"pair_"
+        case _ =>
+          key = key + s"${_type.getKey}_"
+      }
     }
     key
   }
