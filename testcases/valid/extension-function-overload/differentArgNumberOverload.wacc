@@ -1,13 +1,7 @@
-# program with function that has same parameter name as function
-
-# Output:
-# 99
-
-# Program:
-
 begin
-  int f(int f, int x) is
-    return (f + x)
+  int f(int x, int y) is
+    int r = x + y;
+    return r
   end
 
   int f(int f) is
@@ -15,9 +9,7 @@ begin
   end
   
   int x = call f(1);
-  int y = call f(2);
-  int z = call f(x, y);
+  int y = call f(1, 1);
   println x;
-  println y;
-  println z
+  println y
 end
