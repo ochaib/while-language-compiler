@@ -150,6 +150,7 @@ object CodeGenerator {
       case whileNode: WhileNode => generateWhile(whileNode)
 
       // EXTENSIONS:
+      case doWhileNode: DoWhileNode => generateDoWhile(doWhileNode)
       case _:BreakNode => IndexedSeq.empty
       case _:ContinueNode => IndexedSeq.empty
       case forNode: ForNode => generateFor(forNode)
@@ -829,6 +830,52 @@ object CodeGenerator {
     val totalConditionInstructions = conditionLabel +: condInstructions :+ bodyBranch
 
     initConditionBranch +: (totalBodyInstructions ++ totalConditionInstructions)
+  }
+
+  // DO WHILE EXTENSION:
+  def generateDoWhile(doWhileNode: DoWhileNode): IndexedSeq[Instruction] = {
+    // Labels
+    val conditionLabel: Label = labelGenerator.generate()
+    val bodyLabel: Label = labelGenerator.generate()
+
+    // *** BODY ***
+
+
+    // Update Scope to While Body
+    currentSymbolTable = symbolTableManager.nextScope()
+
+    // Enter Scope
+    val allocateWhileBody: IndexedSeq[Instruction] = enterScopeAndAllocateStack()
+
+    // Body Instruction list
+    val bodyInstructions: IndexedSeq[Instruction] = generateStatement(doWhileNode.stat)
+
+    // Leave Scope
+    val deallocateWhileBody: IndexedSeq[Instruction] = leaveScopeAndDeallocateStack()
+
+    // ************
+
+    // *** CONDITION ***
+
+    // Initial condition check
+    val initConditionBranch: Instruction = Branch(None, conditionLabel)
+
+    // Condition
+    val condInstructions: IndexedSeq[Instruction] = generateExpression(doWhileNode.expr) :+
+      Compare(None, RM.peekVariableRegister, new Immediate(1))
+
+    // Branch to start of body
+    val bodyBranch: Instruction = Branch(Some(Equal), bodyLabel)
+
+    // ************
+
+    // *** SUMMARY ***
+
+    val totalBodyInstructions: IndexedSeq[Instruction] = bodyLabel +: (allocateWhileBody ++ bodyInstructions ++ deallocateWhileBody)
+
+    val totalConditionInstructions = conditionLabel +: condInstructions :+ bodyBranch
+
+    initConditionBranch +: (totalConditionInstructions ++ totalBodyInstructions)
   }
 
   def generateFor(forNode: ForNode): IndexedSeq[Instruction] = {

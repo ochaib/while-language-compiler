@@ -60,6 +60,12 @@ sealed class TypeCheckVisitor(entryNode: ASTNode, topSymbolTable: SymbolTable) e
         // Prepare to visit stat by creating new symbol table
         symbolTableCreatorWrapper(_ => visit(stat))
 
+      case DoWhileNode(token: Token, stat, expr) =>
+        // Prepare to visit stat by creating new symbol table
+        symbolTableCreatorWrapper(_ => visit(stat))
+
+        conditionCheckerHelper(token, expr)
+
       case ForNode(token: Token, forConditionNode, stat) =>
         forConditionHelper(token, forConditionNode)
         // Prepare to visit stat by creating new symbol table
