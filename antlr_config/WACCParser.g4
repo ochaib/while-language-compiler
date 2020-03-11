@@ -24,6 +24,7 @@ stat: SKIP_                                 #Skip
       | PRINTLN expr                        #Println
       | IF expr THEN stat ELSE stat FI      #If
       | WHILE expr DO stat DONE             #While
+      | DO stat WHILE expr DONE             #DoWhile
       | FOR for_condition stat DONE         #For
       | BREAK                               #Break
       | CONTINUE                            #Continue

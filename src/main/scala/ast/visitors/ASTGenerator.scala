@@ -144,6 +144,15 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     WhileNode(ctx.start, conditionExpr, doStat)
   }
 
+  // DoWhile Extension.
+  override def visitDoWhile(ctx: WACCParser.DoWhileContext): DoWhileNode = {
+    // ‘do’ ⟨stat⟩ ‘while’ ⟨expr⟩ ‘done’
+    val doStat: StatNode = visit(ctx.getChild(1)).asInstanceOf[StatNode]
+    val conditionExpr: ExprNode = visit(ctx.getChild(3)).asInstanceOf[ExprNode]
+
+    DoWhileNode(ctx.start, doStat, conditionExpr)
+  }
+
   // FOR LOOP EXTENSION:
   override def visitFor(ctx: WACCParser.ForContext): ForNode = {
     // ‘for’ for_condition ⟨stat⟩ ‘done’

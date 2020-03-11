@@ -68,6 +68,15 @@ case class WhileNode(token: Token, expr: ExprNode, stat: StatNode) extends StatN
   }
 }
 
+case class DoWhileNode(token: Token, stat: StatNode, expr: ExprNode) extends StatNode(token) {
+  override def toTreeString: String = {
+    val doStr: String = console.color("do", fg=Console.BLUE)
+    val whileStr: String = console.color("while", fg=Console.BLUE)
+    val doneStr: String = console.color("done", fg=Console.BLUE)
+    s"$doStr ${stat.toString} $whileStr\n${expr.toString}\n$doneStr"
+  }
+}
+
 case class ForNode(token: Token, forCondition: ForConditionNode, stat: StatNode) extends StatNode(token) {
   override def toTreeString: String = {
     val forStr: String = console.color("for", fg=Console.BLUE)

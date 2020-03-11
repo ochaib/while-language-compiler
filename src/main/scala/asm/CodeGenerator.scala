@@ -152,6 +152,7 @@ object CodeGenerator {
       // EXTENSIONS:
       case _:BreakNode => IndexedSeq.empty
       case _:ContinueNode => IndexedSeq.empty
+      case forNode: ForNode => generateFor(forNode)
 
       case begin: BeginNode => generateBegin(begin)
       case SequenceNode(_, statOne, statTwo) => generateStatement(statOne) ++ generateStatement(statTwo)
