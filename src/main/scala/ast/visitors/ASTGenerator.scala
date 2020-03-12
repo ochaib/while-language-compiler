@@ -3,14 +3,19 @@ package ast.visitors
 import ast.nodes._
 import antlr.{WACCLexer, WACCParser, WACCParserBaseVisitor}
 import org.antlr.v4.runtime._
+import scala.collection.mutable
 import util.SyntaxErrorLog
 
 // Class used to traverse the parse tree built by ANTLR
-class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
+class ASTGenerator(imports: IndexedSeq[ProgramNode] = IndexedSeq[ProgramNode]()) extends WACCParserBaseVisitor[ASTNode] {
 
   def debugCtx(ctx: ParserRuleContext) = {
     for (i<-0 until ctx.getChildCount) println(s"$i:: " + ctx.getChild(i).getClass + ": " + ctx.getChild(i).getText)
   }
+
+  // FIXME: imported functions cannot call other imported functions right now
+  var usedFuncs: mutable.ListBuffer[FuncNode] = mutable.ListBuffer[FuncNode]()
+  val importedFuncs: Map[String, FuncNode] = imports.flatMap(_.functions).map(f => f.identNode.ident -> f).toMap
 
   override def visitProgram(ctx: WACCParser.ProgramContext): ProgramNode = {
     // Need to retrieve program information from parser context,
@@ -23,7 +28,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
     val functions: IndexedSeq[FuncNode] = for (i<-1 until childCount - 3) yield visit(ctx.getChild(i)).asInstanceOf[FuncNode]
     // Then create program node from the two
-    ProgramNode(ctx.start, functions, stat)
+    ProgramNode(ctx.start, functions ++ usedFuncs, stat)
   }
 
   override def visitFunc(ctx: WACCParser.FuncContext): FuncNode = {
@@ -212,6 +217,13 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
       if (ctx.getChildCount() == 5)
         Some(visit(ctx.getChild(3)).asInstanceOf[ArgListNode])
       else None
+
+    val funcName: String = ident.ident
+    if (importedFuncs.contains(funcName)) {
+      usedFuncs += importedFuncs(funcName)
+      println(s"${funcName} is stdlib")
+    }
+    else { println(s"${funcName} is not stdlib") }
 
     CallNode(ctx.start, ident, argList)
   }
