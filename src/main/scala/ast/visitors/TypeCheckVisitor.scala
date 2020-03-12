@@ -48,8 +48,8 @@ sealed class TypeCheckVisitor(entryNode: ASTNode, topSymbolTable: SymbolTable) e
 
       // SHORT-EFFECT INCREMENT/DECREMENT EXTENSION
       case shortEffect: ShortEffectNode => shortEffect match {
-        case IncrementNode(token, ident) => visitShortEffect(token, ident)
-        case DecrementNode(token, ident) => visitShortEffect(token, ident)
+        case IncrementNode(token, ident) => visitShortEffect(token, ident, "Increment")
+        case DecrementNode(token, ident) => visitShortEffect(token, ident, "Decrement")
       }
 
       case ReadNode(token: Token, lhs) => visitRead(token, lhs)
@@ -485,7 +485,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode, topSymbolTable: SymbolTable) e
   }
 
   // EXTENSION SIDE-EFFECT
-  def visitShortEffect(token: Token, ident: IdentNode): Unit = {
+  def visitShortEffect(token: Token, ident: IdentNode, short: String): Unit = {
     visit(ident)
     val identType = ident.getType(topSymbolTable, currentSymbolTable)
     // Int Type for comparison as side effects can only be used on integers.
@@ -495,7 +495,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode, topSymbolTable: SymbolTable) e
     if (identType == null) {
 
     } else if (!(identType == intType)) {
-      SemanticErrorLog.add(s"${getPos(token)} Short Effect for ${ident.getKey} failed, " +
+      SemanticErrorLog.add(s"${getPos(token)} $short for ${ident.getKey} failed, " +
         s"expected type ${intType.getKey} "
         + s"but got type ${identType.getKey} instead.")
     }
