@@ -1,5 +1,5 @@
 import antlr._
-import asm.CodeGenerator
+import asm.{CodeGenerator, Optimiser}
 import asm.instructions.Instruction
 import asm.instructionset.ARM11
 import ast.nodes.{ASTNode, ProgramNode}
@@ -77,8 +77,12 @@ object Compiler extends App {
     console.log("Compiling...")
     val instructions: IndexedSeq[Instruction] =
       CodeGenerator.generateProgram(tree)
+
+    // PEEPHOLE OPTIMISATION
+    val optimisedInstructions: IndexedSeq[Instruction] = Optimiser.optimise(instructions)
+
     // Format using ARM11 syntax
-    val compiled: String = ARM11.print(instructions)
+    val compiled: String = ARM11.print(optimisedInstructions)
     // Appropriately name output file, no prefix because it should go in root directory
     val baseFilename: String = args(0).split("/").last
     val outputFile: String =

@@ -8,9 +8,9 @@ import util.{ColoredConsole => console}
 sealed abstract class UnaryOperationNode(token: Token, expr: ExprNode) extends ExprNode(token) {
 
   override def initType(topST: SymbolTable, ST: SymbolTable): TYPE = this match {
-    case LogicalNotNode(_, _) => new BoolTypeNode(null).getType(topST, ST)
-    case LenNode(_, _) | OrdNode(_, _) | NegateNode(_, _) => new IntTypeNode(null).getType(topST, ST)
-    case ChrNode(_, _) => new CharTypeNode(null).getType(topST, ST)
+    case LogicalNotNode(_, _) => BoolTypeNode(null).getType(topST, ST)
+    case LenNode(_, _) | OrdNode(_, _) | NegateNode(_, _) => IntTypeNode(null).getType(topST, ST)
+    case ChrNode(_, _) => CharTypeNode(null).getType(topST, ST)
   }
 
   override def initKey: String = this match {
