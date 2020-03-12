@@ -491,7 +491,11 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
     binaryOperator match {
       case "+"  => PlusNode(ctx.start, firstExpr, secondExpr)
-      case "++" => PlusNode(ctx.start, firstExpr, secondExpr)
+      case "++" if firstExpr.getKey != StringTypeNode(null).getKey =>
+        PlusNode(ctx.start, firstExpr, secondExpr)
+      case "++" if firstExpr.getKey == StringTypeNode(null).getKey =>
+        SyntaxErrorLog.add("Syntax Error: ++ not defined for strings.")
+        Int_literNode(ctx.start, "100")
       case "-"  => MinusNode(ctx.start, firstExpr, secondExpr)
       case "--" => MinusNode(ctx.start, firstExpr, secondExpr)
     }
