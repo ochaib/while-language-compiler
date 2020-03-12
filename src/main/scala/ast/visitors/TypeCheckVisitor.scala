@@ -37,6 +37,21 @@ sealed class TypeCheckVisitor(entryNode: ASTNode, topSymbolTable: SymbolTable) e
 
       case AssignmentNode(token: Token, lhs, rhs) => visitAssignment(token, lhs, rhs)
 
+      // SIDE-EFFECT EXTENSION
+      case sideEffect: SideEffectNode => sideEffect match {
+        case AddAssign(token, ident, expr) => visitSideEffect(token, ident, expr)
+        case SubAssign(token, ident, expr) => visitSideEffect(token, ident, expr)
+        case MulAssign(token, ident, expr) => visitSideEffect(token, ident, expr)
+        case DivAssign(token, ident, expr) => visitSideEffect(token, ident, expr)
+        case ModAssign(token, ident, expr) => visitSideEffect(token, ident, expr)
+      }
+
+      // SHORT-EFFECT INCREMENT/DECREMENT EXTENSION
+      case shortEffect: ShortEffectNode => shortEffect match {
+        case IncrementNode(token, ident) => visitShortEffect(token, ident)
+        case DecrementNode(token, ident) => visitShortEffect(token, ident)
+      }
+
       case ReadNode(token: Token, lhs) => visitRead(token, lhs)
 
       case FreeNode(token: Token, expr) => visitFree(token, expr)
@@ -447,6 +462,42 @@ sealed class TypeCheckVisitor(entryNode: ASTNode, topSymbolTable: SymbolTable) e
       SemanticErrorLog.add(s"${getPos(token)} Assignment for ${lhs.getKey} to ${rhs.getKey} failed, " +
         s"expected type ${lhsType.getKey} "
         + s"but got type ${rhsType.getKey} instead.")
+    }
+  }
+
+  // EXTENSION SIDE-EFFECT
+  def visitSideEffect(token: Token, ident: IdentNode, expr: ExprNode): Unit = {
+    visit(ident)
+    visit(expr)
+    val identType = ident.getType(topSymbolTable, currentSymbolTable)
+    val exprType  = expr.getType(topSymbolTable, currentSymbolTable)
+    // Int Type for comparison as side effects can only be used on integers.
+    val intType   = IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)
+
+    // If either side evaluated to an incorrect expression, stop checking
+    if (identType == null || exprType == null) {
+
+    } else if (!(identType == intType && exprType == intType)) {
+      SemanticErrorLog.add(s"${getPos(token)} Side Effect for ${ident.getKey} to ${expr.getKey} failed, " +
+        s"expected type ${intType.getKey} "
+        + s"but got type ${identType.getKey} and ${exprType.getKey} instead.")
+    }
+  }
+
+  // EXTENSION SIDE-EFFECT
+  def visitShortEffect(token: Token, ident: IdentNode): Unit = {
+    visit(ident)
+    val identType = ident.getType(topSymbolTable, currentSymbolTable)
+    // Int Type for comparison as side effects can only be used on integers.
+    val intType   = IntTypeNode(null).getType(topSymbolTable, currentSymbolTable)
+
+    // If ident evaluated to an incorrect expression, stop checking.
+    if (identType == null) {
+
+    } else if (!(identType == intType)) {
+      SemanticErrorLog.add(s"${getPos(token)} Short Effect for ${ident.getKey} failed, " +
+        s"expected type ${intType.getKey} "
+        + s"but got type ${identType.getKey} instead.")
     }
   }
 
