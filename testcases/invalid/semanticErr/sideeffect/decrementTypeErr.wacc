@@ -1,0 +1,14 @@
+# type mismatch: int <- bool
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  char c = 'c';
+  c--
+end
