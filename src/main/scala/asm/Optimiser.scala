@@ -13,10 +13,11 @@ object Optimiser {
 
     // optIns.flatMap(i, j => optimiseChecks(i, j))
 
-    for (i <- 0 until instructions.length - 1) {
+    for (i <- 4 until instructions.length - 1) {
       // First two instructions to retrieve and compare.
       var current = optIns.remove(i)
       var next = optIns.remove(i)
+      breakable {
         current match {
           // Removing redundant load.
           case store: Store if next.isInstanceOf[Load] =>
@@ -24,6 +25,7 @@ object Optimiser {
             if (load.src.isDefined && store.src.isDefined && store.dest == load.src.get
               && store.src.get == load.dest) {
               optIns.insert(i, store)
+              break
             }
 
           // Instead of loading then moving to another register, load directly into that register.
@@ -32,14 +34,17 @@ object Optimiser {
             if (load.dest == move.src.asInstanceOf[ShiftedRegister].register) {
               optIns.insert(i, Load(load.condition, load.asmType, move.dest, load.src, load.offset,
                 load.registerWriteBack, load.loadable, load.label))
+              break
             }
 
           // Redundant POP, not necessary to POP anything twice.
           case pop: Pop if next.isInstanceOf[Pop] =>
             val nextPop = next.asInstanceOf[Pop]
             optIns.insert(i, pop)
+            break
 
           case _ =>
+        }
       }
       // Add instructions back if no optimisations have been found.
       optIns.insert(i, next)
