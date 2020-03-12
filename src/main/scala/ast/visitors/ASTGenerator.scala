@@ -155,7 +155,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
   // FOR LOOP EXTENSION:
   override def visitFor(ctx: WACCParser.ForContext): ForNode = {
-    // ‘for’ for_condition ⟨stat⟩ ‘done’
+    // ‘for’ for_condition 'do' ⟨stat⟩ ‘done’
     val forCondition: ForConditionNode = visit(ctx.getChild(1)).asInstanceOf[ForConditionNode]
     val doStat: StatNode = visit(ctx.getChild(3)).asInstanceOf[StatNode]
 

@@ -25,7 +25,7 @@ stat: SKIP_                                 #Skip
       | IF expr THEN stat ELSE stat FI      #If
       | WHILE expr DO stat DONE             #While
       | DO stat WHILE expr DONE             #DoWhile
-      | FOR for_condition stat DONE         #For
+      | FOR for_condition DO stat DONE      #For
       | BREAK                               #Break
       | CONTINUE                            #Continue
       | BEGIN stat END                      #Begin
