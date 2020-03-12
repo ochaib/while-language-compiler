@@ -334,11 +334,25 @@ sealed class TypeCheckVisitor(entryNode: ASTNode, topSymbolTable: SymbolTable) e
     symbolTableCreatorWrapper(_ => visit(stat))
   }
 
+  def makeFunctionKey(identNode: IdentNode, listOption: Option[Any]): String = {
+    if (listOption.isDefined) {
+      listOption.get match {
+        case paramList: ParamListNode =>
+          SymbolTable.makeFunctionKey(identNode, paramList.paramList.map(_.paramType.getType(topSymbolTable, currentSymbolTable)))
+        case argListNode: ArgListNode =>
+          SymbolTable.makeFunctionKey(identNode, argListNode.exprNodes.map(_.getType(topSymbolTable, currentSymbolTable)))
+        case _ =>
+          assert(assertion = false, "Must be a paramlist or arglist")
+          ""
+      }
+    } else SymbolTable.makeFunctionKey(identNode, IndexedSeq())
+  }
+
   def functionDeclarationIsValid(token: Token, funcType: TypeNode, identNode: IdentNode, paramList: Option[ParamListNode], stat: StatNode): Boolean = {
     visit(funcType)
     var functionIdentifier: FUNCTION = null
     // check identNode is already defined
-    if (currentSymbolTable.lookupFun(identNode.getKey).isDefined) {
+    if (currentSymbolTable.lookupFun(makeFunctionKey(identNode, paramList)).isDefined) {
       SemanticErrorLog.add(s"${getPos(token)} tried to define function: " +
         s"${identNode.getKey} but it was already declared.")
       false
@@ -350,15 +364,14 @@ sealed class TypeCheckVisitor(entryNode: ASTNode, topSymbolTable: SymbolTable) e
       if (paramList.isDefined) {
         functionIdentifier.paramTypes = paramList.get.getIdentifierList(topSymbolTable, currentSymbolTable)
       }
-      currentSymbolTable.add(identNode.getKey, functionIdentifier)
+      currentSymbolTable.add(makeFunctionKey(identNode, paramList), functionIdentifier)
       true
     }
   }
 
   def visitFunctionBody(token: Token, funcType: TypeNode, identNode: IdentNode, paramList: Option[ParamListNode], stat: StatNode): Unit = {
     // The body should only be visited if the identity has been checked already
-    assert(currentSymbolTable.lookupFun(identNode.getKey).isDefined, "Function has not been added to the symbol table yet")
-    var functionIdentifier: FUNCTION = currentSymbolTable.lookupFun(identNode.getKey).get
+    assert(currentSymbolTable.lookupFun(makeFunctionKey(identNode, paramList)).isDefined, "Function has not been added to the symbol table yet")
     // Save the func return type for current scope
     var saveFuncReturnType: TYPE = currentFuncReturnType
     // Set new func return type for new scope
@@ -499,7 +512,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode, topSymbolTable: SymbolTable) e
   }
 
   def visitCall(token: Token, identNode: IdentNode, argList: Option[ArgListNode]): Unit = {
-    val funcIdentifier: Option[FUNCTION] = currentSymbolTable.lookupFunAll(identNode.getKey)
+    val funcIdentifier: Option[FUNCTION] = currentSymbolTable.lookupFunAll(makeFunctionKey(identNode, argList))
     if (funcIdentifier.isEmpty)
       SemanticErrorLog.add(s"${getPos(token)} function ${identNode.getKey} not declared.")
     else if (argList.isDefined && funcIdentifier.get.paramTypes.length != argList.get.exprNodes.length){

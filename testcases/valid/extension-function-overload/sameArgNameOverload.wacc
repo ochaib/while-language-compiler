@@ -1,0 +1,21 @@
+# program with function that has same parameter name as function
+
+# Output:
+# 99
+
+# Program:
+
+begin
+  int f(int f) is
+    return f
+  end
+
+  char f(char f) is
+    return f
+  end
+  
+  char y = call f('c');
+  int x = call f(99);
+  println x;
+  println y
+end
