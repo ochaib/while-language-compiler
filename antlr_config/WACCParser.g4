@@ -94,7 +94,8 @@ ident: IDENT;
 
 binaryMulDivModOp: MULTIPLY | DIVIDE | MODULO;
 
-binaryAddSubOp: PLUS | MINUS;
+// Add INC DEC as if an expression follows ++/-- it should be treated as + + / - -
+binaryAddSubOp: PLUS | MINUS | INC | DEC;
 
 binaryComparatorOp: GT | GTE | LT | LTE;
 

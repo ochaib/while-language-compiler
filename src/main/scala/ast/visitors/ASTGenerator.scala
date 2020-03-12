@@ -491,7 +491,9 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
     binaryOperator match {
       case "+"  => PlusNode(ctx.start, firstExpr, secondExpr)
+      case "++" => PlusNode(ctx.start, firstExpr, secondExpr)
       case "-"  => MinusNode(ctx.start, firstExpr, secondExpr)
+      case "--" => MinusNode(ctx.start, firstExpr, secondExpr)
     }
   }
 
