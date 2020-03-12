@@ -137,6 +137,11 @@ object CodeGenerator {
       case _: SkipNode => IndexedSeq.empty
       case declaration: DeclarationNode => generateDeclaration(declaration)
       case assign: AssignmentNode => generateAssignment(assign)
+
+      // SIDE-EFFECT EXTENSIONS
+      case sideEffect: SideEffectNode => generateSideEffect(sideEffect)
+      case shortEffect: ShortEffectNode => generateShortEffect(shortEffect)
+
       case ReadNode(_, lhs) => generateRead(lhs)
       case FreeNode(_, expr) => generateFree(expr)
       case ReturnNode(_, expr) => generateReturn(expr)
@@ -149,7 +154,7 @@ object CodeGenerator {
       case ifNode: IfNode => generateIf(ifNode)
       case whileNode: WhileNode => generateWhile(whileNode)
 
-      // EXTENSIONS:
+      // LOOP EXTENSIONS:
       case doWhileNode: DoWhileNode => generateDoWhile(doWhileNode)
       case _:BreakNode => IndexedSeq.empty
       case _:ContinueNode => IndexedSeq.empty
@@ -167,6 +172,30 @@ object CodeGenerator {
   def generateAssignment(assignment: AssignmentNode): IndexedSeq[Instruction] = {
     generateAssignRHS(assignment.rhs) ++ generateAssignLHS(assignment.lhs)
   }
+
+  // SIDE-EFFECT EXTENSIONS:
+  def generateSideEffect(sideEffect: SideEffectNode): IndexedSeq[Instruction] = {
+    sideEffect match {
+      // Pass code generation to generateAssignment depending on the side effect.
+      case AddAssign(token, ident, expr) => generateAssignment(AssignmentNode(token, ident, PlusNode(token, ident, expr)))
+      case SubAssign(token, ident, expr) => generateAssignment(AssignmentNode(token, ident, MinusNode(token, ident, expr)))
+      case MulAssign(token, ident, expr) => generateAssignment(AssignmentNode(token, ident, MultiplyNode(token, ident, expr)))
+      case DivAssign(token, ident, expr) => generateAssignment(AssignmentNode(token, ident, DivideNode(token, ident, expr)))
+      case ModAssign(token, ident, expr) => generateAssignment(AssignmentNode(token, ident, ModNode(token, ident, expr)))
+    }
+  }
+
+  def generateShortEffect(shortEffect: ShortEffectNode): IndexedSeq[Instruction] = {
+    shortEffect match {
+      case IncrementNode(token, ident) =>
+        // Should generate the ident and the code necessary for ident + 1 which is the same as ident++.
+        generateExpression(PlusNode(token, ident, Int_literNode(token, "1"))) ++ generateIdent(ident)
+      case DecrementNode(token, ident) =>
+        // Should generate the ident and the code necessary for ident - 1 which is the same as ident--.
+      generateExpression(MinusNode(token, ident, Int_literNode(token, "1"))) ++ generateIdent(ident)
+    }
+  }
+
 
   def generateAssignLHS(lhs: AssignLHSNode): IndexedSeq[Instruction] = {
     lhs match {
