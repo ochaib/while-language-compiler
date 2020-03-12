@@ -1,0 +1,10 @@
+# WACC Standard Library
+
+# Program:
+
+begin
+  bool isdigit(char c) is
+    return (((ord c) <= (ord '9')) && ((ord c) >= (ord '0')))
+  end
+  println "WACC Standard Library"
+end
