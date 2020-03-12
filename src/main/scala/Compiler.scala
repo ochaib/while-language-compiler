@@ -67,7 +67,7 @@ object Compiler extends App {
     }
 
     // first, build any import files (.wacch) in same directory
-    val directory: String = args(0).substring(0, args(0).lastIndexOf('/')+1) + "/"
+    val directory: String = args(0).substring(0, args(0).lastIndexOf('/')+1) + "./"
     val importedFiles: IndexedSeq[String] = (new File(directory)).listFiles.map(_.getPath).filter(_.endsWith(".wach"))
     val imports: IndexedSeq[ProgramNode] = importedFiles.map(parseImport(_))
     // Build AST
