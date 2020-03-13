@@ -174,7 +174,7 @@ object CodeGenerator {
 
       // LOOP EXTENSIONS:
       case doWhileNode: DoWhileNode => generateDoWhile(doWhileNode)
-      case _:BreakNode => IndexedSeq.empty
+      case _:BreakNode => IndexedSeq[Instruction](BranchLink(None, labelGenerator.generate()))
       case _:ContinueNode => IndexedSeq.empty
       case forNode: ForNode => generateFor(forNode)
 
@@ -940,7 +940,7 @@ object CodeGenerator {
       generateDeclaration(forNode.forCondition.decl) ++
       generateExpression(forNode.forCondition.expr) ++
       IndexedSeq[Instruction](Compare(None, RM.peekVariableRegister, new Immediate(1))) ++
-      generateAssignment(forNode.forCondition.assign)
+      generateStatement(forNode.forCondition.assign)
 
     // Branch to start of body
     val bodyBranch: Instruction = Branch(Some(Equal), bodyLabel)
