@@ -12782,6 +12782,278 @@ orExpr.s contents are:
 ===========================================================
 -- Finished
 
+calling the reference compiler on testcases/valid/imports/basic-import.wacc
+-- Test: basic-import.wacc
+
+-- Uploaded file: 
+---------------------------------------------------------------
+# evaluating imports
+
+# Program:
+
+begin
+	skip
+end
+---------------------------------------------------------------
+
+-- Compiler Output:
+-- Compiling...
+-- Printing Assembly...
+basic-import.s contents are:
+===========================================================
+11  .data
+11
+11	msg_print_ln:
+11		.word 1
+11		.ascii "\0"
+11	msg_0:
+11		.word 11
+11		.ascii "hello world"
+11	msg_print_string:
+11		.word 5
+11		.ascii "%.*s\0"
+11
+11	.text
+11
+11	.global main
+11	f_helloworld_p_:
+11		PUSH {lr}
+11		LDR r4, =msg_0
+11		MOV r0, r4
+11		POP {pc}
+11		POP {pc}
+11		.ltorg
+11	main:
+11		PUSH {lr}
+11		SUB sp, sp, #4
+11		BL f_helloworld_p_
+11		ADD sp, sp, #0
+11		MOV r4, r0
+11		STR r4, [sp]
+11		LDR r4, [sp]
+11		MOV r0, r4
+11		BL p_print_string
+11		BL p_print_ln
+11		ADD sp, sp, #4
+11		LDR r0, =0
+11		POP {pc}
+11		.ltorg
+11	p_print_string:
+11		PUSH {lr}
+11		LDR r1, [r0]
+11		ADD r2, r0, #4
+11		LDR r0, =msg_print_string
+11		ADD r0, r0, #4
+11		BL printf
+11		MOV r0, #0
+11		BL fflush
+11		POP {pc}
+11	p_print_ln:
+11		PUSH {lr}
+11		LDR r0, =msg_print_ln
+11		ADD r0, r0, #4
+11		BL puts
+11		MOV r0, #0
+11		BL fflush
+11		POP {pc}
+11
+===========================================================
+-- Finished
+
+calling the reference compiler on testcases/valid/imports/standard-library-import.wacc
+-- Test: standard-library-import.wacc
+
+-- Uploaded file: 
+---------------------------------------------------------------
+# evaluating stdlib imports
+
+# Program:
+
+begin
+	skip
+end
+---------------------------------------------------------------
+
+-- Compiler Output:
+-- Compiling...
+-- Printing Assembly...
+standard-library-import.s contents are:
+===========================================================
+11	.data
+11
+11	msg_index_too_large:
+11		.word 45
+11		.ascii "ArrayIndexOutOfBoundsError: index too large\n\0"
+11	msg_print_int:
+11		.word 3
+11		.ascii "%d\0"
+11	msg_print_ln:
+11		.word 1
+11		.ascii "\0"
+11	msg_throw_overflow_error:
+11		.word 82
+11		.ascii "OverflowError: the result is too small/large to store in a 4-byte signed-integer.\n"
+11	msg_negative_index:
+11		.word 44
+11		.ascii "ArrayIndexOutOfBoundsError: negative index\n\0"
+11	msg_print_string:
+11		.word 5
+11		.ascii "%.*s\0"
+11
+11	.text
+11
+11	.global main
+11	f_min_p_array_:
+11		PUSH {lr}
+11		SUB sp, sp, #16
+11		LDR r4, [sp, #20]
+11		STR r4, [sp, #12]
+11		ADD r4, sp, #12
+11		LDR r5, =0
+11		LDR r4, [r4]
+11		MOV r0, r5
+11		MOV r1, r4
+11		BL p_check_array_bounds
+11		ADD r4, r4, #4
+11		ADD r4, r4, r5, LSL #2
+11		LDR r4, [r4]
+11		STR r4, [sp, #8]
+11		LDR r4, =1
+11		STR r4, [sp, #4]
+11		LDR r4, [sp, #12]
+11		LDR r4, [r4]
+11		STR r4, [sp]
+11		B L0
+11	L1:
+11		ADD r4, sp, #12
+11		LDR r5, [sp, #4]
+11		LDR r4, [r4]
+11		MOV r0, r5
+11		MOV r1, r4
+11		BL p_check_array_bounds
+11		ADD r4, r4, #4
+11		ADD r4, r4, r5, LSL #2
+11		LDR r4, [r4]
+11		LDR r5, [sp, #8]
+11		CMP r4, r5
+11		MOVLT r4, #1
+11		MOVGE r4, #0
+11		CMP r4, #0
+11		BEQ L2
+11		ADD r4, sp, #12
+11		LDR r5, [sp, #4]
+11		LDR r4, [r4]
+11		MOV r0, r5
+11		MOV r1, r4
+11		BL p_check_array_bounds
+11		ADD r4, r4, #4
+11		ADD r4, r4, r5, LSL #2
+11		LDR r4, [r4]
+11		STR r4, [sp, #8]
+11		LDR r4, [sp, #4]
+11		LDR r5, =1
+11		ADDS r4, r4, r5
+11		BLVS p_throw_overflow_error
+11		STR r4, [sp, #4]
+11		B L3
+11	L2:
+11		LDR r4, [sp, #4]
+11		LDR r5, =1
+11		ADDS r4, r4, r5
+11		BLVS p_throw_overflow_error
+11		STR r4, [sp, #4]
+11	L3:
+11	L0:
+11		LDR r4, [sp, #4]
+11		LDR r5, [sp]
+11		CMP r4, r5
+11		MOVLT r4, #1
+11		MOVGE r4, #0
+11		CMP r4, #1
+11		BEQ L1
+11		LDR r4, [sp, #8]
+11		MOV r0, r4
+11		ADD sp, sp, #16
+11		POP {pc}
+11		ADD sp, sp, #16
+11		POP {pc}
+11		.ltorg
+11	main:
+11		PUSH {lr}
+11		SUB sp, sp, #8
+11		LDR r0, =16
+11		BL malloc
+11		MOV r4, r0
+11		LDR r5, =2
+11		STR r5, [r4, #4]
+11		LDR r5, =1
+11		STR r5, [r4, #8]
+11		LDR r5, =3
+11		STR r5, [r4, #12]
+11		LDR r5, =3
+11		STR r5, [r4]
+11		STR r4, [sp, #4]
+11		LDR r4, [sp, #4]
+11		STR r4, [sp, #-4]!
+11		BL f_min_p_array_
+11		ADD sp, sp, #4
+11		MOV r4, r0
+11		STR r4, [sp]
+11		LDR r4, [sp]
+11		MOV r0, r4
+11		BL p_print_int
+11		BL p_print_ln
+11		ADD sp, sp, #8
+11		LDR r0, =0
+11		POP {pc}
+11		.ltorg
+11	p_throw_runtime_error:
+11		BL p_print_string
+11		MOV r0, #-1
+11		BL exit
+11	p_print_string:
+11		PUSH {lr}
+11		LDR r1, [r0]
+11		ADD r2, r0, #4
+11		LDR r0, =msg_print_string
+11		ADD r0, r0, #4
+11		BL printf
+11		MOV r0, #0
+11		BL fflush
+11		POP {pc}
+11	p_print_int:
+11		PUSH {lr}
+11		MOV r1, r0
+11		LDR r0, =msg_print_int
+11		ADD r0, r0, #4
+11		BL printf
+11		MOV r0, #0
+11		BL fflush
+11		POP {pc}
+11	p_check_array_bounds:
+11		PUSH {lr}
+11		CMP r0, #0
+11		LDRLT r0, =msg_negative_index
+11		BLLT p_throw_runtime_error
+11		LDR r1, [r1]
+11		CMP r0, r1
+11		LDRCS r0, =msg_index_too_large
+11		BLCS p_throw_runtime_error
+11		POP {pc}
+11	p_throw_overflow_error:
+11		LDR r0, =msg_throw_overflow_error
+11		BL p_throw_runtime_error
+11	p_print_ln:
+11		PUSH {lr}
+11		LDR r0, =msg_print_ln
+11		ADD r0, r0, #4
+11		BL puts
+11		MOV r0, #0
+11		BL fflush
+11		POP {pc}
+===========================================================
+-- Finished
+
 calling the reference compiler on testcases/valid/expressions/plusExpr.wacc
 -- Test: plusExpr.wacc
 
