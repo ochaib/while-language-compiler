@@ -1,3 +1,5 @@
+package wacc
+
 import antlr._
 import asm.CodeGenerator
 import asm.instructions.Instruction
@@ -19,10 +21,8 @@ object Compiler extends App {
   if (args.length == 0) error("No filename provided")
   if (!args(0).endsWith(".wacc")) error("Source code must be a .wacc file")
 
-  def parseImport(importFile: String): ProgramNode = {
-    if (!importFile.endsWith(".wach")) error(s"Imported file ${importFile} must be a .wach file")
-    val file: ANTLRCharStream = ANTLRCharStreams.fromFileName(importFile)
-    val lexer: WACCLexer = new WACCLexer(file)
+  def handleImport(charstream: ANTLRCharStream): ProgramNode = {
+    val lexer: WACCLexer = new WACCLexer(charstream)
     val errorListener = new ErrorListener
     lexer.removeErrorListeners()
     lexer.addErrorListener(errorListener)
@@ -66,12 +66,17 @@ object Compiler extends App {
       System.exit(100)
     }
 
-    // first, build any import files (.wacch) in same directory
+    // first, build the standard library
+    val stdlib: ProgramNode = handleImport(ANTLRCharStreams.fromString(StandardLib.STDLIB))
+
+    // next, build any import files (.wacch) in same directory
     val directory: String = args(0).substring(0, args(0).lastIndexOf('/')+1) + "./"
     val importedFiles: IndexedSeq[String] = (new File(directory)).listFiles.map(_.getPath).filter(_.endsWith(".wach"))
-    val imports: IndexedSeq[ProgramNode] = importedFiles.map(parseImport(_))
+    val imports: IndexedSeq[ProgramNode] = importedFiles
+      .map(fn => ANTLRCharStreams.fromFileName(fn))
+      .map(handleImport(_))
     // Build AST
-    val visitor: ASTGenerator = new ASTGenerator(imports=imports)
+    val visitor: ASTGenerator = new ASTGenerator(imports=(imports :+ stdlib))
     val tree: ProgramNode = visitor.visit(program).asInstanceOf[ProgramNode]
 
     // TODO: add flag to disable semantic analysis as in ref compiler
