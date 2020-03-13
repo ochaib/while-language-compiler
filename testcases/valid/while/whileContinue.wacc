@@ -14,5 +14,5 @@ begin
     continue ;
     println i
   done ;
-  println i;
+  println i
 end

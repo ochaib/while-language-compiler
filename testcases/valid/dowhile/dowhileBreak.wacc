@@ -7,7 +7,7 @@
 
 begin
   do
-    break;
+    break
   while true
   done
 end
