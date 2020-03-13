@@ -27,8 +27,9 @@ class ASTGenerator(imports: IndexedSeq[ProgramNode] = IndexedSeq[ProgramNode]())
     val stat: StatNode = visit(ctx.getChild(childCount - 3)).asInstanceOf[StatNode]
 
     val functions: IndexedSeq[FuncNode] = for (i<-1 until childCount - 3) yield visit(ctx.getChild(i)).asInstanceOf[FuncNode]
+    val funcNames: Set[String] = functions.map(_.identNode.ident).toSet[String]
     // Then create program node from the two
-    ProgramNode(ctx.start, functions ++ usedFuncs, stat)
+    ProgramNode(ctx.start, functions ++ usedFuncs.filter(f => !funcNames.contains(f.identNode.ident)), stat)
   }
 
   override def visitFunc(ctx: WACCParser.FuncContext): FuncNode = {
