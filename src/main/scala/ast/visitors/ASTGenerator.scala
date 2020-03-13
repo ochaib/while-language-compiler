@@ -60,11 +60,8 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     ParamNode(ctx.start, paramType, ident)
   }
 
-//  override def visitStat(ctx: WACCParser.StatContext): ASTNode = {
-//
-//  }
-
   // Individual components of stat that must be visited.
+
   override def visitSkip(ctx: WACCParser.SkipContext): SkipNode = {
     SkipNode(ctx.start)
   }
@@ -86,6 +83,32 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     val rhs: AssignRHSNode = visit(ctx.getChild(2)).asInstanceOf[AssignRHSNode]
 
     AssignmentNode(ctx.start, lhs, rhs)
+  }
+
+  // SIDE-EFFECT EXTENSION:
+  override def visitSideEffect(ctx: WACCParser.SideEffectContext): SideEffectNode = {
+    val ident: IdentNode = visit(ctx.getChild(0)).asInstanceOf[IdentNode]
+    val sideEffect: String = ctx.getChild(1).getText
+    val expr: ExprNode = visit(ctx.getChild(2)).asInstanceOf[ExprNode]
+
+    sideEffect match {
+      case "+=" => AddAssign(ctx.start, ident, expr)
+      case "-=" => SubAssign(ctx.start, ident, expr)
+      case "*=" => MulAssign(ctx.start, ident, expr)
+      case "/=" => DivAssign(ctx.start, ident, expr)
+      case "%=" => ModAssign(ctx.start, ident, expr)
+    }
+  }
+
+  // SHORT-EFFECT EXTENSION:
+  override def visitShortEffect(ctx: WACCParser.ShortEffectContext): ShortEffectNode = {
+    val ident: IdentNode = visit(ctx.getChild(0)).asInstanceOf[IdentNode]
+    val shortEffect: String = ctx.getChild(1).getText
+
+    shortEffect match {
+      case "++" => IncrementNode(ctx.start, ident)
+      case "--" => DecrementNode(ctx.start, ident)
+    }
   }
 
   override def visitRead(ctx: WACCParser.ReadContext): ReadNode = {
@@ -147,6 +170,47 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     WhileNode(ctx.start, conditionExpr, doStat)
   }
 
+  // DoWhile Extension.
+  override def visitDoWhile(ctx: WACCParser.DoWhileContext): DoWhileNode = {
+    // ‘do’ ⟨stat⟩ ‘while’ ⟨expr⟩ ‘done’
+    val doStat: StatNode = visit(ctx.getChild(1)).asInstanceOf[StatNode]
+    val conditionExpr: ExprNode = visit(ctx.getChild(3)).asInstanceOf[ExprNode]
+
+    DoWhileNode(ctx.start, doStat, conditionExpr)
+  }
+
+  // FOR LOOP EXTENSION:
+  override def visitFor(ctx: WACCParser.ForContext): ForNode = {
+    // ‘for’ for_condition 'do' ⟨stat⟩ ‘done’
+    val forCondition: ForConditionNode = visit(ctx.getChild(1)).asInstanceOf[ForConditionNode]
+    val doStat: StatNode = visit(ctx.getChild(3)).asInstanceOf[StatNode]
+
+    ForNode(ctx.start, forCondition, doStat)
+  }
+
+  override def visitFor_condition(ctx: WACCParser.For_conditionContext): ForConditionNode = {
+    // Has to have the form (declaration, check, update) = (int i = __; i binOp __; i = __)
+    val forDeclaration: DeclarationNode = visit(ctx.getChild(1)).asInstanceOf[DeclarationNode]
+    val forExpression: ExprNode = visit(ctx.getChild(3)).asInstanceOf[ExprNode]
+    val forAssign: AssignmentNode = visit(ctx.getChild(5)).asInstanceOf[AssignmentNode]
+
+    ForConditionNode(ctx.start, forDeclaration, forExpression, forAssign)
+  }
+
+  // BREAK EXTENSION:
+  override def visitBreak(ctx: WACCParser.BreakContext): BreakNode = {
+    // ‘break'
+
+    BreakNode(ctx.start)
+  }
+
+  // CONTINUE EXTENSION:
+  override def visitContinue(ctx: WACCParser.ContinueContext): ContinueNode = {
+    // ‘continue'
+
+    ContinueNode(ctx.start)
+  }
+
   override def visitBegin(ctx: WACCParser.BeginContext): BeginNode = {
     // ‘begin’ ⟨stat ⟩ ‘end’
     val beginStat: StatNode = visit(ctx.getChild(1)).asInstanceOf[StatNode]
@@ -163,10 +227,6 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
   }
 
   // Need to traverse each possible option of assign-lhs
-//  override def visitAssign_lhs(ctx: WACCParser.Assign_lhsContext): ASTNode = {
-//
-//  }
-
   override def visitAssignLHSIdent(ctx: WACCParser.AssignLHSIdentContext): AssignLHSNode = {
     visit(ctx.getChild(0)).asInstanceOf[IdentNode]
     // This works now
@@ -179,10 +239,6 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
   override def visitAssignLHSPairElem(ctx: WACCParser.AssignLHSPairElemContext): AssignLHSNode = {
     visit(ctx.getChild(0)).asInstanceOf[PairElemNode]
   }
-
-//  override def visitAssign_rhs(ctx: WACCParser.Assign_rhsContext): ASTNode = {
-//
-//  }
 
   override def visitAssignRHSExpr(ctx: WACCParser.AssignRHSExprContext): AssignRHSNode = {
     visit(ctx.getChild(0)).asInstanceOf[ExprNode]
@@ -227,10 +283,6 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     ArgListNode(ctx.start, exprChildren)
   }
 
-//  override def visitPair_elem(ctx: WACCParser.Pair_elemContext): ASTNode = {
-//
-//  }
-
   override def visitPairFst(ctx: WACCParser.PairFstContext): PairElemNode = {
     // ‘fst’ ⟨expr ⟩
     val pairFstExpr: ExprNode = visit(ctx.getChild(1)).asInstanceOf[ExprNode]
@@ -244,10 +296,6 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
     SndNode(ctx.start, pairSndExpr)
   }
-
-//  override def visitType(ctx: WACCParser.TypeContext): ASTNode = {
-//    // ⟨type⟩
-//  }
 
   override def visitTypeBase_type(ctx: WACCParser.TypeBase_typeContext): TypeNode = {
     // ⟨base-type⟩
@@ -265,10 +313,6 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     // ⟨pair-type⟩
     visit(ctx.getChild(0)).asInstanceOf[PairTypeNode]
   }
-
-//  override def visitBase_type(ctx: WACCParser.Base_typeContext): ASTNode = {
-//
-//  }
 
   override def visitIntBase_type(ctx: WACCParser.IntBase_typeContext): BaseTypeNode = {
     // 'int'
@@ -306,10 +350,6 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     PairTypeNode(ctx.start, fstPairElem, sndPairElem)
   }
 
-//  override def visitPair_elem_type(ctx: WACCParser.Pair_elemContext): ASTNode = {
-//    // ⟨pair-elem-type⟩
-//  }
-
   override def visitPETBaseType(ctx: WACCParser.PETBaseTypeContext): PairElemTypeNode = {
     // ⟨base-type⟩
     visit(ctx.getChild(0)).asInstanceOf[BaseTypeNode]
@@ -325,10 +365,6 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     // 'pair'
     new PairElemTypePairNode(ctx.start)
   }
-
-//  override def visitExpr(ctx: WACCParser.ExprContext): ASTNode = {
-//
-//  }
 
   override def visitExprIntLiter(ctx: WACCParser.ExprIntLiterContext): ExprNode = {
     // ⟨int-liter⟩
@@ -356,10 +392,9 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     val numVal: Option[Int] = num.toIntOption
 
     numVal match {
-      case None => {
+      case None =>
         SyntaxErrorLog.add("Invalid integer value.")
         Int_literNode(ctx.start, "")
-      }
       case Some(n) => Int_literNode(ctx.start, num)
     }
 
@@ -456,7 +491,13 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
     binaryOperator match {
       case "+"  => PlusNode(ctx.start, firstExpr, secondExpr)
+      case "++" if firstExpr.getKey != StringTypeNode(null).getKey =>
+        PlusNode(ctx.start, firstExpr, secondExpr)
+      case "++" if firstExpr.getKey == StringTypeNode(null).getKey =>
+        SyntaxErrorLog.add("Syntax Error: ++ not defined for strings.")
+        Int_literNode(ctx.start, "100")
       case "-"  => MinusNode(ctx.start, firstExpr, secondExpr)
+      case "--" => MinusNode(ctx.start, firstExpr, secondExpr)
     }
   }
 

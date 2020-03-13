@@ -152,9 +152,14 @@ object CodeGenerator {
   def generateStatement(statement: StatNode): IndexedSeq[Instruction] = {
     statement match {
       // Create/return empty instruction list for skip node.
-      case _: SkipNode => IndexedSeq[Instruction]()
+      case _: SkipNode => IndexedSeq.empty
       case declaration: DeclarationNode => generateDeclaration(declaration)
       case assign: AssignmentNode => generateAssignment(assign)
+
+      // SIDE-EFFECT EXTENSIONS
+      case sideEffect: SideEffectNode => generateSideEffect(sideEffect)
+      case shortEffect: ShortEffectNode => generateShortEffect(shortEffect)
+
       case ReadNode(_, lhs) => generateRead(lhs)
       case FreeNode(_, expr) => generateFree(expr)
       case ReturnNode(_, expr) => generateReturn(expr)
@@ -166,6 +171,13 @@ object CodeGenerator {
 
       case ifNode: IfNode => generateIf(ifNode)
       case whileNode: WhileNode => generateWhile(whileNode)
+
+      // LOOP EXTENSIONS:
+      case doWhileNode: DoWhileNode => generateDoWhile(doWhileNode)
+      case _:BreakNode => IndexedSeq.empty
+      case _:ContinueNode => IndexedSeq.empty
+      case forNode: ForNode => generateFor(forNode)
+
       case begin: BeginNode => generateBegin(begin)
       case SequenceNode(_, statOne, statTwo) => generateStatement(statOne) ++ generateStatement(statTwo)
     }
@@ -178,6 +190,30 @@ object CodeGenerator {
   def generateAssignment(assignment: AssignmentNode): IndexedSeq[Instruction] = {
     generateAssignRHS(assignment.rhs) ++ generateAssignLHS(assignment.lhs)
   }
+
+  // SIDE-EFFECT EXTENSIONS:
+  def generateSideEffect(sideEffect: SideEffectNode): IndexedSeq[Instruction] = {
+    sideEffect match {
+      // Pass code generation to generateAssignment depending on the side effect.
+      case AddAssign(token, ident, expr) => generateAssignment(AssignmentNode(token, ident, PlusNode(token, ident, expr)))
+      case SubAssign(token, ident, expr) => generateAssignment(AssignmentNode(token, ident, MinusNode(token, ident, expr)))
+      case MulAssign(token, ident, expr) => generateAssignment(AssignmentNode(token, ident, MultiplyNode(token, ident, expr)))
+      case DivAssign(token, ident, expr) => generateAssignment(AssignmentNode(token, ident, DivideNode(token, ident, expr)))
+      case ModAssign(token, ident, expr) => generateAssignment(AssignmentNode(token, ident, ModNode(token, ident, expr)))
+    }
+  }
+
+  def generateShortEffect(shortEffect: ShortEffectNode): IndexedSeq[Instruction] = {
+    shortEffect match {
+      case IncrementNode(token, ident) =>
+        // Should generate the ident and the code necessary for ident + 1 which is the same as ident++.
+        generateExpression(PlusNode(token, ident, Int_literNode(token, "1"))) ++ generateIdent(ident)
+      case DecrementNode(token, ident) =>
+        // Should generate the ident and the code necessary for ident - 1 which is the same as ident--.
+      generateExpression(MinusNode(token, ident, Int_literNode(token, "1"))) ++ generateIdent(ident)
+    }
+  }
+
 
   def generateAssignLHS(lhs: AssignLHSNode): IndexedSeq[Instruction] = {
     lhs match {
@@ -827,6 +863,102 @@ object CodeGenerator {
 
     // Body Instruction list
     val bodyInstructions: IndexedSeq[Instruction] = generateStatement(whileNode.stat)
+
+    // Leave Scope
+    val deallocateWhileBody: IndexedSeq[Instruction] = leaveScopeAndDeallocateStack()
+
+    // ************
+
+
+    // *** SUMMARY ***
+
+    val totalBodyInstructions: IndexedSeq[Instruction] = bodyLabel +: (allocateWhileBody ++ bodyInstructions ++ deallocateWhileBody)
+
+    val totalConditionInstructions = conditionLabel +: condInstructions :+ bodyBranch
+
+    initConditionBranch +: (totalBodyInstructions ++ totalConditionInstructions)
+  }
+
+  // DO WHILE EXTENSION:
+  def generateDoWhile(doWhileNode: DoWhileNode): IndexedSeq[Instruction] = {
+    // Labels
+    val conditionLabel: Label = labelGenerator.generate()
+    val bodyLabel: Label = labelGenerator.generate()
+
+    // *** BODY ***
+
+
+    // Update Scope to While Body
+    currentSymbolTable = symbolTableManager.nextScope()
+
+    // Enter Scope
+    val allocateWhileBody: IndexedSeq[Instruction] = enterScopeAndAllocateStack()
+
+    // Body Instruction list
+    val bodyInstructions: IndexedSeq[Instruction] = generateStatement(doWhileNode.stat)
+
+    // Leave Scope
+    val deallocateWhileBody: IndexedSeq[Instruction] = leaveScopeAndDeallocateStack()
+
+    // ************
+
+    // *** CONDITION ***
+
+    // Initial condition check
+    val initConditionBranch: Instruction = Branch(None, conditionLabel)
+
+    // Condition
+    val condInstructions: IndexedSeq[Instruction] = generateExpression(doWhileNode.expr) :+
+      Compare(None, RM.peekVariableRegister, new Immediate(1))
+
+    // Branch to start of body
+    val bodyBranch: Instruction = Branch(Some(Equal), bodyLabel)
+
+    // ************
+
+    // *** SUMMARY ***
+
+    val totalBodyInstructions: IndexedSeq[Instruction] = bodyLabel +: (allocateWhileBody ++ bodyInstructions ++ deallocateWhileBody)
+
+    val totalConditionInstructions = conditionLabel +: condInstructions :+ bodyBranch
+
+    initConditionBranch +: (totalConditionInstructions ++ totalBodyInstructions)
+  }
+
+  def generateFor(forNode: ForNode): IndexedSeq[Instruction] = {
+    // Labels
+    val conditionLabel: Label = labelGenerator.generate()
+    val bodyLabel: Label = labelGenerator.generate()
+
+    // *** CONDITION ***
+
+    // Initial condition check
+    val initConditionBranch: Instruction = Branch(None, conditionLabel)
+
+    // Condition, (declaration, expression, assign)
+    val condInstructions: IndexedSeq[Instruction] =
+      generateDeclaration(forNode.forCondition.decl) ++
+      generateExpression(forNode.forCondition.expr) ++
+      IndexedSeq[Instruction](Compare(None, RM.peekVariableRegister, new Immediate(1))) ++
+      generateAssignment(forNode.forCondition.assign)
+
+    // Branch to start of body
+    val bodyBranch: Instruction = Branch(Some(Equal), bodyLabel)
+
+    // ************
+
+
+    // *** BODY ***
+
+
+    // Update Scope to While Body
+    currentSymbolTable = symbolTableManager.nextScope()
+
+    // Enter Scope
+    val allocateWhileBody: IndexedSeq[Instruction] = enterScopeAndAllocateStack()
+
+    // Body Instruction list
+    val bodyInstructions: IndexedSeq[Instruction] = generateStatement(forNode.stat)
 
     // Leave Scope
     val deallocateWhileBody: IndexedSeq[Instruction] = leaveScopeAndDeallocateStack()

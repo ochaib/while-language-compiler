@@ -16,6 +16,8 @@ param: type ident ;
 stat: SKIP_                                 #Skip
       | type ident EQUALS assign_rhs        #Declaration
       | assign_lhs EQUALS assign_rhs        #Assignment
+      | ident side_effect expr              #SideEffect
+      | ident incDec                        #ShortEffect
       | READ assign_lhs                     #Read
       | FREE expr                           #Free
       | RETURN expr                         #Return
@@ -24,8 +26,20 @@ stat: SKIP_                                 #Skip
       | PRINTLN expr                        #Println
       | IF expr THEN stat ELSE stat FI      #If
       | WHILE expr DO stat DONE             #While
+      | DO stat WHILE expr DONE             #DoWhile
+      | FOR for_condition DO stat DONE      #For
+      | BREAK                               #Break
+      | CONTINUE                            #Continue
       | BEGIN stat END                      #Begin
       | stat SEMICOLON stat                 #Sequence;
+
+// Has to have the form (declaration, check, update) = (int i = __; i binOp __; i = __)
+// Has to be a declaration of some value that continues to be checked and updated in for loop.
+for_condition: OPEN_PARENTHESES stat SEMICOLON expr SEMICOLON stat CLOSE_PARENTHESES;
+
+side_effect: ADDEQ | SUBEQ | MULTEQ | DIVEQ | MODEQ;
+
+incDec: INC | DEC;
 
 assign_lhs: ident                           #AssignLHSIdent
           | array_elem                      #AssignLHSArrayElem
@@ -80,7 +94,8 @@ ident: IDENT;
 
 binaryMulDivModOp: MULTIPLY | DIVIDE | MODULO;
 
-binaryAddSubOp: PLUS | MINUS;
+// Add INC DEC as if an expression follows ++/-- it should be treated as + + / - -
+binaryAddSubOp: PLUS | MINUS | INC | DEC;
 
 binaryComparatorOp: GT | GTE | LT | LTE;
 

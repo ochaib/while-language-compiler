@@ -1,0 +1,13 @@
+# simple integer calculation
+
+# Output:
+# 72
+
+# Program:
+
+begin
+  int x = 12 ;
+  int y = 6 ;
+  x *= y ;
+  println x
+end
