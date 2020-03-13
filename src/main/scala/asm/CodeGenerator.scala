@@ -20,6 +20,10 @@ object CodeGenerator {
   var paramOffsetMap: Map[String, Int] = Map.empty
   var currentParamOffset: Int = 0
 
+  // BREAK
+  var breakLoopLabel: Label = Label("")
+  var continueLabel: Label = Label("")
+
   // Keep track of number of branches.
   val labelGenerator: LabelGenerator = LabelGenerator()
 
@@ -104,7 +108,7 @@ object CodeGenerator {
           assert(assertion = false, "Must be a paramlist or arglist")
           ""
       }
-    } else SymbolTable.makeFunctionKey(identNode, IndexedSeq())
+    } else SymbolTable.makeFunctionKey(identNode, IndexedSeq.empty)
   }
 
   def getFunctionLabel(identNode: IdentNode, listOption: Option[Any]): String = {
@@ -145,9 +149,9 @@ object CodeGenerator {
     symbolTableManager.lookupOffset(key)// + bytesAllocatedSoFar - getScopeStackSize(currentSymbolTable)
   }
 
-//  def generateParamList(paramList: ParamListNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+//  def generateParamList(paramList: ParamListNode): IndexedSeq[Instruction] = IndexedSeq.empty
 
-  def generateParam(param: ParamNode): IndexedSeq[Instruction] = IndexedSeq[Instruction]()
+  def generateParam(param: ParamNode): IndexedSeq[Instruction] = IndexedSeq.empty
 
   def generateStatement(statement: StatNode): IndexedSeq[Instruction] = {
     statement match {
@@ -165,7 +169,7 @@ object CodeGenerator {
       case ReturnNode(_, expr) => generateReturn(expr)
       case ExitNode(_, expr) => generateExit(expr)
 
-      // Unsure as of what to do for the print generation.
+      // Print generation.
       case PrintNode(_, expr) => generatePrint(expr, printLn = false)
       case PrintlnNode(_, expr) => generatePrint(expr, printLn = true)
 
@@ -174,8 +178,8 @@ object CodeGenerator {
 
       // LOOP EXTENSIONS:
       case doWhileNode: DoWhileNode => generateDoWhile(doWhileNode)
-      case _:BreakNode => IndexedSeq[Instruction](BranchLink(None, labelGenerator.generate()))
-      case _:ContinueNode => IndexedSeq.empty
+      case _:BreakNode => IndexedSeq[Instruction](Branch(None, breakLoopLabel))
+      case _:ContinueNode => IndexedSeq[Instruction](Branch(None, continueLabel))
       case forNode: ForNode => generateFor(forNode)
 
       case begin: BeginNode => generateBegin(begin)
@@ -213,7 +217,6 @@ object CodeGenerator {
       generateExpression(MinusNode(token, ident, Int_literNode(token, "1"))) ++ generateIdent(ident)
     }
   }
-
 
   def generateAssignLHS(lhs: AssignLHSNode): IndexedSeq[Instruction] = {
     lhs match {
@@ -835,7 +838,20 @@ object CodeGenerator {
     // Labels
     val conditionLabel: Label = labelGenerator.generate()
     val bodyLabel: Label = labelGenerator.generate()
+    var breakInstruction: IndexedSeq[Instruction] = IndexedSeq.empty
+    var continueInstruction: IndexedSeq[Instruction] = IndexedSeq.empty
 
+    // Set label for Break statement
+    val prelimBreakLabel = breakLoopLabel
+    if (whileNode.containsBreak()) {
+      breakLoopLabel = labelGenerator.generate()
+    }
+
+    // Set label for Continue statement
+    val prelimContinueLabel = continueLabel
+    if (whileNode.containsContinue()) {
+      continueLabel = labelGenerator.generate()
+    }
 
     // *** CONDITION ***
 
@@ -869,6 +885,19 @@ object CodeGenerator {
 
     // ************
 
+    // Branch to break if it exists
+    if (whileNode.containsBreak()) {
+      breakInstruction = IndexedSeq[Instruction](Branch(None, breakLoopLabel))
+      // Reset break label
+      breakLoopLabel = prelimBreakLabel
+    }
+
+    // Branch to continue if it exists
+    if (whileNode.containsContinue()) {
+      continueInstruction = IndexedSeq[Instruction](Branch(None, continueLabel))
+    }
+    // Reset continue label
+    continueLabel = prelimContinueLabel
 
     // *** SUMMARY ***
 
@@ -876,7 +905,7 @@ object CodeGenerator {
 
     val totalConditionInstructions = conditionLabel +: condInstructions :+ bodyBranch
 
-    initConditionBranch +: (totalBodyInstructions ++ totalConditionInstructions)
+    initConditionBranch +: (totalBodyInstructions ++ totalConditionInstructions ++ breakInstruction ++ continueInstruction)
   }
 
   // DO WHILE EXTENSION:
@@ -884,6 +913,20 @@ object CodeGenerator {
     // Labels
     val conditionLabel: Label = labelGenerator.generate()
     val bodyLabel: Label = labelGenerator.generate()
+    var breakInstruction: IndexedSeq[Instruction] = IndexedSeq.empty
+    var continueInstruction: IndexedSeq[Instruction] = IndexedSeq.empty
+
+    // Set label for Break statement
+    val prelimBreakLabel = breakLoopLabel
+    if (doWhileNode.containsBreak()) {
+      breakLoopLabel = labelGenerator.generate()
+    }
+
+    // Set label for Continue statement
+    val prelimContinueLabel = continueLabel
+    if (doWhileNode.containsContinue()) {
+      continueLabel = labelGenerator.generate()
+    }
 
     // *** BODY ***
 
@@ -916,19 +959,47 @@ object CodeGenerator {
 
     // ************
 
+    // Branch to break if it exists
+    if (doWhileNode.containsBreak()) {
+      breakInstruction = IndexedSeq[Instruction](Branch(None, breakLoopLabel))
+      // Reset break label
+      breakLoopLabel = prelimBreakLabel
+    }
+
+    // Branch to continue if it exists
+    if (doWhileNode.containsContinue()) {
+      continueInstruction = IndexedSeq[Instruction](Branch(None, continueLabel))
+    }
+    // Reset continue label
+    continueLabel = prelimContinueLabel
+
     // *** SUMMARY ***
 
     val totalBodyInstructions: IndexedSeq[Instruction] = bodyLabel +: (allocateWhileBody ++ bodyInstructions ++ deallocateWhileBody)
 
     val totalConditionInstructions = conditionLabel +: condInstructions :+ bodyBranch
 
-    initConditionBranch +: (totalConditionInstructions ++ totalBodyInstructions)
+    initConditionBranch +: (totalConditionInstructions ++ totalBodyInstructions ++ breakInstruction ++ continueInstruction)
   }
 
   def generateFor(forNode: ForNode): IndexedSeq[Instruction] = {
     // Labels
     val conditionLabel: Label = labelGenerator.generate()
     val bodyLabel: Label = labelGenerator.generate()
+    var breakInstruction: IndexedSeq[Instruction] = IndexedSeq.empty
+    var continueInstruction: IndexedSeq[Instruction] = IndexedSeq.empty
+
+    // Set label for Break statement
+    val prelimBreakLabel = breakLoopLabel
+    if (forNode.containsBreak()) {
+      breakLoopLabel = labelGenerator.generate()
+    }
+
+    // Set label for Continue statement
+    val prelimContinueLabel = continueLabel
+    if (forNode.containsContinue()) {
+      continueLabel = labelGenerator.generate()
+    }
 
     // *** CONDITION ***
 
@@ -965,6 +1036,19 @@ object CodeGenerator {
 
     // ************
 
+    // Branch to break if it exists
+    if (forNode.containsBreak()) {
+      breakInstruction = IndexedSeq[Instruction](Branch(None, breakLoopLabel))
+      // Reset break label
+      breakLoopLabel = prelimBreakLabel
+    }
+
+    // Branch to continue if it exists
+    if (forNode.containsContinue()) {
+      continueInstruction = IndexedSeq[Instruction](Branch(None, continueLabel))
+    }
+    // Reset continue label
+    continueLabel = prelimContinueLabel
 
     // *** SUMMARY ***
 
@@ -972,7 +1056,7 @@ object CodeGenerator {
 
     val totalConditionInstructions = conditionLabel +: condInstructions :+ bodyBranch
 
-    initConditionBranch +: (totalBodyInstructions ++ totalConditionInstructions)
+    initConditionBranch +: (totalBodyInstructions ++ totalConditionInstructions ++ breakInstruction ++ continueInstruction)
   }
 
   def generateBegin(begin: BeginNode): IndexedSeq[Instruction] = {
