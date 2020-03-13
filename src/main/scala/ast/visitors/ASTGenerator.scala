@@ -210,6 +210,40 @@ class ASTGenerator(imports: IndexedSeq[ProgramNode] = IndexedSeq[ProgramNode]())
     visit(ctx.getChild(0)).asInstanceOf[PairElemNode]
   }
 
+  def lookForPossibleCalls(assignRHSNode: AssignRHSNode): Unit = assignRHSNode match {
+    case CallNode(_, ident, _) => tryImportFunc(ident)
+    case _ =>
+  }
+
+  def lookForPossibleCalls(statNode: StatNode): Unit = statNode match {
+    case DeclarationNode(_, _, _, r) => lookForPossibleCalls(r)
+    case AssignmentNode(_, _, r) => lookForPossibleCalls(r)
+    case IfNode(_, _, thenStat, elseStat) =>
+      lookForPossibleCalls(thenStat)
+      lookForPossibleCalls(elseStat)
+    case WhileNode(_, _, stat) => lookForPossibleCalls(stat)
+    case BeginNode(_, stat) => lookForPossibleCalls(stat)
+    case SequenceNode(_, statOne, statTwo) =>
+      lookForPossibleCalls(statOne)
+      lookForPossibleCalls(statTwo)
+    case _ =>
+  }
+
+  def lookForPossibleCalls(node: ASTNode): Unit = node match {
+    case node: StatNode => lookForPossibleCalls(node)
+    case node: AssignRHSNode => lookForPossibleCalls(node)
+    case _ =>
+  }
+
+  def tryImportFunc(funcIdent: IdentNode): Unit = {
+    val funcName: String = funcIdent.ident
+    if (importedFuncs.contains(funcName)) {
+      val importedFunc: FuncNode = importedFuncs(funcName)
+      usedFuncs += importedFunc
+      lookForPossibleCalls(importedFunc.stat)
+    }
+  }
+
   override def visitAssignRHSCall(ctx: WACCParser.AssignRHSCallContext): AssignRHSNode = {
     // ‘call’ ⟨ident⟩ ‘(’ ⟨arg-list⟩? ‘)’
     val ident: IdentNode = visit(ctx.getChild(1)).asInstanceOf[IdentNode]
@@ -218,12 +252,7 @@ class ASTGenerator(imports: IndexedSeq[ProgramNode] = IndexedSeq[ProgramNode]())
         Some(visit(ctx.getChild(3)).asInstanceOf[ArgListNode])
       else None
 
-    val funcName: String = ident.ident
-    if (importedFuncs.contains(funcName)) {
-      usedFuncs += importedFuncs(funcName)
-      println(s"${funcName} is stdlib")
-    }
-    else { println(s"${funcName} is not stdlib") }
+    tryImportFunc(ident)
 
     CallNode(ctx.start, ident, argList)
   }
