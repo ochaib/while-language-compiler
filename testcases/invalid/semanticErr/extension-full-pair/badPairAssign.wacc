@@ -1,0 +1,14 @@
+# create a pair (int, pair (int, int) )
+
+# Output:
+# #empty#
+
+# Program:
+
+begin
+  pair(int, int) ipair = newpair(2, 3) ;
+  pair(int, pair) ipair2 = newpair(1, ipair) ;
+  pair(char, char) cpair = newpair('a', 'b') ;
+  pair(int, pair) cpair2 = newpair(1, cpair) ;
+  cpair2 = ipair2
+end

@@ -93,6 +93,24 @@ object CodeGenerator {
     }
   }
 
+  def makeFunctionKey(identNode: IdentNode, listOption: Option[Any]): String = {
+    if (listOption.isDefined) {
+      listOption.get match {
+        case paramList: ParamListNode =>
+          SymbolTable.makeFunctionKey(identNode, paramList.paramList.map(_.paramType.getType(topSymbolTable, currentSymbolTable)))
+        case argListNode: ArgListNode =>
+          SymbolTable.makeFunctionKey(identNode, argListNode.exprNodes.map(_.getType(topSymbolTable, currentSymbolTable)))
+        case _ =>
+          assert(assertion = false, "Must be a paramlist or arglist")
+          ""
+      }
+    } else SymbolTable.makeFunctionKey(identNode, IndexedSeq())
+  }
+
+  def getFunctionLabel(identNode: IdentNode, listOption: Option[Any]): String = {
+    s"f_${makeFunctionKey(identNode, listOption)}"
+  }
+
   def generateFunction(func: FuncNode): IndexedSeq[Instruction] = {
 
     // Update the current symbol table to function block
@@ -106,7 +124,7 @@ object CodeGenerator {
       setAndGetAllParams(func.paramList.get)
     }
 
-    var labelPushLR = IndexedSeq[Instruction](Label(s"f_${func.identNode.ident}"), pushLR)
+    var labelPushLR = IndexedSeq[Instruction](Label(getFunctionLabel(func.identNode, func.paramList)), pushLR)
     if (func.paramList.isDefined)
       // May need to fetch parameters in reverse.
       labelPushLR ++= func.paramList.get.paramList.flatMap(generateParam)
@@ -137,6 +155,11 @@ object CodeGenerator {
       case _: SkipNode => IndexedSeq.empty
       case declaration: DeclarationNode => generateDeclaration(declaration)
       case assign: AssignmentNode => generateAssignment(assign)
+
+      // SIDE-EFFECT EXTENSIONS
+      case sideEffect: SideEffectNode => generateSideEffect(sideEffect)
+      case shortEffect: ShortEffectNode => generateShortEffect(shortEffect)
+
       case ReadNode(_, lhs) => generateRead(lhs)
       case FreeNode(_, expr) => generateFree(expr)
       case ReturnNode(_, expr) => generateReturn(expr)
@@ -149,7 +172,7 @@ object CodeGenerator {
       case ifNode: IfNode => generateIf(ifNode)
       case whileNode: WhileNode => generateWhile(whileNode)
 
-      // EXTENSIONS:
+      // LOOP EXTENSIONS:
       case doWhileNode: DoWhileNode => generateDoWhile(doWhileNode)
       case _:BreakNode => IndexedSeq.empty
       case _:ContinueNode => IndexedSeq.empty
@@ -167,6 +190,30 @@ object CodeGenerator {
   def generateAssignment(assignment: AssignmentNode): IndexedSeq[Instruction] = {
     generateAssignRHS(assignment.rhs) ++ generateAssignLHS(assignment.lhs)
   }
+
+  // SIDE-EFFECT EXTENSIONS:
+  def generateSideEffect(sideEffect: SideEffectNode): IndexedSeq[Instruction] = {
+    sideEffect match {
+      // Pass code generation to generateAssignment depending on the side effect.
+      case AddAssign(token, ident, expr) => generateAssignment(AssignmentNode(token, ident, PlusNode(token, ident, expr)))
+      case SubAssign(token, ident, expr) => generateAssignment(AssignmentNode(token, ident, MinusNode(token, ident, expr)))
+      case MulAssign(token, ident, expr) => generateAssignment(AssignmentNode(token, ident, MultiplyNode(token, ident, expr)))
+      case DivAssign(token, ident, expr) => generateAssignment(AssignmentNode(token, ident, DivideNode(token, ident, expr)))
+      case ModAssign(token, ident, expr) => generateAssignment(AssignmentNode(token, ident, ModNode(token, ident, expr)))
+    }
+  }
+
+  def generateShortEffect(shortEffect: ShortEffectNode): IndexedSeq[Instruction] = {
+    shortEffect match {
+      case IncrementNode(token, ident) =>
+        // Should generate the ident and the code necessary for ident + 1 which is the same as ident++.
+        generateExpression(PlusNode(token, ident, Int_literNode(token, "1"))) ++ generateIdent(ident)
+      case DecrementNode(token, ident) =>
+        // Should generate the ident and the code necessary for ident - 1 which is the same as ident--.
+      generateExpression(MinusNode(token, ident, Int_literNode(token, "1"))) ++ generateIdent(ident)
+    }
+  }
+
 
   def generateAssignLHS(lhs: AssignLHSNode): IndexedSeq[Instruction] = {
     lhs match {
@@ -479,7 +526,7 @@ object CodeGenerator {
       })
 
     var labelAndBranch = IndexedSeq[Instruction](
-      BranchLink(None, Label(s"f_${call.identNode.ident}"))
+      BranchLink(None, Label(getFunctionLabel(call.identNode, call.argList)))
     )
 
     // TODO May need to do this multiple times if stack exceeds 1024 (max stack size).
@@ -947,6 +994,7 @@ object CodeGenerator {
     allocateInstructions ++ statInstructions ++ deallocateInstructions
   }
 
+  @scala.annotation.tailrec
   def generateExpression(expr: ExprNode): IndexedSeq[Instruction] = {
     expr match {
       case Int_literNode(_, str)

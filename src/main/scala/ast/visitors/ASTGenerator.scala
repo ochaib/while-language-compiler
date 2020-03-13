@@ -85,6 +85,32 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     AssignmentNode(ctx.start, lhs, rhs)
   }
 
+  // SIDE-EFFECT EXTENSION:
+  override def visitSideEffect(ctx: WACCParser.SideEffectContext): SideEffectNode = {
+    val ident: IdentNode = visit(ctx.getChild(0)).asInstanceOf[IdentNode]
+    val sideEffect: String = ctx.getChild(1).getText
+    val expr: ExprNode = visit(ctx.getChild(2)).asInstanceOf[ExprNode]
+
+    sideEffect match {
+      case "+=" => AddAssign(ctx.start, ident, expr)
+      case "-=" => SubAssign(ctx.start, ident, expr)
+      case "*=" => MulAssign(ctx.start, ident, expr)
+      case "/=" => DivAssign(ctx.start, ident, expr)
+      case "%=" => ModAssign(ctx.start, ident, expr)
+    }
+  }
+
+  // SHORT-EFFECT EXTENSION:
+  override def visitShortEffect(ctx: WACCParser.ShortEffectContext): ShortEffectNode = {
+    val ident: IdentNode = visit(ctx.getChild(0)).asInstanceOf[IdentNode]
+    val shortEffect: String = ctx.getChild(1).getText
+
+    shortEffect match {
+      case "++" => IncrementNode(ctx.start, ident)
+      case "--" => DecrementNode(ctx.start, ident)
+    }
+  }
+
   override def visitRead(ctx: WACCParser.ReadContext): ReadNode = {
     // ‘read’ ⟨assign-lhs⟩
     val lhs: AssignLHSNode = visit(ctx.getChild(1)).asInstanceOf[AssignLHSNode]
@@ -155,7 +181,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
   // FOR LOOP EXTENSION:
   override def visitFor(ctx: WACCParser.ForContext): ForNode = {
-    // ‘for’ for_condition ⟨stat⟩ ‘done’
+    // ‘for’ for_condition 'do' ⟨stat⟩ ‘done’
     val forCondition: ForConditionNode = visit(ctx.getChild(1)).asInstanceOf[ForConditionNode]
     val doStat: StatNode = visit(ctx.getChild(3)).asInstanceOf[StatNode]
 
@@ -465,7 +491,13 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
     binaryOperator match {
       case "+"  => PlusNode(ctx.start, firstExpr, secondExpr)
+      case "++" if firstExpr.getKey != StringTypeNode(null).getKey =>
+        PlusNode(ctx.start, firstExpr, secondExpr)
+      case "++" if firstExpr.getKey == StringTypeNode(null).getKey =>
+        SyntaxErrorLog.add("Syntax Error: ++ not defined for strings.")
+        Int_literNode(ctx.start, "100")
       case "-"  => MinusNode(ctx.start, firstExpr, secondExpr)
+      case "--" => MinusNode(ctx.start, firstExpr, secondExpr)
     }
   }
 

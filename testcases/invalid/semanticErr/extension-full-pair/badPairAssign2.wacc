@@ -1,0 +1,14 @@
+# assign a pair(int, int) to a pair(char, char)
+
+# Output:
+# #empty#
+
+# Program:
+
+begin
+  pair(int, int) ipair = newpair(2, 3) ;
+  pair(int, pair) ipair2 = newpair(1, ipair) ;
+  pair(char, char) cpair = newpair('a', 'b') ;
+  pair(int, pair) cpair2 = newpair(1, cpair) ;
+  snd ipair2 = snd cpair2
+end
