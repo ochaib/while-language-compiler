@@ -1,0 +1,14 @@
+# simple integer calculation
+
+# Output:
+# 330
+
+# Program:
+
+begin
+  int x = 329 ;
+  int y = 2 ;
+  int z = x + y ;
+  z-- ;
+  println z
+end
