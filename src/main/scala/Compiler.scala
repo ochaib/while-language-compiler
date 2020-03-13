@@ -106,7 +106,7 @@ object Compiler extends App {
       CodeGenerator.generateProgram(tree)
 
     // PEEPHOLE OPTIMISATION
-    val optimisedInstructions: IndexedSeq[Instruction] = Optimiser.optimise(instructions)
+//    val optimisedInstructions: IndexedSeq[Instruction] = Optimiser.optimise(instructions)
 
     // Format using ARM11 syntax
     val compiled: String = ARM11.print(instructions)
