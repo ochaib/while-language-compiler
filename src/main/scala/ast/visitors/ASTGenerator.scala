@@ -204,7 +204,8 @@ class ASTGenerator(imports: IndexedSeq[ProgramNode] = IndexedSeq[ProgramNode]())
     // Has to have the form (declaration, check, update) = (int i = __; i binOp __; i = __)
     val forDeclaration: DeclarationNode = visit(ctx.getChild(1)).asInstanceOf[DeclarationNode]
     val forExpression: ExprNode = visit(ctx.getChild(3)).asInstanceOf[ExprNode]
-    val forAssign: AssignmentNode = visit(ctx.getChild(5)).asInstanceOf[AssignmentNode]
+    // Can be an assign node or a short assign or side effect.
+    val forAssign: StatNode = visit(ctx.getChild(5)).asInstanceOf[StatNode]
 
     ForConditionNode(ctx.start, forDeclaration, forExpression, forAssign)
   }

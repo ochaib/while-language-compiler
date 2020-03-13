@@ -85,7 +85,7 @@ case class ForNode(token: Token, forCondition: ForConditionNode, stat: StatNode)
   }
 }
 
-case class ForConditionNode(token: Token, decl: DeclarationNode, expr: ExprNode, assign: AssignmentNode)
+case class ForConditionNode(token: Token, decl: DeclarationNode, expr: ExprNode, assign: StatNode)
   extends StatNode(token) {
 
   override def toTreeString: String = {
