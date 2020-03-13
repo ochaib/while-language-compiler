@@ -3,14 +3,19 @@ package ast.visitors
 import ast.nodes._
 import antlr.{WACCLexer, WACCParser, WACCParserBaseVisitor}
 import org.antlr.v4.runtime._
+import scala.collection.mutable
 import util.SyntaxErrorLog
 
 // Class used to traverse the parse tree built by ANTLR
-class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
+class ASTGenerator(imports: IndexedSeq[ProgramNode] = IndexedSeq[ProgramNode]()) extends WACCParserBaseVisitor[ASTNode] {
 
   def debugCtx(ctx: ParserRuleContext) = {
     for (i<-0 until ctx.getChildCount) println(s"$i:: " + ctx.getChild(i).getClass + ": " + ctx.getChild(i).getText)
   }
+
+  // FIXME: imported functions cannot call other imported functions right now
+  var usedFuncs: mutable.Set[FuncNode] = mutable.Set[FuncNode]()
+  val importedFuncs: Map[String, FuncNode] = imports.flatMap(_.functions).map(f => f.identNode.ident -> f).toMap
 
   override def visitProgram(ctx: WACCParser.ProgramContext): ProgramNode = {
     // Need to retrieve program information from parser context,
@@ -22,8 +27,9 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     val stat: StatNode = visit(ctx.getChild(childCount - 3)).asInstanceOf[StatNode]
 
     val functions: IndexedSeq[FuncNode] = for (i<-1 until childCount - 3) yield visit(ctx.getChild(i)).asInstanceOf[FuncNode]
+    val funcNames: Set[String] = functions.map(_.identNode.ident).toSet[String]
     // Then create program node from the two
-    ProgramNode(ctx.start, functions, stat)
+    ProgramNode(ctx.start, functions ++ usedFuncs.filter(f => !funcNames.contains(f.identNode.ident)), stat)
   }
 
   override def visitFunc(ctx: WACCParser.FuncContext): FuncNode = {
@@ -261,6 +267,40 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     visit(ctx.getChild(0)).asInstanceOf[PairElemNode]
   }
 
+  def lookForPossibleCalls(assignRHSNode: AssignRHSNode): Unit = assignRHSNode match {
+    case CallNode(_, ident, _) => tryImportFunc(ident)
+    case _ =>
+  }
+
+  def lookForPossibleCalls(statNode: StatNode): Unit = statNode match {
+    case DeclarationNode(_, _, _, r) => lookForPossibleCalls(r)
+    case AssignmentNode(_, _, r) => lookForPossibleCalls(r)
+    case IfNode(_, _, thenStat, elseStat) =>
+      lookForPossibleCalls(thenStat)
+      lookForPossibleCalls(elseStat)
+    case WhileNode(_, _, stat) => lookForPossibleCalls(stat)
+    case BeginNode(_, stat) => lookForPossibleCalls(stat)
+    case SequenceNode(_, statOne, statTwo) =>
+      lookForPossibleCalls(statOne)
+      lookForPossibleCalls(statTwo)
+    case _ =>
+  }
+
+  def lookForPossibleCalls(node: ASTNode): Unit = node match {
+    case node: StatNode => lookForPossibleCalls(node)
+    case node: AssignRHSNode => lookForPossibleCalls(node)
+    case _ =>
+  }
+
+  def tryImportFunc(funcIdent: IdentNode): Unit = {
+    val funcName: String = funcIdent.ident
+    if (importedFuncs.contains(funcName)) {
+      val importedFunc: FuncNode = importedFuncs(funcName)
+      usedFuncs.add(importedFunc)
+      lookForPossibleCalls(importedFunc.stat)
+    }
+  }
+
   override def visitAssignRHSCall(ctx: WACCParser.AssignRHSCallContext): AssignRHSNode = {
     // ‘call’ ⟨ident⟩ ‘(’ ⟨arg-list⟩? ‘)’
     val ident: IdentNode = visit(ctx.getChild(1)).asInstanceOf[IdentNode]
@@ -268,6 +308,8 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
       if (ctx.getChildCount() == 5)
         Some(visit(ctx.getChild(3)).asInstanceOf[ArgListNode])
       else None
+
+    tryImportFunc(ident)
 
     CallNode(ctx.start, ident, argList)
   }

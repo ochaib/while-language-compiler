@@ -1,3 +1,5 @@
+package wacc
+
 import antlr._
 import asm.CodeGenerator
 import asm.instructions.Instruction
@@ -18,6 +20,25 @@ object Compiler extends App {
 
   if (args.length == 0) error("No filename provided")
   if (!args(0).endsWith(".wacc")) error("Source code must be a .wacc file")
+
+  def handleImport(charstream: ANTLRCharStream): ProgramNode = {
+    val lexer: WACCLexer = new WACCLexer(charstream)
+    val errorListener = new ErrorListener
+    lexer.removeErrorListeners()
+    lexer.addErrorListener(errorListener)
+    val tokens: ANTLRTokenStream = new ANTLRTokenStream(lexer)
+    val parser: WACCParser = new WACCParser(tokens)
+    parser.removeErrorListeners()
+    parser.addErrorListener(errorListener)
+    val program: WACCParser.ProgramContext = parser.program()
+    if (SyntaxErrorLog.errorCheck) {
+      SyntaxErrorLog.printAllErrors()
+      System.exit(100)
+    }
+    val visitor: ASTGenerator = new ASTGenerator()
+    val tree: ProgramNode = visitor.visit(program).asInstanceOf[ProgramNode]
+    tree
+  }
 
   try {
     // Build the lexer and parse out tokens
@@ -45,9 +66,17 @@ object Compiler extends App {
       System.exit(100)
     }
 
+    // first, build the standard library
+    val stdlib: ProgramNode = handleImport(ANTLRCharStreams.fromString(StandardLib.STDLIB))
+
+    // next, build any import files (.wacch) in same directory
+    val directory: String = args(0).substring(0, args(0).lastIndexOf('/')+1) + "./"
+    val importedFiles: IndexedSeq[String] = (new File(directory)).listFiles.map(_.getPath).filter(_.endsWith(".wach"))
+    val imports: IndexedSeq[ProgramNode] = importedFiles
+      .map(fn => ANTLRCharStreams.fromFileName(fn))
+      .map(handleImport(_))
     // Build AST
-    val visitor
-        : ASTGenerator = new ASTGenerator() // TODO: this should be a singleton
+    val visitor: ASTGenerator = new ASTGenerator(imports=(imports :+ stdlib))
     val tree: ProgramNode = visitor.visit(program).asInstanceOf[ProgramNode]
 
     // TODO: add flag to disable semantic analysis as in ref compiler

@@ -26,6 +26,7 @@ antlr:
 
 # compiles SBT project
 sources:
+	$(PYTHON) make-stdlib.py
 	$(SBT) clean compile
 
 # makes assembly compiler JAR
