@@ -1,0 +1,13 @@
+# simple for loop
+
+# Output:
+# #empty#
+
+# Program:
+
+begin
+  do
+    break;
+  while true
+  done
+end
