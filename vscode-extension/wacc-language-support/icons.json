@@ -1,0 +1,13 @@
+{
+    "iconDefinitions": {
+        "_wacc": {
+            "iconPath": "./wacc-icon.png"
+        }
+    },
+    "fileExtensions": {
+        ".wacc": "_wacc"
+    },
+    "languageIds": {
+        "wacc": "_wacc"
+    }
+}

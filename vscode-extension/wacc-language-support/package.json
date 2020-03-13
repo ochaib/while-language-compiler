@@ -1,8 +1,9 @@
 {
     "name": "wacc-language-support",
-    "displayName": "WACC Language support",
+    "displayName": "WACC Language Support",
     "description": "",
-    "version": "0.0.1",
+    "publisher": "pshah123",
+    "version": "1.1.1",
     "engines": {
         "vscode": "^1.43.0"
     },
@@ -20,6 +21,11 @@
             "language": "wacc",
             "scopeName": "source.wacc",
             "path": "./syntaxes/wacc.tmLanguage.json"
+        }],
+        "iconThemes": [{
+            "id": "wacc",
+            "label": "wacc",
+            "path": "./icons.json"
         }]
     }
 }

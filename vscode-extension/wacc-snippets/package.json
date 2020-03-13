@@ -1,8 +1,9 @@
 {
     "name": "wacc-snippets",
-    "displayName": "wacc-snippets",
+    "displayName": "WACC Snippets",
     "description": "Snippets for the extended WACC language",
-    "version": "0.0.1",
+    "publisher": "pshah123",
+    "version": "0.0.2",
     "engines": {
         "vscode": "^1.43.0"
     },
