@@ -109,7 +109,7 @@ object Compiler extends App {
     val optimisedInstructions: IndexedSeq[Instruction] = Optimiser.optimise(instructions)
 
     // Format using ARM11 syntax
-    val compiled: String = ARM11.print(optimisedInstructions)
+    val compiled: String = ARM11.print(instructions)
     // Appropriately name output file, no prefix because it should go in root directory
     val baseFilename: String = args(0).split("/").last
     val outputFile: String =
