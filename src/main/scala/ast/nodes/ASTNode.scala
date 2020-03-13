@@ -1,6 +1,7 @@
 package ast.nodes
 
 import ast.symboltable._
+import ast.visitors._
 import org.antlr.v4.runtime.Token
 import util.{SemanticErrorLog, ColoredConsole => console}
 import scala.util.control.Breaks._
