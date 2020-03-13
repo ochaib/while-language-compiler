@@ -37,6 +37,15 @@ object Optimiser {
               break
             }
 
+          // Instead of loading then moving to another register, load directly into that register.
+          case store: Store if next.isInstanceOf[Move] =>
+            val move = next.asInstanceOf[Move]
+            if (store.dest == move.src.asInstanceOf[ShiftedRegister].register) {
+              optIns.insert(i, Store(store.condition, store.byteType, move.dest, store.src, store.offset,
+                store.registerWriteBack, store.label))
+              break
+            }
+
           // Redundant POP, not necessary to POP anything twice.
           case pop: Pop if next.isInstanceOf[Pop] =>
             val nextPop = next.asInstanceOf[Pop]
