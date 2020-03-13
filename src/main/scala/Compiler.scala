@@ -1,5 +1,3 @@
-package wacc
-
 import antlr._
 import asm.CodeGenerator
 import asm.instructions.Instruction
