@@ -33,7 +33,6 @@ stat: SKIP_                                 #Skip
       | BEGIN stat END                      #Begin
       | stat SEMICOLON stat                 #Sequence;
 
-
 // Has to be a declaration of some value that continues to be checked and updated in for loop.
 for_condition: OPEN_PARENTHESES stat SEMICOLON expr SEMICOLON stat CLOSE_PARENTHESES;
 
