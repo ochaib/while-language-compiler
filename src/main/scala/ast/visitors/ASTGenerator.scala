@@ -14,7 +14,7 @@ class ASTGenerator(imports: IndexedSeq[ProgramNode] = IndexedSeq[ProgramNode]())
   }
 
   // FIXME: imported functions cannot call other imported functions right now
-  var usedFuncs: mutable.ListBuffer[FuncNode] = mutable.ListBuffer[FuncNode]()
+  var usedFuncs: mutable.Set[FuncNode] = mutable.Set[FuncNode]()
   val importedFuncs: Map[String, FuncNode] = imports.flatMap(_.functions).map(f => f.identNode.ident -> f).toMap
 
   override def visitProgram(ctx: WACCParser.ProgramContext): ProgramNode = {
@@ -240,7 +240,7 @@ class ASTGenerator(imports: IndexedSeq[ProgramNode] = IndexedSeq[ProgramNode]())
     val funcName: String = funcIdent.ident
     if (importedFuncs.contains(funcName)) {
       val importedFunc: FuncNode = importedFuncs(funcName)
-      usedFuncs += importedFunc
+      usedFuncs.add(importedFunc)
       lookForPossibleCalls(importedFunc.stat)
     }
   }
