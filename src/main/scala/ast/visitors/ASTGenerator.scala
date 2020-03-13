@@ -159,13 +159,16 @@ class ASTGenerator(imports: IndexedSeq[ProgramNode] = IndexedSeq[ProgramNode]())
     PrintlnNode(ctx.start, printlnExpr)
   }
 
-  override def visitIf(ctx: WACCParser.IfContext): IfNode = {
+  override def visitIf(ctx: WACCParser.IfContext): ASTNode = {
   // ‘if’ ⟨expr ⟩ ‘then’ ⟨stat ⟩ ‘else’ ⟨stat ⟩ ‘fi’
     val conditionExpr: ExprNode = visit(ctx.getChild(1)).asInstanceOf[ExprNode]
     val thenStat: StatNode = visit(ctx.getChild(3)).asInstanceOf[StatNode]
     val elseStat: StatNode = visit(ctx.getChild(5)).asInstanceOf[StatNode]
 
-    IfNode(ctx.start, conditionExpr, thenStat, elseStat)
+    conditionExpr match {
+      case Bool_literNode(_, value) => if (value) thenStat else elseStat
+      case _ => IfNode(ctx.start, conditionExpr, thenStat, elseStat)
+    }
   }
 
   override def visitWhile(ctx: WACCParser.WhileContext): WhileNode = {
