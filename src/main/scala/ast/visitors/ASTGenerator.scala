@@ -171,12 +171,15 @@ class ASTGenerator(imports: IndexedSeq[ProgramNode] = IndexedSeq[ProgramNode]())
     }
   }
 
-  override def visitWhile(ctx: WACCParser.WhileContext): WhileNode = {
+  override def visitWhile(ctx: WACCParser.WhileContext): ASTNode = {
     // ‘while’ ⟨expr ⟩ ‘do’ ⟨stat ⟩ ‘done’
     val conditionExpr: ExprNode = visit(ctx.getChild(1)).asInstanceOf[ExprNode]
     val doStat: StatNode = visit(ctx.getChild(3)).asInstanceOf[StatNode]
 
-    WhileNode(ctx.start, conditionExpr, doStat)
+    conditionExpr match {
+      case Bool_literNode(t, false) => SkipNode(t)
+      case _ => WhileNode(ctx.start, conditionExpr, doStat)
+    }
   }
 
   // DoWhile Extension.
