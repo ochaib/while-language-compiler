@@ -23,7 +23,7 @@ sealed class TypeCheckVisitor(entryNode: ASTNode, topSymbolTable: SymbolTable) e
     case ParamListNode(token: Token, paramNodeList) => for (paramNode <- paramNodeList) visit(paramNode)
 
     case ParamNode(token: Token, paramType, identNode) =>
-      // Add the parameter identifierr in
+      // Add the parameter identifier in
       val paramIdentifier: PARAM = new PARAM(identNode.getKey, paramType.getType(topSymbolTable, currentSymbolTable))
       currentSymbolTable.add(identNode.getKey, paramIdentifier)
       visitParamNode(token, paramType, identNode)
@@ -86,9 +86,9 @@ sealed class TypeCheckVisitor(entryNode: ASTNode, topSymbolTable: SymbolTable) e
         // Prepare to visit stat by creating new symbol table
         symbolTableCreatorWrapper(_ => visit(stat))
 
-      case _:BreakNode =>
+      case _:BreakNode => statNode.foundBreak()
 
-      case _:ContinueNode =>
+      case _:ContinueNode => statNode.foundContinue()
 
       case BeginNode(token: Token, stat) => symbolTableCreatorWrapper(_ => visit(stat))
 
