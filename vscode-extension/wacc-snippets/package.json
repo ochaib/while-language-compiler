@@ -1,0 +1,21 @@
+{
+    "name": "wacc-snippets",
+    "displayName": "WACC Snippets",
+    "description": "Snippets for the extended WACC language",
+    "publisher": "pshah123",
+    "version": "0.0.2",
+    "engines": {
+        "vscode": "^1.43.0"
+    },
+    "categories": [
+        "Snippets"
+    ],
+    "contributes": {
+        "snippets": [
+            {
+                "language": "wacc",
+                "path": "./snippets/snippets.json"
+            }
+        ]
+    }
+}

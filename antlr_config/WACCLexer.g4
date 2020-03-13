@@ -81,6 +81,15 @@ NE: '!=';
 AND: '&&';
 OR: '||';
 
+// SIDE-EFFECT EXPRESSIONS
+INC: '++';
+DEC: '--';
+ADDEQ: '+=';
+SUBEQ: '-=';
+DIVEQ: '/=';
+MULTEQ: '*=';
+MODEQ: '%=';
+
 // IDENT
 fragment UNDERSCORE: '_';
 fragment DIGIT: '0'..'9';

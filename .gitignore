@@ -38,6 +38,7 @@ testcases/
 
 # ignore scala metals
 *.db
+.bloop/
 
 # ignore generated assembly
 assembly/

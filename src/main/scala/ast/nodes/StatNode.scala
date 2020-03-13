@@ -6,7 +6,26 @@ import org.antlr.v4.runtime.Token
 import util.{ColoredConsole => console}
 
 abstract class StatNode(token: Token) extends ASTNode(token) {
+  var breakFound = false
+  var continueFound = false
+
   override def toTreeString: String = console.color("<STATEMENT>", fg=Console.RED)
+
+  def foundBreak(): Unit = {
+    breakFound = true
+  }
+
+  def containsBreak(): Boolean = {
+    breakFound
+  }
+
+  def foundContinue(): Unit = {
+    continueFound = true
+  }
+
+  def containsContinue(): Boolean = {
+    continueFound
+  }
 }
 
 case class SkipNode(token: Token) extends StatNode(token) {
@@ -85,7 +104,7 @@ case class ForNode(token: Token, forCondition: ForConditionNode, stat: StatNode)
   }
 }
 
-case class ForConditionNode(token: Token, decl: DeclarationNode, expr: ExprNode, assign: AssignmentNode)
+case class ForConditionNode(token: Token, decl: DeclarationNode, expr: ExprNode, assign: StatNode)
   extends StatNode(token) {
 
   override def toTreeString: String = {

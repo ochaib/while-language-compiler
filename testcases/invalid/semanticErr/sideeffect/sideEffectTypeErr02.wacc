@@ -1,0 +1,14 @@
+# type mismatch: int <- char
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  char c = 'c';
+  c -= (4 + 5)
+end

@@ -1,0 +1,12 @@
+# simple integer calculation
+
+# Output:
+# 2
+
+# Program:
+
+begin
+  int x = 1 ;
+  x++;
+  println x
+end

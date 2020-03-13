@@ -1,0 +1,6 @@
+begin
+    string helloworld() is
+        return "hello world"
+    end
+    skip
+end

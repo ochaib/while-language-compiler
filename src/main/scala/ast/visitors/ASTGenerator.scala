@@ -3,14 +3,19 @@ package ast.visitors
 import ast.nodes._
 import antlr.{WACCLexer, WACCParser, WACCParserBaseVisitor}
 import org.antlr.v4.runtime._
+import scala.collection.mutable
 import util.SyntaxErrorLog
 
 // Class used to traverse the parse tree built by ANTLR
-class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
+class ASTGenerator(imports: IndexedSeq[ProgramNode] = IndexedSeq[ProgramNode]()) extends WACCParserBaseVisitor[ASTNode] {
 
   def debugCtx(ctx: ParserRuleContext) = {
     for (i<-0 until ctx.getChildCount) println(s"$i:: " + ctx.getChild(i).getClass + ": " + ctx.getChild(i).getText)
   }
+
+  // FIXME: imported functions cannot call other imported functions right now
+  var usedFuncs: mutable.Set[FuncNode] = mutable.Set[FuncNode]()
+  val importedFuncs: Map[String, FuncNode] = imports.flatMap(_.functions).map(f => f.identNode.ident -> f).toMap
 
   override def visitProgram(ctx: WACCParser.ProgramContext): ProgramNode = {
     // Need to retrieve program information from parser context,
@@ -22,8 +27,9 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     val stat: StatNode = visit(ctx.getChild(childCount - 3)).asInstanceOf[StatNode]
 
     val functions: IndexedSeq[FuncNode] = for (i<-1 until childCount - 3) yield visit(ctx.getChild(i)).asInstanceOf[FuncNode]
+    val funcNames: Set[String] = functions.map(_.identNode.ident).toSet[String]
     // Then create program node from the two
-    ProgramNode(ctx.start, functions, stat)
+    ProgramNode(ctx.start, functions ++ usedFuncs.filter(f => !funcNames.contains(f.identNode.ident)), stat)
   }
 
   override def visitFunc(ctx: WACCParser.FuncContext): FuncNode = {
@@ -85,6 +91,32 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     AssignmentNode(ctx.start, lhs, rhs)
   }
 
+  // SIDE-EFFECT EXTENSION:
+  override def visitSideEffect(ctx: WACCParser.SideEffectContext): SideEffectNode = {
+    val ident: IdentNode = visit(ctx.getChild(0)).asInstanceOf[IdentNode]
+    val sideEffect: String = ctx.getChild(1).getText
+    val expr: ExprNode = visit(ctx.getChild(2)).asInstanceOf[ExprNode]
+
+    sideEffect match {
+      case "+=" => AddAssign(ctx.start, ident, expr)
+      case "-=" => SubAssign(ctx.start, ident, expr)
+      case "*=" => MulAssign(ctx.start, ident, expr)
+      case "/=" => DivAssign(ctx.start, ident, expr)
+      case "%=" => ModAssign(ctx.start, ident, expr)
+    }
+  }
+
+  // SHORT-EFFECT EXTENSION:
+  override def visitShortEffect(ctx: WACCParser.ShortEffectContext): ShortEffectNode = {
+    val ident: IdentNode = visit(ctx.getChild(0)).asInstanceOf[IdentNode]
+    val shortEffect: String = ctx.getChild(1).getText
+
+    shortEffect match {
+      case "++" => IncrementNode(ctx.start, ident)
+      case "--" => DecrementNode(ctx.start, ident)
+    }
+  }
+
   override def visitRead(ctx: WACCParser.ReadContext): ReadNode = {
     // ‘read’ ⟨assign-lhs⟩
     val lhs: AssignLHSNode = visit(ctx.getChild(1)).asInstanceOf[AssignLHSNode]
@@ -127,21 +159,27 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     PrintlnNode(ctx.start, printlnExpr)
   }
 
-  override def visitIf(ctx: WACCParser.IfContext): IfNode = {
+  override def visitIf(ctx: WACCParser.IfContext): ASTNode = {
   // ‘if’ ⟨expr ⟩ ‘then’ ⟨stat ⟩ ‘else’ ⟨stat ⟩ ‘fi’
     val conditionExpr: ExprNode = visit(ctx.getChild(1)).asInstanceOf[ExprNode]
     val thenStat: StatNode = visit(ctx.getChild(3)).asInstanceOf[StatNode]
     val elseStat: StatNode = visit(ctx.getChild(5)).asInstanceOf[StatNode]
 
-    IfNode(ctx.start, conditionExpr, thenStat, elseStat)
+    conditionExpr match {
+      case Bool_literNode(_, value) => if (value) thenStat else elseStat
+      case _ => IfNode(ctx.start, conditionExpr, thenStat, elseStat)
+    }
   }
 
-  override def visitWhile(ctx: WACCParser.WhileContext): WhileNode = {
+  override def visitWhile(ctx: WACCParser.WhileContext): ASTNode = {
     // ‘while’ ⟨expr ⟩ ‘do’ ⟨stat ⟩ ‘done’
     val conditionExpr: ExprNode = visit(ctx.getChild(1)).asInstanceOf[ExprNode]
     val doStat: StatNode = visit(ctx.getChild(3)).asInstanceOf[StatNode]
 
-    WhileNode(ctx.start, conditionExpr, doStat)
+    conditionExpr match {
+      case Bool_literNode(t, false) => SkipNode(t)
+      case _ => WhileNode(ctx.start, conditionExpr, doStat)
+    }
   }
 
   // DoWhile Extension.
@@ -155,7 +193,7 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
   // FOR LOOP EXTENSION:
   override def visitFor(ctx: WACCParser.ForContext): ForNode = {
-    // ‘for’ for_condition ⟨stat⟩ ‘done’
+    // ‘for’ for_condition 'do' ⟨stat⟩ ‘done’
     val forCondition: ForConditionNode = visit(ctx.getChild(1)).asInstanceOf[ForConditionNode]
     val doStat: StatNode = visit(ctx.getChild(3)).asInstanceOf[StatNode]
 
@@ -166,7 +204,8 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     // Has to have the form (declaration, check, update) = (int i = __; i binOp __; i = __)
     val forDeclaration: DeclarationNode = visit(ctx.getChild(1)).asInstanceOf[DeclarationNode]
     val forExpression: ExprNode = visit(ctx.getChild(3)).asInstanceOf[ExprNode]
-    val forAssign: AssignmentNode = visit(ctx.getChild(5)).asInstanceOf[AssignmentNode]
+    // Can be an assign node or a short assign or side effect.
+    val forAssign: StatNode = visit(ctx.getChild(5)).asInstanceOf[StatNode]
 
     ForConditionNode(ctx.start, forDeclaration, forExpression, forAssign)
   }
@@ -235,6 +274,40 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
     visit(ctx.getChild(0)).asInstanceOf[PairElemNode]
   }
 
+  def lookForPossibleCalls(assignRHSNode: AssignRHSNode): Unit = assignRHSNode match {
+    case CallNode(_, ident, _) => tryImportFunc(ident)
+    case _ =>
+  }
+
+  def lookForPossibleCalls(statNode: StatNode): Unit = statNode match {
+    case DeclarationNode(_, _, _, r) => lookForPossibleCalls(r)
+    case AssignmentNode(_, _, r) => lookForPossibleCalls(r)
+    case IfNode(_, _, thenStat, elseStat) =>
+      lookForPossibleCalls(thenStat)
+      lookForPossibleCalls(elseStat)
+    case WhileNode(_, _, stat) => lookForPossibleCalls(stat)
+    case BeginNode(_, stat) => lookForPossibleCalls(stat)
+    case SequenceNode(_, statOne, statTwo) =>
+      lookForPossibleCalls(statOne)
+      lookForPossibleCalls(statTwo)
+    case _ =>
+  }
+
+  def lookForPossibleCalls(node: ASTNode): Unit = node match {
+    case node: StatNode => lookForPossibleCalls(node)
+    case node: AssignRHSNode => lookForPossibleCalls(node)
+    case _ =>
+  }
+
+  def tryImportFunc(funcIdent: IdentNode): Unit = {
+    val funcName: String = funcIdent.ident
+    if (importedFuncs.contains(funcName)) {
+      val importedFunc: FuncNode = importedFuncs(funcName)
+      usedFuncs.add(importedFunc)
+      lookForPossibleCalls(importedFunc.stat)
+    }
+  }
+
   override def visitAssignRHSCall(ctx: WACCParser.AssignRHSCallContext): AssignRHSNode = {
     // ‘call’ ⟨ident⟩ ‘(’ ⟨arg-list⟩? ‘)’
     val ident: IdentNode = visit(ctx.getChild(1)).asInstanceOf[IdentNode]
@@ -242,6 +315,8 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
       if (ctx.getChildCount() == 5)
         Some(visit(ctx.getChild(3)).asInstanceOf[ArgListNode])
       else None
+
+    tryImportFunc(ident)
 
     CallNode(ctx.start, ident, argList)
   }
@@ -465,7 +540,13 @@ class ASTGenerator extends WACCParserBaseVisitor[ASTNode] {
 
     binaryOperator match {
       case "+"  => PlusNode(ctx.start, firstExpr, secondExpr)
+      case "++" if firstExpr.getKey != StringTypeNode(null).getKey =>
+        PlusNode(ctx.start, firstExpr, secondExpr)
+      case "++" if firstExpr.getKey == StringTypeNode(null).getKey =>
+        SyntaxErrorLog.add("Syntax Error: ++ not defined for strings.")
+        Int_literNode(ctx.start, "100")
       case "-"  => MinusNode(ctx.start, firstExpr, secondExpr)
+      case "--" => MinusNode(ctx.start, firstExpr, secondExpr)
     }
   }
 

@@ -1,0 +1,59 @@
+{
+	"Program": {
+		"prefix": "begin",
+		"body": [
+			"begin",
+			"\t${1:body}",
+			"end"
+		],
+		"description": "Boilerplate for a new program"
+	},
+	"Function": {
+		"prefix": "func",
+		"body": [
+			"${1:type} ${2:ident} (${3:params}) is",
+			"\t${4:stat}",
+			"end"
+		],
+		"description": "Boilerplate for a new function"
+	},
+	"If-Else": {
+		"prefix": "if",
+		"body": [
+			"if ${1:condition}",
+			"\tthen",
+			"\t\t${2:then stat}",
+			"\telse",
+			"\t\t${3:else stat}",
+			"fi"
+		],
+		"description":"Boilerplate for a new conditional branch"
+	},
+	"While": {
+		"prefix": "while",
+		"body": [
+			"while ${1:condition} do",
+			"\t${2:stat}",
+			"done"
+		],
+		"description":"Boilerplate for a new while loop"
+	},
+	"Do-While": {
+		"prefix": "do-while",
+		"body": [
+			"do",
+			"\t${1:stat}",
+			"while ${2:condition} done"
+		],
+		"description":"Boilerplate for a new do-while loop"
+	},
+	"For": {
+		"prefix": "for",
+		"body": [
+			"for (${1:declaration}; ${2:check}; ${3:update}) do",
+			"\t${4:stat}",
+			"done"
+		],
+		"description":"Boilerplate for a new for loop"
+	}
+}

@@ -1,12 +1,7 @@
 package ast.symboltable
 
-import ast.nodes.{
-  ASTNode,
-  BoolTypeNode,
-  CharTypeNode,
-  StringTypeNode,
-  IntTypeNode
-}
+import ast.nodes.{ASTNode, BoolTypeNode, CharTypeNode, IdentNode, IntTypeNode, StringTypeNode}
+
 import scala.collection.immutable.HashMap
 
 
@@ -79,5 +74,20 @@ object SymbolTable {
     val newSymbolTable: SymbolTable = new SymbolTable(new HashMap(), new HashMap(), encSymbolTable, IndexedSeq())
     encSymbolTable.addChild(newSymbolTable)
     newSymbolTable
+  }
+
+  def makeFunctionKey(identNode: IdentNode, paramTypeList: IndexedSeq[TYPE]): String = {
+    var key = s"${identNode.ident}_p_"
+    for (_type <- paramTypeList) {
+      _type match {
+        case _: ARRAY =>
+          key = key + "array_"
+        case _: PAIR =>
+          key = key + s"pair_"
+        case _ =>
+          key = key + s"${_type.getKey}_"
+      }
+    }
+    key
   }
 }
