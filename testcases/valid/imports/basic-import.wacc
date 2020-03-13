@@ -1,0 +1,4 @@
+begin
+    string x = call helloworld();
+    println x
+end
