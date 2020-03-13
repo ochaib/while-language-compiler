@@ -1,0 +1,25 @@
+{
+    "name": "wacc-language-support",
+    "displayName": "WACC Language support",
+    "description": "",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.43.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "contributes": {
+        "languages": [{
+            "id": "wacc",
+            "aliases": ["WACC", "wacc"],
+            "extensions": [".wacc",".wach"],
+            "configuration": "./language-configuration.json"
+        }],
+        "grammars": [{
+            "language": "wacc",
+            "scopeName": "source.wacc",
+            "path": "./syntaxes/wacc.tmLanguage.json"
+        }]
+    }
+}

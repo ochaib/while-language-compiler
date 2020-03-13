@@ -1,0 +1,65 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "WACC",
+	"patterns": [
+		{
+			"include": "#keywords"
+		},
+		{
+			"include": "#strings"
+		},
+		{
+			"include": "#ops"
+		},
+		{
+			"include": "#standard-library"
+		}
+	],
+	"repository": {
+		"keywords": {
+			"patterns": [{
+				"name": "keyword.control.wacc",
+				"match": "\\b(if|while|do|done|begin|end|exit|for|return|continue|break)\\b"
+			}]
+		},
+		"strings": {
+			"name": "string.quoted.double.wacc",
+			"begin": "\"",
+			"end": "\"",
+			"patterns": [
+				{
+					"name": "constant.character.escape.wacc",
+					"match": "\\\\."
+				}
+			]
+		},
+		"ops": {
+			"patterns": [{
+				"name": "binary.operator.wacc",
+				"match": "\\b(\\*|\\/|%)\\b"
+			}, {
+				"name": "unary.operator.wacc",
+				"match": "\\b(!|len|ord|chr)\\b"
+			}, {
+				"name": "comparison.operator.wacc",
+				"match": "\\b(>|>=|<|<=|==|!=|&&|\\|\\|)\\b"
+			}, {
+				"name": "sideeffect.operator.wacc",
+				"match": "\\b(\\+\\+|--|\\+=|-=|\\/=|\\*=|%=)\\b"
+			}, {
+				"name": "pair.operator.wacc",
+				"match": "\\b(fst|snd)\\b"
+			}]
+		},
+		"standard-library": {
+			"patterns": [{
+				"name": "common.functions.wacc",
+				"match": "\\b(print|println|free|read|skip|call|newpair|pair)\\b"
+			}, {
+				"name": "stdlib.functions.wacc",
+				"match": "\\b(isdigit|islower|isupper|isalpha|isalnum|isspace|isnewline|tolower|toupper|min|max|abs|rand|pow|find|any|indexOf)\\b"
+			}]
+		}
+	},
+	"scopeName": "source.wacc"
+}
